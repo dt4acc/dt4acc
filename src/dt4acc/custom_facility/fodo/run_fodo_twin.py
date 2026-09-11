@@ -120,7 +120,13 @@ async def main():
     )
     builder.LoadDatabase()
     softioc.iocInit(dispatcher)
-    softioc.interactive_ioc(globals())
+    logger.warning("EPICS IOC ready: prefix=%s", prefix or "<none>")
+
+    headless = os.environ.get("DT4ACC_HEADLESS", "").lower() in ("1", "true", "yes")
+    if headless:
+        softioc.non_interactive_ioc()
+    else:
+        softioc.interactive_ioc(globals())
 
 
 async def initialise_pvs(
