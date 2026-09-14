@@ -1,7 +1,23 @@
+"""Generic EPICS digital twin launcher.
+
+Starts an EPICS soft-IOC digital twin for any lattice + accelerator_setup.json
+catalog pair conforming to the generic schema (Quadrupole/Sextupole/Steerer,
+one power converter per magnet — see
+``custom_facility.generic.liasion_translator_setup``). No facility-specific
+code is required: this is the EPICS-side equivalent of
+``custom_facility.soleil.run_soleil_twin`` for Tango.
+
+If neither ``--lattice``/``DT4ACC_LATTICE_FILE`` nor
+``--accelerator-setup-file``/``DT4ACC_ACCELERATOR_SETUP_FILE`` are supplied,
+falls back to the bundled FODO test lattice/catalog under ``resources/``.
+"""
+
+import argparse
 import asyncio
 import getpass
 import logging
 import os
+from pathlib import Path
 from typing import Dict, Any
 
 from importlib import resources
@@ -11,6 +27,7 @@ from softioc import builder, softioc
 from dt4acc.core.bl.controller import read_and_dispatch
 from dt4acc.core.bl.handle_lattice import lattice_loader
 from dt4acc.core.interfaces.controller_interface import ControllerInterface
+from dt4acc.config.data.querries import configure_data_file
 from dt4acc.custom_epics.ioc.pv_setup import (
     initialize_master_clock_pvs,
     initialize_cavity_pvs,
@@ -34,16 +51,54 @@ from dt4acc.core.bl.translating_command_execution_engine import (
 from dt4acc.custom_epics.ioc.orbit_pva import OrbitTwinServer
 from dt4acc.custom_epics.ioc.controller import dispatcher
 from dt4acc.custom_epics.ioc.view import View
-from dt4acc.custom_facility.fodo.liasion_translator_setup import load_managers
+from dt4acc.custom_facility.generic.liasion_translator_setup import load_managers
 
 logging.basicConfig(level=logging.WARNING)
 logging.getLogger("dt4acc_lib").setLevel(level=logging.WARNING)
 logging.getLogger("transitions").setLevel(level=logging.WARNING)
 logging.getLogger("transitions.core").setLevel(level=logging.WARNING)
-logger = logging.getLogger("dt4acc-fodo")
+logger = logging.getLogger("dt4acc-epics")
+
+_DEFAULT_LATTICE_FILE = resources.files("dt4acc").joinpath(
+    "custom_facility/generic/resources/fodo_lattice.json"
+)
+_DEFAULT_ACCELERATOR_SETUP_FILE = resources.files("dt4acc").joinpath(
+    "custom_facility/generic/resources/accelerator_setup.json"
+)
+
+# A generous margin over the loaded lattice's element count, so orbit/twiss/
+# survey waveform PVs never truncate a lattice larger than the bundled FODO
+# test lattice (whose element count is below the BESSY-derived default).
+_N_ELEMENTS_MARGIN = 100
 
 
-async def main():
+def _build_args_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Run the generic EPICS digital twin for a given lattice + accelerator_setup.json.",
+    )
+    parser.add_argument(
+        "--lattice",
+        help="PyAT lattice file (.m or .json). "
+        "Default: DT4ACC_LATTICE_FILE, else the bundled FODO test lattice.",
+    )
+    parser.add_argument(
+        "--accelerator-setup-file",
+        help="accelerator_setup.json catalog file. "
+        "Default: DT4ACC_ACCELERATOR_SETUP_FILE, else the bundled FODO test catalog.",
+    )
+    parser.add_argument(
+        "--prefix",
+        help="EPICS PV prefix. Default: DT4ACC_PREFIX, else the current user name.",
+    )
+    return parser
+
+
+def _resolve_path(cli_value, env_name: str, default) -> Path:
+    resolved = cli_value or os.environ.get(env_name) or default
+    return Path(resolved)
+
+
+async def main(argv=None):
     """Handle all startups
 
     * load liasion manager and translation service
@@ -59,17 +114,33 @@ async def main():
         * handle delayed execution
 
     """
-    filename = resources.files("dt4acc").joinpath(
-        "custom_facility/fodo/resources/fodo_lattice.json"
+    args = _build_args_parser().parse_args(argv)
+
+    lattice_file = _resolve_path(args.lattice, "DT4ACC_LATTICE_FILE", _DEFAULT_LATTICE_FILE)
+    if not lattice_file.exists():
+        raise SystemExit(f"Error: lattice file not found: {lattice_file}")
+
+    accelerator_setup_file = _resolve_path(
+        args.accelerator_setup_file, "DT4ACC_ACCELERATOR_SETUP_FILE", _DEFAULT_ACCELERATOR_SETUP_FILE
     )
-    lattice_loader.set_lattice_file(filename)
+    if not accelerator_setup_file.exists():
+        raise SystemExit(f"Error: accelerator setup file not found: {accelerator_setup_file}")
+
+    # dt4acc.config.data.querries resolves its data file from
+    # DT4ACC_ACCELERATOR_SETUP_FILE only once, at import time - by the time
+    # we get here it has typically already been imported (transitively, via
+    # pv_setup/liasion_translator_setup above). Point it explicitly at the
+    # resolved path before anything reads the catalog.
+    configure_data_file(accelerator_setup_file)
+
+    lattice_loader.set_lattice_file(lattice_file)
     acc = lattice_loader.load()
     backend = SimulatorBackend(
-        name="FODO_on_PyAT",
+        name="EPICS_twin",
         acc=PyATAcceleratorSimulator(at_lattice=acc),
     )
 
-    _, lm, ts = load_managers()
+    yp, lm, ts = load_managers(acc)
 
     command_rewriter = CommandRewriter(liaison_manager=lm, translation_service=ts)
 
@@ -83,7 +154,7 @@ async def main():
         num_readings=1,
     )
 
-    prefix = os.environ.get("DT4ACC_PREFIX", getpass.getuser())
+    prefix = args.prefix or os.environ.get("DT4ACC_PREFIX", getpass.getuser())
     if prefix:
         pva_prefix = prefix + ":"
     else:
@@ -109,8 +180,15 @@ async def main():
     if prefix:
         builder.SetDeviceName(prefix)
 
+    n_elements = len(acc) + _N_ELEMENTS_MARGIN
+
     view.update_process_variables(
-        await initialise_pvs(builder=builder, controller=controller)
+        await initialise_pvs(
+            builder=builder,
+            controller=controller,
+            cavity_names=yp.cavity_names(),
+            n_elements=n_elements,
+        )
     )
     # Extra reads at startup
     await read_and_dispatch(
@@ -130,18 +208,23 @@ async def main():
 
 
 async def initialise_pvs(
-    builder, controller: ControllerInterface
+    builder,
+    controller: ControllerInterface,
+    cavity_names=None,
+    n_elements=None,
 ) -> Dict[ReadCommand, Any]:
+    cavity_kwargs = {} if cavity_names is None else {"cavity_names": cavity_names}
+    n_elements_kwargs = {} if n_elements is None else {"n_elements": n_elements}
 
     return {
         **await initialize_master_clock_pvs(builder, controller=controller),
-        **await initialize_cavity_pvs(builder, controller=controller),
+        **await initialize_cavity_pvs(builder, controller=controller, **cavity_kwargs),
         **await initialize_power_converter_pvs(builder, controller=controller),
         **initialize_machine_info_pvs(builder, n_ref_buckets=400),
-        **initialize_survey_info_pvs(builder),
+        **initialize_survey_info_pvs(builder, **n_elements_kwargs),
         **initialize_orbit_object_pvs(builder),
-        **initialize_orbit_pvs(builder),
-        **initialize_twiss_pvs(builder),
+        **initialize_orbit_pvs(builder, **n_elements_kwargs),
+        **initialize_twiss_pvs(builder, **n_elements_kwargs),
         **initialize_tune_pvs(builder),
         **initialize_other_pvs(builder),
     }

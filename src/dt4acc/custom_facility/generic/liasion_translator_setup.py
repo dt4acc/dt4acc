@@ -1,47 +1,32 @@
-"""
-create_fodo_liaison_and_translator.py
-=======================================
-Generate the liaison-manager (forward/inverse) and translation-service
-lookup tables for the FODO test facility.
+"""Generic EPICS liaison/translator setup — built dynamically from the
+configured accelerator_setup.json catalog and the loaded lattice.
 
-Mirrors build_liaison_manager_lut() / build_translator_manager_lut() in
-  scripts/bessyii/create_managers_input.py
-but simplified for FODO:
-  * one power converter drives exactly one magnet (no grouping needed),
-  * each corrector ("Multipole" lattice element) hosts its own H/V
-    steerer pair directly (no co-wound-on-sextupole indirection),
-  * there is no calibration-curve input (magnets.yaml / power_converters.yaml
-    equivalent) for FODO, so every PC <-> magnet conversion is a plain
-    identity mapping (coeffs [0.0, 1.0]). Replace with real curves once
-    FODO gets actual calibration data.
+Unlike the SOLEIL Tango design-view (no power converters, magnet devices
+write straight to the lattice element), this generic EPICS schema mirrors a
+simple "one power converter per magnet" facility: Quadrupole/Sextupole map
+1:1 to a power converter, and each AT ``Multipole`` corrector element hosts
+two independent power-converter-driven steerers (horizontal on
+``PolynomB[0]``/``B1``, vertical on ``PolynomA[0]``/``A1``).
 
-Run after create_fodo_yellow_pages.py (this script loads the yellow
-pages lookup table it produced) and after
-json2accelerator_setup_fodo.py (this script loads the magnet DB it
-produced).
-
-Writes, next to fodo_yellow_pages_lookup_table.yml:
-  fodo_liaison_manager_forward_lookup_table.yml
-  fodo_liaison_manager_inverse_lookup_table.yml
-  fodo_translation_service_lookup_table.yml
+The catalog (``accelerator_setup.json``) is read through
+``dt4acc.config.data.querries`` (configurable via
+``DT4ACC_ACCELERATOR_SETUP_FILE``/``configure_data_file()``); cavity names
+are not part of the catalog (no power converter of their own) and are taken
+directly from the loaded lattice instead.
 """
 
-import datetime
-import json
-import pprint
+import functools
 from collections import defaultdict
-from dataclasses import asdict
-from pathlib import Path
 
-import jsons
-import yaml
+import at
 
+from dt4acc_lib.bl.liaison_manager import LiaisonManager
+from dt4acc_lib.bl.translator_service import TranslatorService
 from dt4acc_lib.bl.yellow_pages import YellowPages
-from dt4acc_lib.model.utils.identifiers import (
-    ConversionID,
-    DevicePropertyID,
-    LatticeElementPropertyID,
-)
+from dt4acc_lib.interfaces.utils.liaison_manager import LiaisonManagerBase
+from dt4acc_lib.interfaces.utils.translator_service import TranslatorServiceBase
+from dt4acc_lib.interfaces.utils.yellow_pages import YellowPagesBase
+from dt4acc_lib.model.utils.identifiers import ConversionID, DevicePropertyID, LatticeElementPropertyID
 from dt4acc_lib.model.utils.liaison_manager_lookup_table import (
     LiaisonManagerForwardLookupElement,
     LiaisonManagerForwardLookupTable,
@@ -56,23 +41,36 @@ from dt4acc_lib.model.utils.translator_manager_lookup_table import (
     TuneConversionCoefficients,
 )
 
-FODO_DIR = Path(__file__).resolve().parent.parent
-ACCELERATOR_SETUP_FILE = (
-    FODO_DIR.parent.parent / "custom_epics" / "data" / "fodo" / "accelerator_setup.json"
-)
-YP_FILE = FODO_DIR / "resources" / "created" / "fodo_yellow_pages_lookup_table.yml"
-LM_FWD_FILE = FODO_DIR / "resources" / "created" / "fodo_liaison_manager_forward_lookup_table.yml"
-LM_INV_FILE = FODO_DIR / "resources" / "created" / "fodo_liaison_manager_inverse_lookup_table.yml"
-TS_FILE = FODO_DIR / "resources" / "created" / "fodo_translation_service_lookup_table.yml"
+from dt4acc.config.data.querries import get_controlled_elements
+
+_FALLBACK_BRHO = 5.4
 
 
-class CompressedSequenceDumper(yaml.SafeDumper):
-    def represent_sequence(self, tag, seq, flow_style=None):
-        flow = len(seq) <= 12
-        return super().represent_sequence(tag, seq, flow_style=flow)
+def _yellow_pages_lut(magnets, acc) -> dict:
+    quadrupoles = [m["name"] for m in magnets if m["type"] == "Quadrupole"]
+    sextupoles = [m["name"] for m in magnets if m["type"] == "Sextupole"]
+    steerers = [m["name"] for m in magnets if m["type"] == "Steerer"]
+
+    horizontal_steerers = [s for s in steerers if s.startswith("H")]
+    vertical_steerers = [s for s in steerers if s.startswith("V")]
+    horizontal_steerers_host = [s[1:] for s in horizontal_steerers]
+    vertical_steerers_host = [s[1:] for s in vertical_steerers]
+
+    cavities = [elem.FamName for elem in acc if isinstance(elem, at.RFCavity)]
+
+    return dict(
+        quadrupoles=quadrupoles,
+        sextupoles=sextupoles,
+        steerers=steerers,
+        horizontal_steerers=horizontal_steerers,
+        horizontal_steerers_host=horizontal_steerers_host,
+        vertical_steerers=vertical_steerers,
+        vertical_steerers_host=vertical_steerers_host,
+        cavities=cavities,
+    )
 
 
-def build_liaison_manager_lut(magnets, yp: YellowPages):
+def _build_liaison_manager_lut(magnets, yp: YellowPages):
     pc_of = {m["name"]: m["pc"] for m in magnets}
 
     inv_d = defaultdict(list)
@@ -102,9 +100,6 @@ def build_liaison_manager_lut(magnets, yp: YellowPages):
     # (index 0 isn't a valid European order at all) and not "x_kick"/
     # "y_kick" (which would instead go through the element's KickAngle
     # attribute, which our Multipole-class correctors don't carry).
-    # dt4acc_lib's ElementProxyFactory now resolves B1/A1 straight onto
-    # PolynomB[0]/PolynomA[0] (proxy_factory.py's multipole range was
-    # widened from range(2, 20) to range(1, 20) to enable this).
     for family_name, host_family, lattice_property, co_wound_prefix in (
         ("horizontal_steerers", "horizontal_steerers_host", "B1", "H"),
         ("vertical_steerers", "vertical_steerers_host", "A1", "V"),
@@ -194,7 +189,7 @@ def build_liaison_manager_lut(magnets, yp: YellowPages):
     return lut_fwd, lut_inv
 
 
-def build_translator_manager_lut(magnets, yp: YellowPages, lm_inv: LiaisonManagerInverseLookupTable):
+def _build_translator_manager_lut(magnets, yp: YellowPages, lm_inv: LiaisonManagerInverseLookupTable):
     lut = []
 
     for cavity_name in yp.get("cavities"):
@@ -219,8 +214,9 @@ def build_translator_manager_lut(magnets, yp: YellowPages, lm_inv: LiaisonManage
     all_keys = list(lm_inv.keys())
     unhandled = []
 
-    # No calibration curve for FODO yet -> identity, but flagged energy
-    # dependent since a real PC-current-to-strength conversion would be.
+    # No calibration curve for this generic schema yet -> identity, but
+    # flagged energy dependent since a real PC-current-to-strength
+    # conversion would be.
     for dev_p in all_keys:
         if dev_p.device_name in steerer_pcs and dev_p.property in ("set_current", "rdbk_current"):
             for lat_p in lm_inv.get(dev_p):
@@ -314,75 +310,47 @@ def build_translator_manager_lut(magnets, yp: YellowPages, lm_inv: LiaisonManage
         for name, prop in (("twiss", "parameters"), ("track", "pos"), ("survey", "s"))
     )
 
-    print("No translation objects for (expected: orbit, tune sub-properties already added directly):")
-    pprint.pprint(unhandled)
     return lut
 
 
-def dump_yaml(fname: Path, data_type: str, now, payload):
-    header = (
-        "# \n"
-        f"# FODO {data_type}: {now}\n"
-        "# WARNING: automatically generated data\n"
-        "#          please check when it is updated if you edit it by hand!\n"
-    )
-    fname.parent.mkdir(parents=True, exist_ok=True)
-    with fname.open("wt") as fp:
-        fp.write(header)
-        yaml.dump(payload, fp, Dumper=CompressedSequenceDumper)
-        fp.write("# EOF\n")
+def _brho(acc) -> float:
+    try:
+        return float(acc.BRho)
+    except Exception:
+        import logging
+
+        logging.getLogger("dt4acc-generic-epics").warning(
+            "Could not compute BRho from the loaded lattice, falling back to %s", _FALLBACK_BRHO
+        )
+        return _FALLBACK_BRHO
 
 
-def main():
-    with ACCELERATOR_SETUP_FILE.open() as f:
-        magnets = json.load(f)
-    with YP_FILE.open() as f:
-        yp_lut = yaml.safe_load(f)
-    yp = YellowPages(yp_lut)
+def build_managers(acc) -> "tuple[YellowPagesBase, LiaisonManagerBase, TranslatorServiceBase]":
+    """Build ``(yp, lm, ts)`` dynamically from the configured catalog and lattice.
 
-    lut_fwd_, lut_inv_ = build_liaison_manager_lut(magnets, yp)
+    Reads the magnet/power-converter catalog through
+    ``dt4acc.config.data.querries.get_controlled_elements()`` (configured via
+    ``DT4ACC_ACCELERATOR_SETUP_FILE``/``configure_data_file()``) and RF
+    cavity names from ``acc``, the already-loaded pyAT lattice.
+    """
+    magnets = list(get_controlled_elements())
+    yp = YellowPages(_yellow_pages_lut(magnets, acc))
+
+    lut_fwd_, lut_inv_ = _build_liaison_manager_lut(magnets, yp)
     lut_fwd = LiaisonManagerForwardLookupTable(lut_fwd_)
     lut_inv = LiaisonManagerInverseLookupTable(lut_inv_)
-
-    mismatched = lut_inv.non_unique_entries()
-    if mismatched:
-        print("Following inverse lut items look up can be misleading!")
-        pprint.pprint(mismatched)
-    mismatched = lut_fwd.non_unique_entries()
-    if mismatched:
-        print("Following forward lut items look up can be misleading!")
-        pprint.pprint(mismatched)
-
     lut_fwd.verify()
     lut_inv.verify()
+    lm = LiaisonManager(forward_lut=lut_fwd, inverse_lut=lut_inv)
 
-    now = datetime.datetime.now()
-    dump_yaml(LM_INV_FILE, "Liaison manager inverse table", now, asdict(lut_inv))
-    dump_yaml(LM_FWD_FILE, "Liaison manager forward table", now, asdict(lut_fwd))
+    tlut = TranslatorLookupTable(lut=_build_translator_manager_lut(magnets, yp, lut_inv))
+    tlut.verify()
+    ts = TranslatorService(lut=tlut, brho=_brho(acc))
 
-    # reload to make sure what we wrote is actually consumable
-    with LM_INV_FILE.open() as f:
-        lmt_inv = jsons.load(yaml.safe_load(f), LiaisonManagerInverseLookupTable)
-    lmt_inv.verify()
-    with LM_FWD_FILE.open() as f:
-        lmt_fwd = jsons.load(yaml.safe_load(f), LiaisonManagerForwardLookupTable)
-    lmt_fwd.verify()
-
-    tlut = TranslatorLookupTable(lut=build_translator_manager_lut(magnets, yp, lmt_inv))
-    dump_yaml(TS_FILE, "Translation service table", now, asdict(tlut))
-
-    with TS_FILE.open() as f:
-        tlut_loaded = jsons.load(yaml.safe_load(f), TranslatorLookupTable)
-    assert tlut == tlut_loaded
-    tlut_loaded.verify()
-
-    print(f"\nliaison manager forward entries : {len(lut_fwd.lut)}")
-    print(f"liaison manager inverse entries : {len(lut_inv.lut)}")
-    print(f"translator entries              : {len(tlut.lut)}")
-    print(f"\nWritten to {LM_FWD_FILE}")
-    print(f"Written to {LM_INV_FILE}")
-    print(f"Written to {TS_FILE}")
+    return yp, lm, ts
 
 
-if __name__ == "__main__":
-    main()
+@functools.lru_cache(maxsize=1)
+def load_managers(acc):
+    """Cached entry point. ``acc`` must be the already-loaded pyAT lattice."""
+    return build_managers(acc)

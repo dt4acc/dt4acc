@@ -35,6 +35,7 @@ from dt4acc.core.bl.translating_command_execution_engine import (
 from dt4acc.custom_epics.ioc.orbit_pva import OrbitTwinServer
 from dt4acc.custom_epics.ioc.controller import dispatcher
 from dt4acc.custom_epics.ioc.view import View
+from dt4acc.config.data.querries import configure_data_file
 from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_managers
 
 logging.basicConfig(level=logging.WARNING)
@@ -61,6 +62,18 @@ async def main():
         * handle delayed execution
 
     """
+    # pv_setup.py's magnet/power-converter PV enumeration now reads through
+    # dt4acc.config.data.querries (configurable), which used to be hardcoded
+    # here to the bundled generic-EPICS FODO catalog via
+    # custom_epics.data.querries. Pin it explicitly to that same file to
+    # preserve this launcher's existing (if incidental) behavior - this is
+    # not a generalization of BESSY II, out of scope for this change.
+    configure_data_file(
+        resources.files("dt4acc").joinpath(
+            "custom_facility/generic/resources/accelerator_setup.json"
+        )
+    )
+
     filename = resources.files("dt4acc").joinpath(
         "custom_facility/bessyii/resources/storage_ring/input/bessy2_storage_ring_reflat.json"
     )
