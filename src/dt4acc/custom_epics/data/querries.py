@@ -25,7 +25,7 @@ _DATA_FILE = (
         Path(__file__)
         .resolve()  # .../src/dt4acc/custom_epics/queries_json.py
         .parent  # .../src/dt4acc/custom_epics/data
-        / "fodo"
+        / "standard"
         / "accelerator_setup.json"
 )
 

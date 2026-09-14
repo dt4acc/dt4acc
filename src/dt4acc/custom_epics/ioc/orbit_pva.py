@@ -14,9 +14,14 @@ from p4p.server.thread import SharedPV
 
 logger = get_logger()
 
+BEAM_PHYSICS_INFO_LABELS = [
+    "BPM", "SPos", "BetaHor", "BetaVer", "PhaseAdvanceHor", "PhaseAdvanceVer",
+]
+
 beam_physics_info_type = Type(
     id="epics:nt/NTTable:1.0",
     spec=[
+        ("labels", "as"),
         (
             "value",
             (
@@ -61,9 +66,12 @@ beam_physics_info_type = Type(
     ],
 )
 
+ORBIT_LABELS = ["BPM", "X", "Y", "A", "B", "C", "D"]
+
 orbit_type = Type(
     id="epics:nt/NTTable:1.0",
     spec=[
+        ("labels", "as"),
         (
             "value",
             (
@@ -110,6 +118,7 @@ orbit_type = Type(
 )
 
 initial_data = {
+    "labels": ORBIT_LABELS,
     "value": {
         # fmt:off
         "A"  : [] ,
@@ -124,6 +133,7 @@ initial_data = {
 }
 
 initial_beam_physics_data = dict(
+    labels=BEAM_PHYSICS_INFO_LABELS,
     value=dict(
         BPM=[],
         SPos=[],
@@ -193,6 +203,7 @@ class OrbitTwinServer:
             s_pos = [0.0] * len(bpm_names)
 
         data = dict(
+            labels=BEAM_PHYSICS_INFO_LABELS,
             value=dict(
                 BPM=bpm_names,
                 SPos=s_pos,
@@ -218,6 +229,7 @@ class OrbitTwinServer:
 
         now = time.time()
         data = {
+            "labels": ORBIT_LABELS,
             "value": {
                 "A": [v * 0.95 for v in x],
                 "B": [v * 0.90 for v in x],
