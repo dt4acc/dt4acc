@@ -71,6 +71,13 @@ _DEFAULT_ACCELERATOR_SETUP_FILE = resources.files("dt4acc").joinpath(
 # test lattice (whose element count is below the BESSY-derived default).
 _N_ELEMENTS_MARGIN = 100
 
+# Generic (facility-independent) PV base names: unlike pv_setup.py's
+# BESSY-II-derived defaults (special_pvs['master_clock']/['current']), these
+# don't assume any particular real machine and match the "master_clock"
+# virtual device name already used by liasion_translator_setup's LiaisonManager.
+_MASTER_CLOCK_PV_NAME = "master_clock"
+_CURRENT_PV_NAME = "beam_current"
+
 
 def _build_args_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -217,7 +224,9 @@ async def initialise_pvs(
     n_elements_kwargs = {} if n_elements is None else {"n_elements": n_elements}
 
     return {
-        **await initialize_master_clock_pvs(builder, controller=controller),
+        **await initialize_master_clock_pvs(
+            builder, controller=controller, master_clock_pv_name=_MASTER_CLOCK_PV_NAME
+        ),
         **await initialize_cavity_pvs(builder, controller=controller, **cavity_kwargs),
         **await initialize_power_converter_pvs(builder, controller=controller),
         **initialize_machine_info_pvs(builder, n_ref_buckets=400),
@@ -226,7 +235,7 @@ async def initialise_pvs(
         **initialize_orbit_pvs(builder, **n_elements_kwargs),
         **initialize_twiss_pvs(builder, **n_elements_kwargs),
         **initialize_tune_pvs(builder),
-        **initialize_other_pvs(builder),
+        **initialize_other_pvs(builder, current_pv_name=_CURRENT_PV_NAME),
     }
 
 
