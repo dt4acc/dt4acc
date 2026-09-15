@@ -15,7 +15,6 @@ are not part of the catalog (no power converter of their own) and are taken
 directly from the loaded lattice instead.
 """
 
-import functools
 from collections import defaultdict
 
 import at
@@ -350,7 +349,11 @@ def build_managers(acc) -> "tuple[YellowPagesBase, LiaisonManagerBase, Translato
     return yp, lm, ts
 
 
-@functools.lru_cache(maxsize=1)
 def load_managers(acc):
-    """Cached entry point. ``acc`` must be the already-loaded pyAT lattice."""
+    """Entry point. ``acc`` must be the already-loaded pyAT lattice.
+
+    Not cached: a pyAT ``Lattice`` is unhashable, so ``functools.lru_cache``
+    cannot key on it, and ``run_epics_twin.main`` only calls this once per
+    process anyway.
+    """
     return build_managers(acc)

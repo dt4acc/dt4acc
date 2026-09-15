@@ -299,9 +299,15 @@ def initialize_machine_info_pvs(
 
 
 async def initialize_master_clock_pvs(
-    builder, controller: ControllerInterface
+    builder, controller: ControllerInterface, master_clock_pv_name: str | None = None
 ) -> Dict[ReadCommand, RecordWrapper]:
     """initialise master clock pv
+
+    Args:
+        master_clock_pv_name: PV base name for the master clock. Defaults to
+            ``special_pvs['master_clock']`` (a BESSY II legacy device name);
+            facilities without a matching real device should pass an explicit
+            lattice/catalog-independent name instead.
 
     Warning:
         note for running the twin as a shadow it will
@@ -317,10 +323,12 @@ async def initialize_master_clock_pvs(
     )
     start_val = np.mean([v.payload for v in vals.all_readings()])
 
+    pv_name = master_clock_pv_name if master_clock_pv_name is not None else special_pvs['master_clock']
+
     d = dict()
 
     d[ReadCommand(id="master_clock", property="freq")] = builder.aOut(
-        f"{special_pvs['master_clock']}:freq",
+        f"{pv_name}:freq",
         initial_value=start_val,
         always_update=True,
         EGU="kHz",
@@ -351,16 +359,20 @@ async def initialize_master_clock_pvs(
     return d
 
 
-def initialize_other_pvs(builder) -> Dict[ReadCommand, RecordWrapper]:
+def initialize_other_pvs(builder, current_pv_name: str | None = None) -> Dict[ReadCommand, RecordWrapper]:
     """Initialises miscellaneous PVs (dummy values).
 
     Args:
         builder: The SoftIOC PV builder instance.
-        prefix (str): Prefix for PV naming.
+        current_pv_name: PV base name for the beam current. Defaults to
+            ``special_pvs['current']`` (a BESSY II legacy device name);
+            facilities without a matching real device should pass an explicit
+            lattice/catalog-independent name instead.
     """
+    pv_name = current_pv_name if current_pv_name is not None else special_pvs['current']
     return {
         ReadCommand("ring", "current"): builder.aOut(
-            f"{special_pvs['current']}:current", initial_value=0
+            f"{pv_name}:current", initial_value=0
         )
     }
 
@@ -419,9 +431,9 @@ async def initialize_cavity_pvs(
     start_val = np.mean([v.payload for v in vals.all_readings()]).mean()
 
     return {
-        ReadCommand(id="lattice_info", property="ref_freq:khz:up"):
         # cavity frequency is determined by master clock ... perhaps some
         # little shift for eigen frequency
+        ReadCommand(id=cavity_name, property="freq"):
         builder.aIn(f"{cavity_name}:freq", initial_value=start_val, EGU="kHz", PREC=3)
         for cavity_name in cavity_names
     }
