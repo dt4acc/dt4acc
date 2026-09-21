@@ -25,8 +25,11 @@ All three flags are optional:
   the bundled `resources/accelerator_setup.json`.
 - `--prefix` / `DT4ACC_PREFIX` — defaults to the current user name.
 
-`DT4ACC_HEADLESS=1` switches the IOC to non-interactive mode (used by the CI
-smoke test); interactive by default.
+By default the IOC runs non-interactively (blocking the terminal, like the
+Tango twin) until interrupted (Ctrl+C/SIGTERM). `DT4ACC_INTERACTIVE=1` opens
+an interactive Python debug console instead, with access to the live twin
+objects (`view`, `controller`, `orbit_server`, `mexec`, `acc`, `builder`,
+`dispatcher`, `yp`, `lm`, `ts`, `command_rewriter`, `prefix`).
 
 ## Catalog schema
 
