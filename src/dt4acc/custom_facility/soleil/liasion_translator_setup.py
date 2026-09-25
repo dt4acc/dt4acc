@@ -192,7 +192,7 @@ def build_managers():
     # Magnet types that have a control interface in SOLEIL design view.
     # Bends (dipoles) are not directly controlled — skip them.
     _CONTROLLED_TYPES = {
-        "Quadrupole", "Sextupole", "Octupole", "Steerer",
+        "Quadrupole", "Sextupole", "Octupole", "Multipole", "Steerer", "Corrector",
         "SkewQuadrupoleCorrector", "RFCavity", "QuadrupoleCorrector"
     }
 

@@ -18,7 +18,7 @@ from dt4acc_lib.interfaces.backend.calculation_states import CalculationStates
 from dt4acc_lib.interfaces.simulator.accelerator_simulator import OpticsCalculationProhibitedError
 from dt4acc_lib.model.output.calculated_track import CalculatedTrack
 from dt4acc.custom_facility.soleil.liasion_translator_setup import load_managers
-from dt4acc.custom_tango.ioc.handle_lattice import LatticeLoader
+from dt4acc.core.bl.handle_lattice import LatticeLoader
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
 from dt4acc_lib.model.output.result import TranslatedReading
 from dt4acc_lib.model.output.tune import Chromaticity

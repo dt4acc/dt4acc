@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Sequence, Union
 
 from dt4acc.config.data.querries import get_data_file
+from dt4acc.custom_facility.soleil.corrector_direction import corrector_direction
 
 
 class FamilyTree(metaclass=ABCMeta):
@@ -103,28 +104,25 @@ def soleil_yellow_pages() -> YellowPages:
     elements = json.loads(get_data_file().read_text())
 
     def is_horizontal(e: dict) -> bool:
-        name = e["name"]
-        fam = e.get("FamName", "")
-        return "CDLH" in name or fam.endswith("_HCOR") or "EM-COR/CH" in name
+        return corrector_direction(e["name"], e.get("FamName", "")) == "horizontal"
 
     def is_vertical(e: dict) -> bool:
-        name = e["name"]
-        fam = e.get("FamName", "")
-        return "CDLV" in name or fam.endswith("_VCOR") or "EM-COR/CV" in name
+        return corrector_direction(e["name"], e.get("FamName", "")) == "vertical"
 
     quadrupoles = [e["name"] for e in elements if e["type"] == "Quadrupole"]
     sextupoles = [e["name"] for e in elements if e["type"] == "Sextupole"]
     bends = [e["name"] for e in elements if e["type"] == "Bend"]
     multipoles = [e["name"] for e in elements if e["type"] == "Multipole"]
 
-    # All steerers are `type == "Steerer"`, split by name/FamName
+    # Correctors can be catalogued as Steerer, Corrector or Multipole.
+    corrector_types = {"Steerer", "Corrector", "Multipole"}
     horizontal_steerers = [
         e["name"] for e in elements
-        if e["type"] == "Steerer" and is_horizontal(e)
+        if e["type"] in corrector_types and is_horizontal(e)
     ]
     vertical_steerers = [
         e["name"] for e in elements
-        if e["type"] == "Steerer" and is_vertical(e)
+        if e["type"] in corrector_types and is_vertical(e)
     ]
 
     # QuadrupoleCorrector: CQLN correctors on octupoles
