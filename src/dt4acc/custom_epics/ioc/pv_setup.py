@@ -1,5 +1,5 @@
 import math
-from typing import Dict
+from typing import Dict, Iterable
 
 from softioc.pythonSoftIoc import RecordWrapper
 import numpy as np
@@ -7,7 +7,7 @@ import numpy as np
 from dt4acc_lib.model.utils.command import ReadCommand, Command
 from dt4acc.core.interfaces.controller_interface import ControllerInterface
 from ..data.constants import config, special_pvs, cavity_names
-from ..data.querries import (
+from dt4acc.config.data.querries import (
     get_unique_magnet_power_converters,
     get_elements_per_power_converter,
 )
@@ -184,28 +184,32 @@ async def add_pc_pvs(
     return d
 
 
-def initialize_orbit_pvs(builder) -> Dict[ReadCommand, RecordWrapper]:
+def initialize_orbit_pvs(
+    builder, n_elements: int = config.n_elements
+) -> Dict[ReadCommand, RecordWrapper]:
     """
     Initializes PVs related to beam orbit measurements.
 
     Args:
         builder: The SoftIOC PV builder instance.
+        n_elements: Waveform length, sized to the loaded lattice. Defaults to
+            the facility-wide constant used by BESSY II.
     """
     return {
         ReadCommand(id="beam", property="x"): builder.WaveformIn(
-            f"beam:orbit:x", initial_value=[0.0], length=config.n_elements
+            f"beam:orbit:x", initial_value=[0.0], length=n_elements
         ),
         ReadCommand(id="beam", property="y"): builder.WaveformIn(
-            f"beam:orbit:y", initial_value=[0.0], length=config.n_elements
+            f"beam:orbit:y", initial_value=[0.0], length=n_elements
         ),
         ReadCommand(id="beam", property="x0"): builder.WaveformIn(
-            f"beam:orbit:x0", initial_value=[0.0], length=config.n_elements
+            f"beam:orbit:x0", initial_value=[0.0], length=n_elements
         ),
         ReadCommand(id="beam", property="names"): builder.WaveformIn(
-            f"beam:orbit:names", initial_value=[""], length=config.n_elements
+            f"beam:orbit:names", initial_value=[""], length=n_elements
         ),
         ReadCommand(id="beam", property="uids"): builder.WaveformIn(
-            f"beam:orbit:uids", initial_value=[""], length=config.n_elements
+            f"beam:orbit:uids", initial_value=[""], length=n_elements
         ),
         ReadCommand(id="beam", property="found"): builder.boolIn(
             f"beam:orbit:found", initial_value=False
@@ -228,46 +232,50 @@ def initialize_tune_pvs(builder) -> Dict[ReadCommand, RecordWrapper]:
     return d
 
 
-def initialize_twiss_pvs(builder):
+def initialize_twiss_pvs(builder, n_elements: int = config.n_elements):
     """
     Initializes PVs for Twiss parameters, which describe beam optics.
 
     Args:
         builder: The SoftIOC PV builder instance.
+        n_elements: Waveform length, sized to the loaded lattice. Defaults to
+            the facility-wide constant used by BESSY II.
     """
     d = dict()
     for axis in ["x", "y"]:
         d[ReadCommand("twiss", f"{axis}:alpha")] = builder.WaveformIn(
-            f"beam:twiss:{axis}:alpha", initial_value=[0.0], length=config.n_elements
+            f"beam:twiss:{axis}:alpha", initial_value=[0.0], length=n_elements
         )
         d[ReadCommand("twiss", f"{axis}:beta")] = builder.WaveformIn(
-            f"beam:twiss:{axis}:beta", initial_value=[0.0], length=config.n_elements
+            f"beam:twiss:{axis}:beta", initial_value=[0.0], length=n_elements
         )
         d[ReadCommand("twiss", f"{axis}:nu")] = builder.WaveformIn(
-            f"beam:twiss:{axis}:nu", initial_value=[0.0], length=config.n_elements
+            f"beam:twiss:{axis}:nu", initial_value=[0.0], length=n_elements
         )
         d[ReadCommand("twiss", f"{axis}:tune")] = builder.aIn(
             f"beam:twiss:{axis}:tune", initial_value=0.0, PREC=8
         )
     d[ReadCommand("twiss", "names")] = builder.WaveformIn(
-        f"beam:twiss:names", initial_value=[""], length=config.n_elements
+        f"beam:twiss:names", initial_value=[""], length=n_elements
     )
     d[ReadCommand("twiss", "uids")] = builder.WaveformIn(
-        f"beam:twiss:uids", initial_value=[""], length=config.n_elements
+        f"beam:twiss:uids", initial_value=[""], length=n_elements
     )
     return d
 
 
-def initialize_survey_info_pvs(builder) -> Dict[ReadCommand, RecordWrapper]:
+def initialize_survey_info_pvs(
+    builder, n_elements: int = config.n_elements
+) -> Dict[ReadCommand, RecordWrapper]:
     return {
         ReadCommand(id="survey", property="s"): builder.WaveformIn(
-            f"survey:s", initial_value=[0.0], EGU="m", length=config.n_elements
+            f"survey:s", initial_value=[0.0], EGU="m", length=n_elements
         ),
         ReadCommand(id="survey", property="names"): builder.WaveformIn(
-            f"survey:names", initial_value=[""], length=config.n_elements
+            f"survey:names", initial_value=[""], length=n_elements
         ),
         ReadCommand(id="survey", property="uids"): builder.WaveformIn(
-            f"survey:uids", initial_value=[""], length=config.n_elements
+            f"survey:uids", initial_value=[""], length=n_elements
         ),
     }
 
@@ -291,9 +299,15 @@ def initialize_machine_info_pvs(
 
 
 async def initialize_master_clock_pvs(
-    builder, controller: ControllerInterface
+    builder, controller: ControllerInterface, master_clock_pv_name: str | None = None
 ) -> Dict[ReadCommand, RecordWrapper]:
     """initialise master clock pv
+
+    Args:
+        master_clock_pv_name: PV base name for the master clock. Defaults to
+            ``special_pvs['master_clock']`` (a BESSY II legacy device name);
+            facilities without a matching real device should pass an explicit
+            lattice/catalog-independent name instead.
 
     Warning:
         note for running the twin as a shadow it will
@@ -309,10 +323,12 @@ async def initialize_master_clock_pvs(
     )
     start_val = np.mean([v.payload for v in vals.all_readings()])
 
+    pv_name = master_clock_pv_name if master_clock_pv_name is not None else special_pvs['master_clock']
+
     d = dict()
 
     d[ReadCommand(id="master_clock", property="freq")] = builder.aOut(
-        f"{special_pvs['master_clock']}:freq",
+        f"{pv_name}:freq",
         initial_value=start_val,
         always_update=True,
         EGU="kHz",
@@ -343,16 +359,20 @@ async def initialize_master_clock_pvs(
     return d
 
 
-def initialize_other_pvs(builder) -> Dict[ReadCommand, RecordWrapper]:
+def initialize_other_pvs(builder, current_pv_name: str | None = None) -> Dict[ReadCommand, RecordWrapper]:
     """Initialises miscellaneous PVs (dummy values).
 
     Args:
         builder: The SoftIOC PV builder instance.
-        prefix (str): Prefix for PV naming.
+        current_pv_name: PV base name for the beam current. Defaults to
+            ``special_pvs['current']`` (a BESSY II legacy device name);
+            facilities without a matching real device should pass an explicit
+            lattice/catalog-independent name instead.
     """
+    pv_name = current_pv_name if current_pv_name is not None else special_pvs['current']
     return {
         ReadCommand("ring", "current"): builder.aOut(
-            f"{special_pvs['current']}:current", initial_value=0
+            f"{pv_name}:current", initial_value=0
         )
     }
 
@@ -391,12 +411,16 @@ def initialize_orbit_object_pvs(builder) -> Dict[ReadCommand, RecordWrapper]:
     return d
 
 
-async def initialize_cavity_pvs(builder, controller: ControllerInterface):
+async def initialize_cavity_pvs(
+    builder, controller: ControllerInterface, cavity_names: Iterable[str] = cavity_names
+):
     """
     Initializes PVs for RF cavities.
 
     Args:
         builder: The SoftIOC PV builder instance.
+        cavity_names: RF cavity names to expose. Defaults to the BESSY II
+            facility constant of the same name.
 
     Todo:
         check that these are updated if the master clock changes
@@ -407,9 +431,9 @@ async def initialize_cavity_pvs(builder, controller: ControllerInterface):
     start_val = np.mean([v.payload for v in vals.all_readings()]).mean()
 
     return {
-        ReadCommand(id="lattice_info", property="ref_freq:khz:up"):
         # cavity frequency is determined by master clock ... perhaps some
         # little shift for eigen frequency
+        ReadCommand(id=cavity_name, property="freq"):
         builder.aIn(f"{cavity_name}:freq", initial_value=start_val, EGU="kHz", PREC=3)
         for cavity_name in cavity_names
     }
