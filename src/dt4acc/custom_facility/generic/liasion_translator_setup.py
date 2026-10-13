@@ -42,14 +42,18 @@ from dt4acc_lib.model.utils.translator_manager_lookup_table import (
 
 from dt4acc.config.data.querries import get_controlled_elements
 
-_FALLBACK_BRHO = 5.4
-
 
 def _yellow_pages_lut(magnets, acc) -> dict:
     quadrupoles = [m["name"] for m in magnets if m["type"] == "Quadrupole"]
     sextupoles = [m["name"] for m in magnets if m["type"] == "Sextupole"]
     steerers = [m["name"] for m in magnets if m["type"] == "Steerer"]
 
+    # This generic schema has no per-magnet "subtype" field (unlike SOLEIL's
+    # catalog): a steerer's direction and its co-wound host element name are
+    # both carried by a single-letter name prefix ("H"/"V" + host name,
+    # e.g. "HQF_001" is the horizontal steerer co-wound on host "QF_001").
+    # This is the generic-schema naming contract, not an incidental FODO
+    # shortcut — see custom_facility/generic/README.md.
     horizontal_steerers = [s for s in steerers if s.startswith("H")]
     vertical_steerers = [s for s in steerers if s.startswith("V")]
     horizontal_steerers_host = [s[1:] for s in horizontal_steerers]
@@ -313,15 +317,20 @@ def _build_translator_manager_lut(magnets, yp: YellowPages, lm_inv: LiaisonManag
 
 
 def _brho(acc) -> float:
+    """Magnetic rigidity of the loaded lattice.
+
+    No silent fallback: a wrong BRho would silently mis-scale every
+    energy-dependent conversion in the translator LUT (steerer and
+    quad/sext PC-current <-> strength), so a lattice that can't provide
+    one must fail loudly instead.
+    """
     try:
         return float(acc.BRho)
-    except Exception:
-        import logging
-
-        logging.getLogger("dt4acc-generic-epics").warning(
-            "Could not compute BRho from the loaded lattice, falling back to %s", _FALLBACK_BRHO
-        )
-        return _FALLBACK_BRHO
+    except Exception as exc:
+        raise ValueError(
+            "Could not compute BRho from the loaded lattice "
+            "(required for energy-dependent unit conversions)"
+        ) from exc
 
 
 def build_managers(acc) -> "tuple[YellowPagesBase, LiaisonManagerBase, TranslatorServiceBase]":
