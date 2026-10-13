@@ -64,13 +64,14 @@ async def main():
     """
     # pv_setup.py's magnet/power-converter PV enumeration now reads through
     # dt4acc.config.data.querries (configurable), which used to be hardcoded
-    # here to the bundled generic-EPICS FODO catalog via
-    # custom_epics.data.querries. Pin it explicitly to that same file to
-    # preserve this launcher's existing (if incidental) behavior - this is
-    # not a generalization of BESSY II, out of scope for this change.
+    # here to the BESSY II catalog via custom_epics.data.querries (whose own
+    # default pointed at custom_epics/data/standard/accelerator_setup.json,
+    # 369 BESSY magnets). Pin it explicitly to that same file to preserve
+    # this launcher's existing behavior - this is not a generalization of
+    # BESSY II, out of scope for this change.
     configure_data_file(
         resources.files("dt4acc").joinpath(
-            "custom_facility/generic/resources/accelerator_setup.json"
+            "custom_epics/data/standard/accelerator_setup.json"
         )
     )
 
