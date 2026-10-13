@@ -30,10 +30,7 @@ from dt4acc.config.data.querries import get_controlled_elements, get_unique_magn
 from dt4acc.config.data.querries import get_rf_cavity_uuids
 from dt4acc.core.bl.controller import Controller
 from dt4acc.custom_tango.views.view import TangoView
-from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import (
-    _connect_to_mexec_service,
-    lattice_properties_for_device,
-)
+from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import _connect_to_mexec_service
 from dt4acc_lib.model.output.result import TranslatedReading, ReadTogetherAndTranslated, SingleReading
 from dt4acc_lib.model.utils.command import ReadCommand, Command
 from tango.server import run
@@ -175,6 +172,12 @@ def peek_from_lattice(element_id: str, prop: str) -> float:
         return 0.0
 
 
+def _steerer_lattice_property(name: str, subtype: str = "") -> str:
+    from dt4acc.custom_facility.soleil.corrector_direction import corrector_lattice_property
+
+    return corrector_lattice_property(name, subtype=subtype) or "B1"
+
+
 def _properties_for_uuid(uuid: str, uuid_to_prop: dict = None) -> list:
     value = (uuid_to_prop or {}).get(uuid, "main_strength")
     if isinstance(value, (set, list, tuple)):
@@ -194,16 +197,31 @@ def _properties_for_uuid_or_spec(uuid: str, prop_spec=None) -> list:
     return ["main_strength"]
 
 
-def _properties_for_element(name: str, mtype: str = "", subtype: str = "") -> list:
-    """Which AT lattice-element properties this device controls.
+def _properties_for_element(
+    name: str,
+    mtype: str,
+    subtype: str = "",
+    family_name: str = "",
+) -> list:
+    from dt4acc.custom_facility.soleil.corrector_direction import corrector_lattice_property
 
-    Sourced from the active facility's liaison manager (via
-    lattice_properties_for_device) instead of re-derived from device-name
-    patterns or magnet type/subtype — that used to duplicate (and drift out
-    of sync with) what liasion_translator_setup.py already computes
-    correctly for each facility.
-    """
-    return lattice_properties_for_device(name)
+    if mtype == "RFCavity":
+        return ["frequency", "voltage"]
+    corrector_prop = corrector_lattice_property(name, family_name, subtype)
+    if mtype == "Steerer" or corrector_prop is not None:
+        return [corrector_prop or _steerer_lattice_property(name, subtype=subtype)]
+
+    subtype_to_prop = {
+        "Quad": "main_strength",
+        "Sext": "main_strength",
+        "SkewSext": "main_strength",
+        "Oct": "B4",
+    }
+    type_to_prop = {
+        "QuadrupoleCorrector": "B2",
+        "SkewQuadrupoleCorrector": "A2",
+    }
+    return [type_to_prop.get(mtype) or subtype_to_prop.get(subtype, "main_strength")]
 
 
 def _add_cache_element(
@@ -434,7 +452,12 @@ def main_loop(server_name: str, instance_name: str, event=None):
                 uuid = m.get("uuid", "")
                 mtype = m.get("type", "")
                 subtype = m.get("subtype", "")
-                props = _properties_for_element(magnet_name, mtype, subtype=subtype)
+                props = _properties_for_element(
+                    magnet_name,
+                    mtype,
+                    subtype=subtype,
+                    family_name=m.get("FamName", ""),
+                )
 
                 if mtype == "RFCavity":
                     _add_cache_element(
