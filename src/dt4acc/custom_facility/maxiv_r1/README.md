@@ -20,28 +20,47 @@ Start the twin with `dt4acc_maxiv_r1` (or `python run_maxiv_r1_twin.py`).
   -table(I) / (brho L); thin correctors use their integrated table (no
   identity);
 * quadrupoles `B2`, sextupoles `B3`, skew correctors `A2`, steerers
-  `x_kick` / `y_kick`, dipoles `B2` (the gradient, as MAX IV's
-  `setBendModel`), RF `frequency`;
+  `x_kick` / `y_kick`, RF `frequency`;
+* combined-function magnets slice by slice, as MAX IV's
+  `createSlicedParamGroups.m` / `createBendParamGroups.m` with the measured
+  field distribution (`data_FieldDistribution.csv`): every SQFI / SQFO slice
+  gets its own share of dipole, quadrupole and sextupole (`B1`, `B2`, `B3`),
+  every dipole slice its share of gradient, sextupole and octupole (`B2`,
+  `B3`, `B4`; the dipole field stays in `BendingAngle`) -- one supply drives
+  (slice, component) pairs, each with the excitation curve scaled by its
+  share;
 * magnet / cavity devices writing directly (`element_uuid` + lattice
-  property) set all slices of their magnet;
+  property) set all slices / components of their magnet, with the same
+  shares; a magnet device's lattice property is its main one (`B2` for
+  SQFI);
 * device names: the previous twin database's where it had a device on the
   same slices, else MAX IV's magnet names
-  (`map_PowersupplyCircuitMagnet.csv`), else the circuit-based AO names.
+  (`map_PowersupplyCircuitMagnet.csv`), else the circuit-based AO names;
+  yellow pages list one entry per magnet (SQFI: the 12 magnets).
 
 ## Validation
 
 Against MAX IV's MML run in simulator mode (production optics 2024 RP2),
 through dt4acc-lib's CommandRewriter and PyATAcceleratorSimulator on
-`R1_lat_indexed.json`: all 180 compared power supplies agree within 0.034 %
-(main dipole supply 0.094 %, at fixed energy) over their whole current range,
-and nothing outside a supply's own magnets moves; all 326 direct magnet /
-cavity writes set exactly their own slices.
+`R1_lat_indexed.json`: all 180 compared power supplies agree within 0.036 %
+over their whole current range, for every magnet **and every slice** and
+every component (main dipole supply at fixed energy), and nothing outside a
+supply's own magnets moves; all 326 direct magnet / cavity writes give each
+slice exactly its share.
+
+## NOTE: dipole trim coils
+
+The 24 dipole trims [s 2|3] are **not driven** (in MML they add to the main
+supply on their own dipole; dt4acc's liaison sets a property, it cannot sum
+two supplies), and their effect on the beam energy is not modelled. Their
+**fixed contribution at a held current** (-0.7071 A, MML's simulator value)
+is included in every dipole slice, as MAX IV's model does. It can be switched
+off, or taken per trim from MAX IV's golden configuration, in dt4acc_agent's
+`reference_data/raw_sources.yaml` (`bend_trims`) before regenerating; off,
+the dipoles' sextupole / octupole parts are 1.5 % / 6.3 % off MML.
 
 ## Not modelled
 
 * beam energy: in MML the main dipole supply also sets the energy
   (`bend2gev`) and rescales every magnet; here the energy is fixed;
-* dipole trim coils (they add to the main supply), pole-face strips (PFS),
-  shunts;
-* one property per magnet: the sextupole component of SQFI/SQFO and the
-  dipoles' higher orders are not driven.
+* driving the dipole trims (see NOTE), pole-face strips (PFS), shunts.
