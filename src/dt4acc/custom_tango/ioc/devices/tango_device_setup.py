@@ -9,6 +9,7 @@ from dt4acc.config.data.querries import (
     get_elements_per_power_converter,
     get_unique_power_converters_for_types,
     get_bpms,
+    element_uuid,
 )
 
 from dt4acc.custom_tango.ioc.devices.multipole_device import MultipoleDevice
@@ -82,9 +83,9 @@ def _add_expected_device(
 def _bpm_lattice_positions() -> dict[str, tuple[int, float]]:
     """Map BPM uuid → (AT element index, s position) from the lattice.
 
-    SOLEIL lattices have at.Monitor elements carrying a UUID; others (e.g.
-    MAX IV R1) mark BPMs as plain elements whose FamName is the uuid used in
-    the setup file. UUID matches take precedence over FamName matches.
+    BPMs are either at.Monitor elements carrying a UUID, or plain elements
+    (e.g. Markers) whose FamName is the uuid used in the setup file. UUID
+    matches take precedence over FamName matches.
     """
     import at as _at
     from dt4acc.core.bl.handle_lattice import lattice_loader
@@ -121,7 +122,7 @@ def build_device_plan() -> DevicePlan:
     for pc_name in get_unique_magnet_power_converters():
         for m in get_elements_per_power_converter(pc_name):
             magnet_name = m["name"]
-            magnet_uuid = m.get("uuid", "") or (m.get("uuids", [""])[0] if m.get("uuids") else "")
+            magnet_uuid = element_uuid(m)
             magnet_type = m.get("type", "")
 
             trl = TangoResourceLocator.from_trl(magnet_name)
@@ -181,7 +182,7 @@ def build_device_plan() -> DevicePlan:
     for pc_name in get_unique_power_converters_for_types(["RFCavity"]):
         for m in get_elements_per_power_converter(pc_name):
             dev_name = m["name"]
-            dev_uuid = m.get("uuid", "")
+            dev_uuid = element_uuid(m)
             dev_type = m.get("type", "")
             class_name = _TYPE_TO_CLASS.get(dev_type, "MultipoleDevice")
 
@@ -361,7 +362,7 @@ def _register_magnets(db: Database, unique_servers: set[tuple[str, str]]):
         magnets = get_elements_per_power_converter(pc_name)
         for m in magnets:
             magnet_name = m["name"]
-            magnet_uuid = m.get("uuid", "") or (m.get("uuids", [""])[0] if m.get("uuids") else "")
+            magnet_uuid = element_uuid(m)
             magnet_type = m.get("type", "")
             try:
                 trl = TangoResourceLocator.from_trl(magnet_name)
@@ -451,7 +452,7 @@ def _register_cavities(db: Database, unique_servers: set[tuple[str, str]]):
     for pc_name in get_unique_power_converters_for_types(["RFCavity"]):
         for m in get_elements_per_power_converter(pc_name):
             dev_name  = m["name"]
-            dev_uuid  = m.get("uuid", "")
+            dev_uuid  = element_uuid(m)
             dev_type  = m.get("type", "")
             class_name = _TYPE_TO_CLASS.get(dev_type, "MultipoleDevice")
             try:

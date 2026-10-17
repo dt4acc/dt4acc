@@ -103,13 +103,21 @@ def get_unique_power_converters_type_specified(type_list: Iterable[str]) -> List
     return get_unique_power_converters_for_types(type_list)
 
 
+def element_uuid(doc: Dict[str, Any]) -> str:
+    """The one lattice element a device is addressed by: "uuid" (one element
+    per device), else the first of "uuids" (a combined-function magnet
+    spanning several slices). Not the full element list: the liaison manager
+    fans a write to this element out to all slices of the magnet."""
+    return doc.get("uuid") or next(iter(doc.get("uuids") or []), "")
+
+
 def get_rf_cavity_uuids() -> List[str]:
     """UUIDs of non-harmonic (main) RF cavities for design-view fan-out."""
     return [
-        d["uuid"] for d in _data()
+        element_uuid(d) for d in _data()
         if d.get("type") == "RFCavity"
         and "HARM" not in (d.get("FamName") or "")
-        and d.get("uuid")
+        and element_uuid(d)
     ]
 
 

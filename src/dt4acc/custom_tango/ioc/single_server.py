@@ -27,7 +27,7 @@ from dt4acc_lib.interfaces.backend.calculation_states import CalculationStates
 from dt4acc_lib.model.utils.tango_resource_locator import TangoResourceLocator
 
 from dt4acc.config.data.querries import get_controlled_elements, get_unique_magnet_power_converters, get_elements_per_power_converter
-from dt4acc.config.data.querries import get_rf_cavity_uuids
+from dt4acc.config.data.querries import get_rf_cavity_uuids, element_uuid
 from dt4acc.core.bl.controller import Controller
 from dt4acc.custom_tango.views.view import TangoView
 from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import (
@@ -182,6 +182,10 @@ def _properties_for_uuid(uuid: str, uuid_to_prop: dict = None) -> list:
     return [value]
 
 
+# a CavityDevice exposes both, whatever its liaison maps main_strength to
+_RF_CAVITY_PROPERTIES = ("frequency", "voltage")
+
+
 def _properties_for_uuid_or_spec(uuid: str, prop_spec=None) -> list:
     if prop_spec is not None:
         if isinstance(prop_spec, (set, list, tuple)):
@@ -190,7 +194,7 @@ def _properties_for_uuid_or_spec(uuid: str, prop_spec=None) -> list:
     if uuid in _uuid_to_prop:
         return _properties_for_uuid(uuid, _uuid_to_prop)
     if uuid in set(get_rf_cavity_uuids()):
-        return ["frequency", "voltage"]
+        return list(_RF_CAVITY_PROPERTIES)
     return ["main_strength"]
 
 
@@ -431,7 +435,7 @@ def main_loop(server_name: str, instance_name: str, event=None):
         for pc_name in get_unique_magnet_power_converters():
             for m in get_elements_per_power_converter(pc_name):
                 magnet_name = m["name"]
-                uuid = m.get("uuid", "")
+                uuid = element_uuid(m)
                 mtype = m.get("type", "")
                 subtype = m.get("subtype", "")
                 props = _properties_for_element(magnet_name, mtype, subtype=subtype)
@@ -439,7 +443,7 @@ def main_loop(server_name: str, instance_name: str, event=None):
                 if mtype == "RFCavity":
                     _add_cache_element(
                         uuid=uuid,
-                        props=props,
+                        props=[*props, *_RF_CAVITY_PROPERTIES],
                         uuids=my_uuids,
                         seen_uuids=seen_uuids,
                         uuid_to_prop=uuid_to_prop,
@@ -462,8 +466,8 @@ def main_loop(server_name: str, instance_name: str, event=None):
             if m.get("type") != "RFCavity":
                 continue
             _add_cache_element(
-                uuid=m.get("uuid", ""),
-                props=_properties_for_element(m["name"], "RFCavity"),
+                uuid=element_uuid(m),
+                props=[*_properties_for_element(m["name"], "RFCavity"), *_RF_CAVITY_PROPERTIES],
                 uuids=my_uuids,
                 seen_uuids=seen_uuids,
                 uuid_to_prop=uuid_to_prop,
