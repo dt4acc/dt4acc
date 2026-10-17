@@ -5,7 +5,8 @@ register_devices.py
 Register the MAX IV R1 twin devices in the Tango database, with the same
 device database, lattice and liaison / translator setup as
 run_maxiv_r1_twin.py. The twin only starts the devices it finds in the
-database, so run this once on a fresh database before starting it.
+database, so run this once on a fresh database before starting it, with
+the twin stopped (registering unexports the devices of a running twin).
 
 Usage
 -----
@@ -21,6 +22,7 @@ DT4ACC_ACCELERATOR_SETUP_FILE, DT4ACC_TANGO_HOST).
 import argparse
 import os
 import pprint
+import sys
 from pathlib import Path
 
 # imported first: chooses the device database before dt4acc.config.data.querries
@@ -51,6 +53,11 @@ def parse_args():
         "--check",
         action="store_true",
         help="Only report present / missing devices, register nothing",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Register even if the twin looks running (stale export after a crash)",
     )
     return parser.parse_args()
 
@@ -86,6 +93,20 @@ def main():
             f"found {len(report.present)}"
         )
         return
+
+    # re-adding a device marks it not exported: a running twin's devices
+    # would become unreachable until it is restarted
+    import tango
+    from dt4acc.custom_tango.ioc.devices.virtual_devices import RING_SIM_DEV
+
+    exported = tango.Database().get_device_exported(RING_SIM_DEV).value_string
+    if not args.force and RING_SIM_DEV.lower() in (d.lower() for d in exported):
+        print(
+            f"ERROR: {RING_SIM_DEV} is exported, the twin seems to be running.\n"
+            "       Stop it before registering (or use --check; --force if it crashed).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     servers = register_all_devices()
     print(f"Registered {len(servers)} servers")
