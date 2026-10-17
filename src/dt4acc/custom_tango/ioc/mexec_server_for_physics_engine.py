@@ -20,13 +20,39 @@ from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend
 logging.getLogger("transitions").setLevel(logging.WARNING)
 logging.getLogger("transitions.core").setLevel(logging.WARNING)
 
+from dt4acc_lib.model.utils.command import BehaviourOnError, Command  # noqa: E402
+
 logger = get_logger()
 
 # Callable that returns (yellow_pages, liaison_manager, translator_service)
 LOAD_MANAGERS_FN = None
 
-# Expected view for output — "design" for SOLEIL (commands in lattice space)
+# Expected view for output — "design" for SOLEIL (commands in lattice space),
+# "device" where the Tango devices are a facility's own devices (power
+# converters, magnets) translated by the liaison manager / translation service.
+# Read it through expected_view(): a launch script sets DT4ACC_VIEW (inherited
+# by the server processes) or this attribute before the twin starts.
 EXPECTED_VIEW = "design"
+
+
+def expected_view() -> str:
+    """The view the twin runs in: DT4ACC_VIEW, else EXPECTED_VIEW."""
+    return os.environ.get("DT4ACC_VIEW", EXPECTED_VIEW)
+
+
+def settle_supplies_enabled() -> bool:
+    """Start (and re-initialise) at the power supplies' nominal currents:
+    DT4ACC_SETTLE_SUPPLIES=1, device view only (see _settle_supplies)."""
+    return os.environ.get("DT4ACC_SETTLE_SUPPLIES") == "1" and expected_view() == "device"
+
+
+def set_expected_view(view: str) -> None:
+    """Choose the view for this process and the ones it starts."""
+    global EXPECTED_VIEW
+    if view not in ("design", "device"):
+        raise ValueError(f"view must be 'design' or 'device', not {view!r}")
+    EXPECTED_VIEW = view
+    os.environ["DT4ACC_VIEW"] = view
 MEXEC_CONNECT_RETRY_TIMEOUT_S = float(os.environ.get("DT4ACC_MEXEC_CONNECT_RETRY_TIMEOUT_S", "15"))
 MEXEC_CONNECT_RETRY_INTERVAL_S = float(os.environ.get("DT4ACC_MEXEC_CONNECT_RETRY_INTERVAL_S", "0.2"))
 
@@ -105,7 +131,7 @@ def _build_mexec():
     return TranslatingCommandExecutionEngine(
         backend=backend,
         cmd_rewriter=cmd_rewriter,
-        expected_view_for_output=os.environ.get("DT4ACC_VIEW", EXPECTED_VIEW),
+        expected_view_for_output=expected_view(),
         num_readings=1,
     )
 
@@ -132,6 +158,9 @@ def _run_mexec_service():
     future = asyncio.run_coroutine_threadsafe(_async_build_mexec(), service_loop)
     mexec = future.result(timeout=120)
     logger.warning("MexecService: lattice ready, mexec built. running on pid %d", os.getpid())
+    if settle_supplies_enabled():
+        n = asyncio.run_coroutine_threadsafe(_settle_supplies(mexec), service_loop).result(timeout=600)
+        logger.warning("MexecService: %d power supplies set to their nominal current", n)
 
 
     proxy = SyncMexecProxy(mexec=mexec, service_loop=service_loop)
@@ -149,6 +178,32 @@ def _run_mexec_service():
 
 async def _async_build_mexec():
     return _build_mexec()
+
+
+async def _settle_supplies(mexec) -> int:
+    """Write every power supply's current, as translated from the loaded
+    lattice (device_values), back through the liaison once: the twin then
+    starts at its supplies' nominal currents, and writing a device's own
+    value back is a no-op. The lattice file need not be in the liaison's
+    image (MAX IV R1: the combined-function quadrupoles' dipole shares)."""
+    from dt4acc.custom_tango.ioc.device_values import device_value_from, lattice_ids, supply_names
+
+    _, lm, ts = _get_load_managers()()
+    currents = {}
+    for name in supply_names(lm):
+        values = {}
+        for lat in lattice_ids(lm, name, "set_current"):
+            try:
+                values[lat] = await mexec.backend.read(lat.element_name, lat.property)
+            except Exception:
+                continue
+        current = device_value_from(lm, ts, values, name, "set_current")
+        if current is not None:
+            currents[name] = current
+    for name, current in currents.items():
+        await mexec.set([Command(id=name, property="set_current", value=current,
+                                 behaviour_on_error=BehaviourOnError.stop)])
+    return len(currents)
 
 
 def _connect_to_mexec_service():

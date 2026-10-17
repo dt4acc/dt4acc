@@ -89,9 +89,15 @@ def _snapshot(dp_ring_sim) -> dict[str, np.ndarray]:
     return {name: _observe(dp_ring_sim, (name,)) for name in ALL_OBSERVABLES}
 
 
+# Chromaticity is a finite difference in momentum: in device view a magnet's
+# nominal value goes back through the liaison as value / share, equal to the
+# settled lattice only to the last bit (~1e-16), which it amplifies to ~1e-6.
+RESTORE_RTOL = {"xi_x": 1e-5, "xi_y": 1e-5}
+
+
 def _restored(dp_ring_sim, baseline) -> bool:
     now = _snapshot(dp_ring_sim)
-    return all(np.allclose(now[k], baseline[k], rtol=1e-9, atol=1e-12) for k in baseline)
+    return all(np.allclose(now[k], baseline[k], rtol=RESTORE_RTOL.get(k, 1e-9), atol=1e-12) for k in baseline)
 
 
 @pytest.mark.parametrize("device_name, kind_key", _magnet_devices(),

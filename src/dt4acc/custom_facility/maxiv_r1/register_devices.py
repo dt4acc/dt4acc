@@ -50,6 +50,12 @@ def parse_args():
         help="Tango database host:port (default: localhost:10000)",
     )
     parser.add_argument(
+        "--view",
+        default=os.environ.get("DT4ACC_VIEW", "device"),
+        choices=("device", "design"),
+        help="as the twin runs (default: device; only device view has the power converters)",
+    )
+    parser.add_argument(
         "--check",
         action="store_true",
         help="Only report present / missing devices, register nothing",
@@ -65,6 +71,7 @@ def parse_args():
 def main():
     args = parse_args()
     os.environ["TANGO_HOST"] = args.tango_host
+    mexec_server_for_physics_engine.set_expected_view(args.view)
 
     from dt4acc.custom_tango.ioc.devices.tango_device_setup import (
         check_devices,
@@ -74,6 +81,7 @@ def main():
     print(f"  Lattice : {args.lattice}")
     print(f"  Devices : {get_data_file()}")
     print(f"  TANGO   : {args.tango_host}")
+    print(f"  View    : {args.view}")
 
     handle_lattice.lattice_loader.set_lattice_file(args.lattice)
     mexec_server_for_physics_engine.LOAD_MANAGERS_FN = _maxiv_r1_load_managers

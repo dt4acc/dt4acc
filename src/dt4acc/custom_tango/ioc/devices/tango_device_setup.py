@@ -20,7 +20,7 @@ from dt4acc.custom_tango.ioc.devices.virtual_devices import RingSimulatorDevice,
 from dt4acc.custom_tango.ioc.devices.power_converter_device import PowerConverterDevice, CavityPowerConverterDevice
 from dt4acc.custom_tango.ioc.devices.bpm_device import BPMDevice
 from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import (
-    EXPECTED_VIEW,
+    expected_view,
     lattice_properties_for_device,
 )
 from dt4acc_lib.model.utils.tango_resource_locator import TangoResourceLocator
@@ -153,7 +153,7 @@ def build_device_plan() -> DevicePlan:
             )
 
     # Power converters
-    if EXPECTED_VIEW == "device":
+    if expected_view() == "device":
         seen = set()
         for pc_name in get_unique_magnet_power_converters():
             if pc_name in seen:
@@ -411,7 +411,7 @@ def _register_power_converters(db: Database, unique_servers: set[tuple[str, str]
     # 2) Power converters — device view only.
     #    In design view the magnet device is the control source — no PC devices.
     # ------------------------------------------------------------
-    if EXPECTED_VIEW == "device":
+    if expected_view() == "device":
         registered_pcs = set()
         for pc_name in get_unique_magnet_power_converters():
             if pc_name in registered_pcs:

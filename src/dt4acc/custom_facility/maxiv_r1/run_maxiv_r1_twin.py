@@ -91,6 +91,12 @@ def parse_args():
         help="TCP port for the MexecService manager (default: 50200)",
     )
     parser.add_argument(
+        "--no-settle-supplies",
+        action="store_true",
+        help="start from the lattice file as is, instead of writing every power"
+             " supply's nominal current (translated from that lattice) once",
+    )
+    parser.add_argument(
         "--view",
         type=str,
         default=os.environ.get("DT4ACC_VIEW", "device"),
@@ -141,6 +147,7 @@ def main():
     print(f"  Recalc period    : {args.heartbeat_period}s (no lattice changes)")
     print(f"  MexecPort        : {args.port}")
     print(f"  View             : {args.view}")
+    print(f"  Settle supplies  : {not args.no_settle_supplies}")
 
     os.environ["TANGO_HOST"] = args.tango_host
 
@@ -153,7 +160,15 @@ def main():
     mexec_server_for_physics_engine.LOAD_MANAGERS_FN = _maxiv_r1_load_managers
     server_manager.HEARTBEAT_PERIOD = args.heartbeat_period
     mexec_config._MANAGER_PORT = args.port
-    server_manager.EXPECTED_VIEW    = args.view
+    # device view: the Tango devices are MAX IV's power converters and magnets,
+    # translated into the lattice by the liaison manager / translation service
+    # (all slices and components with their shares). Set before the servers
+    # start; DT4ACC_VIEW is inherited by their processes.
+    mexec_server_for_physics_engine.set_expected_view(args.view)
+    # the lattice file is not in the liaison's image (no dipole share on the
+    # combined-function quadrupole slices, ...): start at the supplies'
+    # nominal currents, so that writing back what a device reads is a no-op
+    os.environ["DT4ACC_SETTLE_SUPPLIES"] = "0" if args.no_settle_supplies else "1"
 
     server_manager.main()
 

@@ -58,12 +58,17 @@ class PowerConverterDevice(Device):
         self.set_state(DevState.ON)
 
     def _peek_initial_current(self) -> float:
-        """
-        Digital twin — no real machine connected, initial current is always 0.0.
-        Reading from the backend at startup is not meaningful and would require
-        the full liaison/AT chain to be ready, which it is not yet at init time.
-        """
-        return 0.0
+        """The current that gives the lattice the twin starts from (its
+        magnets' strengths translated forward, device view), so that a client
+        reading the current and stepping it moves the magnets by the step
+        only. 0.0 if the twin can not translate it."""
+        from dt4acc.custom_tango.ioc.single_server import read_device_value
+
+        value = read_device_value(self.pc_name, "set_current")
+        if value is None:
+            logger.warning("%s: initial current unknown, starting at 0 A", self.pc_name)
+            return 0.0
+        return value
 
     # ------------------------------------------------------------------
     # Async helper

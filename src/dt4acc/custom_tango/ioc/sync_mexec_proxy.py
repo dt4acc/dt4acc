@@ -115,6 +115,17 @@ class SyncMexecProxy:
             )
             fut.result(timeout=30)
             logger.warning("SyncMexecProxy.sync_reinit: backend reinit done")
+            # the reloaded lattice file is not at the supplies' nominal
+            # currents: settle it again, as at start-up
+            from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import (
+                _settle_supplies,
+                settle_supplies_enabled,
+            )
+            if settle_supplies_enabled():
+                n = asyncio.run_coroutine_threadsafe(
+                    _settle_supplies(self.mexec), self.service_loop
+                ).result(timeout=600)
+                logger.warning("SyncMexecProxy.sync_reinit: %d power supplies set to their nominal current", n)
         except Exception as exc:
             logger.error("SyncMexecProxy.sync_reinit failed: %s", exc)
             raise
