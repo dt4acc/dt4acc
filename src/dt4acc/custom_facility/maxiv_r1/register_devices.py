@@ -25,13 +25,13 @@ import pprint
 import sys
 from pathlib import Path
 
-# imported first: chooses the device database before dt4acc.config.data.querries
+from dt4acc.config.data.querries import get_data_file
 from dt4acc.custom_facility.maxiv_r1.run_maxiv_r1_twin import (
     DEFAULT_LATTICE_FILE,
     _maxiv_r1_load_managers,
 )
-from dt4acc.core.bl import handle_lattice  # noqa: E402
-from dt4acc.custom_tango.ioc import mexec_server_for_physics_engine  # noqa: E402
+from dt4acc.core.bl import handle_lattice
+from dt4acc.custom_tango.ioc import mexec_server_for_physics_engine
 
 
 def parse_args():
@@ -66,17 +66,15 @@ def main():
     args = parse_args()
     os.environ["TANGO_HOST"] = args.tango_host
 
-    from dt4acc.config.data.querries import configure_data_file
     from dt4acc.custom_tango.ioc.devices.tango_device_setup import (
         check_devices,
         register_all_devices,
     )
 
     print(f"  Lattice : {args.lattice}")
-    print(f"  Devices : {os.environ['DT4ACC_ACCELERATOR_SETUP_FILE']}")
+    print(f"  Devices : {get_data_file()}")
     print(f"  TANGO   : {args.tango_host}")
 
-    configure_data_file(os.environ["DT4ACC_ACCELERATOR_SETUP_FILE"])
     handle_lattice.lattice_loader.set_lattice_file(args.lattice)
     mexec_server_for_physics_engine.LOAD_MANAGERS_FN = _maxiv_r1_load_managers
 

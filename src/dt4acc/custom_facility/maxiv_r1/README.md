@@ -7,6 +7,10 @@ from MAX IV's own Matlab Middle Layer export of R1 (AO + lattice, 1.5 GeV,
 brho 5.0035 T m). Do not edit them by hand; regenerate instead.
 
 Start the twin with `dt4acc_maxiv_r1` (or `python run_maxiv_r1_twin.py`).
+It reads its data from `~/Documents/dt4acc_config_data/`, the folder of
+whichever twin is run: copy `R1_lat_indexed.json` there, and
+`resources/accelerator_setup_maxiv_r1.json` as `accelerator_setup.json`
+(or set `DT4ACC_LATTICE_FILE` / `DT4ACC_ACCELERATOR_SETUP_FILE`).
 It only starts the devices it finds in the Tango database: on a fresh
 database register them first with `dt4acc_maxiv_r1_register` (or
 `python register_devices.py`; `--check` only reports present / missing).

@@ -19,10 +19,11 @@ Files
     lattice      ~/Documents/dt4acc_config_data/R1_lat_indexed.json (default,
                  --lattice / DT4ACC_LATTICE_FILE to override); the generated
                  tables name its slices ("sqfi73", ...)
-    devices      resources/accelerator_setup_maxiv_r1.json (default,
-                 DT4ACC_ACCELERATOR_SETUP_FILE to override): the device
-                 database the TANGO devices are registered from, generated
-                 together with the tables so that both agree
+    devices      ~/Documents/dt4acc_config_data/accelerator_setup.json
+                 (default, DT4ACC_ACCELERATOR_SETUP_FILE to override): the
+                 device database the TANGO devices are registered from; copy
+                 resources/accelerator_setup_maxiv_r1.json there, it is
+                 generated together with the tables so that both agree
 
 Environment variables (all optional, CLI args take precedence)
 --------------------------------------------------------------
@@ -38,16 +39,9 @@ import sys
 from importlib.resources import files
 from pathlib import Path
 
-# The device database must be chosen before dt4acc.config.data.querries is
-# imported anywhere (it reads the variable at import time), and is inherited
-# by the processes the server starts.
-_DEFAULT_SETUP_FILE = files("dt4acc").joinpath(
-    "custom_facility", "maxiv_r1", "resources", "accelerator_setup_maxiv_r1.json"
-)
-os.environ.setdefault("DT4ACC_ACCELERATOR_SETUP_FILE", str(_DEFAULT_SETUP_FILE))
-
-from dt4acc.core.bl import handle_lattice  # noqa: E402
-from dt4acc.custom_tango.ioc import mexec_config, mexec_server_for_physics_engine  # noqa: E402
+from dt4acc.config.data.querries import get_data_file
+from dt4acc.core.bl import handle_lattice
+from dt4acc.custom_tango.ioc import mexec_config, mexec_server_for_physics_engine
 
 # ---------------------------------------------------------------------------
 # Defaults
@@ -56,6 +50,11 @@ from dt4acc.custom_tango.ioc import mexec_config, mexec_server_for_physics_engin
 DATA_DIR = Path.home() / "Documents" / "dt4acc_config_data"
 
 DEFAULT_LATTICE_FILE = DATA_DIR / "R1_lat_indexed.json"
+
+# generated together with the liaison / translator tables of this package
+GENERATED_SETUP_FILE = files("dt4acc").joinpath(
+    "custom_facility", "maxiv_r1", "resources", "accelerator_setup_maxiv_r1.json"
+)
 
 DEFAULT_HEARTBEAT_PERIOD_S = 1.0
 
@@ -125,9 +124,19 @@ def main():
         )
         sys.exit(1)
 
+    setup_file = get_data_file()
+    if not setup_file.exists():
+        print(f"ERROR: Device database not found: {setup_file}", file=sys.stderr)
+        print(
+            f"       Copy {GENERATED_SETUP_FILE} there"
+            " or set DT4ACC_ACCELERATOR_SETUP_FILE",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     print("MAX IV R1 twin server starting (generated setup)")
     print(f"  Lattice          : {args.lattice}")
-    print(f"  Devices          : {os.environ['DT4ACC_ACCELERATOR_SETUP_FILE']}")
+    print(f"  Devices          : {setup_file}")
     print(f"  TANGO            : {args.tango_host}")
     print(f"  Recalc period    : {args.heartbeat_period}s (no lattice changes)")
     print(f"  MexecPort        : {args.port}")
@@ -135,11 +144,9 @@ def main():
 
     os.environ["TANGO_HOST"] = args.tango_host
 
-    from dt4acc.config.data.querries import configure_data_file
     from dt4acc.custom_tango.ioc import server_manager
     from dt4acc.custom_tango.ioc.single_server import enable_device_view_readback
 
-    configure_data_file(os.environ["DT4ACC_ACCELERATOR_SETUP_FILE"])
     enable_device_view_readback()
 
     handle_lattice.lattice_loader.set_lattice_file(args.lattice)
