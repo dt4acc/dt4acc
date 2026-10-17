@@ -79,6 +79,37 @@ def _add_expected_device(
     plan.servers.add((server_name, instance_name))
 
 
+def _bpm_lattice_positions() -> dict[str, tuple[int, float]]:
+    """Map BPM uuid → (AT element index, s position) from the lattice.
+
+    SOLEIL lattices have at.Monitor elements carrying a UUID; others (e.g.
+    MAX IV R1) mark BPMs as plain elements whose FamName is the uuid used in
+    the setup file. UUID matches take precedence over FamName matches.
+    """
+    import at as _at
+    from dt4acc.core.bl.handle_lattice import lattice_loader
+
+    lattice = lattice_loader.load()
+    s_pos = _at.get_s_pos(lattice, range(len(lattice)))
+    by_uuid: dict[str, tuple[int, float]] = {}
+    by_name: dict[str, tuple[int, float]] = {}
+    for i, elem in enumerate(lattice):
+        position = (i, float(s_pos[i]))
+        uuid = getattr(elem, "UUID", None)
+        if uuid and isinstance(elem, _at.Monitor):
+            by_uuid[uuid] = position
+        by_name.setdefault(elem.FamName, position)
+    return {**by_name, **by_uuid}
+
+
+def _bpm_orbit_index_and_s_pos(bpm: dict, positions: dict[str, tuple[int, float]]) -> tuple[int, float]:
+    """Orbit index (-1 if not in the lattice) and s position of a setup BPM entry.
+    A s_pos of 0.0 in the setup file is taken as unknown and filled from the lattice."""
+    orbit_index, lattice_s_pos = positions.get(bpm.get("uuid"), (-1, 0.0))
+    s_pos = float(bpm.get("s_pos", 0.0)) or lattice_s_pos
+    return orbit_index, s_pos
+
+
 def build_device_plan() -> DevicePlan:
     """
     Build the expected device inventory from the same source data used by
@@ -197,29 +228,19 @@ def build_device_plan() -> DevicePlan:
         )
 
     # BPMs
-    bpm_index_map: dict = {}
+    bpm_positions: dict = {}
     try:
-        import at as _at  # noqa: F401
-        from dt4acc.core.bl.handle_lattice import lattice_loader
-
-        lattice = lattice_loader.load()
-        for i, elem in enumerate(lattice):
-            if isinstance(elem, _at.Monitor):
-                uuid = getattr(elem, "UUID", None)
-                if uuid:
-                    bpm_index_map[uuid] = i
-        logger.info("BPM plan: resolved %d BPM orbit indices from lattice", len(bpm_index_map))
+        bpm_positions = _bpm_lattice_positions()
     except Exception as e:
         logger.warning("BPM plan: could not build orbit index map: %s", e)
 
     for bpm in get_bpms():
         bpm_name = bpm.get("name")
         bpm_uuid = bpm.get("uuid")
-        bpm_spos = float(bpm.get("s_pos", 0.0))
         if not bpm_name:
             continue
 
-        orbit_index = bpm_index_map.get(bpm_uuid, -1)
+        orbit_index, bpm_spos = _bpm_orbit_index_and_s_pos(bpm, bpm_positions)
         try:
             trl = TangoResourceLocator.from_trl(bpm_name)
             server_name, instance_name = trl.domain, trl.family
@@ -504,36 +525,20 @@ def _register_bpms(db: Database, unique_servers: set[tuple[str, str]]):
     """Register BPM devices and properties."""
     # 4) BPM devices — one per Monitor element, read-only
     # ------------------------------------------------------------
-    # Build s_pos → AT element index map by loading the lattice directly.
-    # AT element s positions are computed via at.get_s_pos() — not stored
-    # on individual elements.
-    bpm_index_map: dict = {}  # uuid → AT element index
+    # uuid → (AT element index, s position), loaded from the lattice directly
+    bpm_positions: dict = {}
     try:
-        import at as _at
-        from dt4acc.core.bl.handle_lattice import lattice_loader
-
-        lattice = lattice_loader.load()
-        for i, elem in enumerate(lattice):
-            if isinstance(elem, _at.Monitor):
-                uuid = getattr(elem, "UUID", None)
-                if uuid:
-                    bpm_index_map[uuid] = i
-        logger.info(f"BPM registration: resolved {len(bpm_index_map)} BPM orbit indices from lattice")
-        if bpm_index_map:
-            sample = list(bpm_index_map.items())[:3]
-            logger.info("BPM registration: sample uuid→index: %s", sample)
+        bpm_positions = _bpm_lattice_positions()
     except Exception as e:
         logger.warning("BPM registration: could not build orbit index map: %s", e)
 
     for bpm in get_bpms():
         bpm_name = bpm.get("name")
         bpm_uuid = bpm.get("uuid")
-        bpm_spos = float(bpm.get("s_pos", 0.0))
         if not bpm_name:
             continue
 
-        # Find orbit index by UUID match
-        orbit_index = bpm_index_map.get(bpm_uuid, -1)
+        orbit_index, bpm_spos = _bpm_orbit_index_and_s_pos(bpm, bpm_positions)
         if orbit_index == -1:
             logger.warning("BPM %s: uuid=%s not found in lattice BPM map", bpm_name, bpm_uuid)
 
