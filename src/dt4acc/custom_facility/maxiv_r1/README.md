@@ -7,6 +7,9 @@ from MAX IV's own Matlab Middle Layer export of R1 (AO + lattice, 1.5 GeV,
 brho 5.0035 T m). Do not edit them by hand; regenerate instead.
 
 Start the twin with `dt4acc_maxiv_r1` (or `python run_maxiv_r1_twin.py`).
+It only starts the devices it finds in the Tango database: on a fresh
+database register them first with `dt4acc_maxiv_r1_register` (or
+`python register_devices.py`; `--check` only reports present / missing).
 **Requires dt4acc-lib with the curve conversion fix (PR #29)**: without it
 131 of 180 power supplies are 1–45 % off.
 
