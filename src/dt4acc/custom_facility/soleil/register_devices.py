@@ -1,4 +1,5 @@
 import json
+import os
 import pprint
 from typing import Sequence
 
@@ -43,6 +44,16 @@ def main():
     args = arg_parser.parse_args()
     display_setup_from_args(args)
     handle_lattice.lattice_loader.set_lattice_file(args.lattice)
+
+    # build_device_plan()/register_all_devices() resolve each magnet's Tango
+    # class and lattice property via lattice_properties_for_device(), which
+    # needs the active facility's load_managers() -- normally set by
+    # run_soleil_twin.py, but this script can run standalone (e.g. the
+    # launcher's separate device-registration step), so set it here too.
+    os.environ.setdefault(
+        "DT4ACC_LOAD_MANAGERS",
+        "dt4acc.custom_facility.soleil.liasion_translator_setup:load_managers",
+    )
 
     if args.register_devices:
         servers = register_all_devices()
