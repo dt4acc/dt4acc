@@ -1,13 +1,3 @@
-# import os
-#
-# import pymongo
-
-# from dt4acc import mongodb_
-#
-# client = pymongo.MongoClient(mongodb_)
-# DB_NAME = os.environ.get("MONGODB_DB", "bessyii")
-# db = client[DB_NAME]
-# collection = db['accelerator.setup']
 # TODO
 # this is a temporary solution to avoid the MongoDB dependency
 # rework this to use the file repository along with mongodb
@@ -70,7 +60,7 @@ def get_elements_per_power_converter(pc: str) -> List[Dict[str, Any]]:
 
 def get_unique_magnet_power_converters() -> List[str]:
     """Distinct list of power-converter names for magnetic elements.
-    Skips entries where pc is None (e.g. SOLEIL design view has no PCs)."""
+    Skips entries where pc is None (e.g. a design view without PCs)."""
     wanted = {
         "Quadrupole", "Sextupole", "Steerer", "SkewQuadrupoleCorrector", "QuadrupoleCorrector",
         "Multipole", "Bend", "Octupole"

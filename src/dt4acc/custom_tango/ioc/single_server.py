@@ -135,7 +135,7 @@ _nominal_cache: dict = {}           # uuid -> {property: value}
 _my_magnet_uuids: list = []         # UUIDs of elements in this server process
 _uuid_to_prop: dict = {}            # uuid -> lattice properties
 _sync_proxy = None                  # MexecService proxy for live reads
-_device_view = False                # True only for device-view facilities (e.g. MAX IV)
+_device_view = False                # True only in device view
 
 
 def _default_lattice_values() -> dict:
@@ -154,8 +154,8 @@ def _default_lattice_values() -> dict:
 
 def enable_device_view_readback() -> None:
     """Call from facility startup script to enable live AT readback on polling.
-    Must be called before tango.server.run() — e.g. in run_maxiv_r1_twin.py.
-    In design view (SOLEIL) this is never called so peek_from_lattice returns 0.0.
+    Must be called before tango.server.run(), from the facility's run script.
+    In design view this is never called so peek_from_lattice returns 0.0.
     """
     global _device_view
     _device_view = True
@@ -163,16 +163,42 @@ def enable_device_view_readback() -> None:
 
 def peek_from_lattice(element_id: str, prop: str) -> float:
     """Live read of a single element property from AT via MexecService.
-    Only active in device view (MAX IV). Returns 0.0 in design view (SOLEIL)
-    so the cached value is kept unchanged — no regression for SOLEIL.
+    Only active in device view. Returns 0.0 in design view
+    so the cached value is kept unchanged there.
     """
     global _sync_proxy, _device_view # noqa: F824
     if not _device_view or _sync_proxy is None:
         return 0.0
     try:
-        return _sync_proxy.sync_peek(element_id, prop)
+        raw = _sync_proxy.sync_peek(element_id, prop)
     except Exception:
         return 0.0
+    return _lattice_to_device_value(element_id, prop, raw)
+
+
+def _lattice_to_device_value(element_id: str, prop: str, value: float) -> float:
+    """A device writing Command(element_id, prop) is translated by the
+    liaison into all slices / components of its magnet with their shares,
+    the element itself getting value / share. Its readback is the element's
+    lattice value translated forward with the same conversion, so that it
+    reads back what was written. Without such a conversion (design view,
+    plain elements) the lattice value is the device value."""
+    from dt4acc_lib.model.utils.identifiers import (
+        ConversionID,
+        DevicePropertyID,
+        LatticeElementPropertyID,
+    )
+    from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import _get_load_managers
+
+    try:
+        _, _, ts = _get_load_managers()()
+        conversion = ts.get(ConversionID(
+            lattice_property_id=LatticeElementPropertyID(element_name=element_id, property=prop),
+            device_property_id=DevicePropertyID(device_name=element_id, property=prop),
+        ))
+    except Exception:
+        return value
+    return float(conversion.forward(value))
 
 
 def _properties_for_uuid(uuid: str, uuid_to_prop: dict = None) -> list:
@@ -180,6 +206,10 @@ def _properties_for_uuid(uuid: str, uuid_to_prop: dict = None) -> list:
     if isinstance(value, (set, list, tuple)):
         return list(value)
     return [value]
+
+
+# a CavityDevice exposes both, whatever its liaison maps main_strength to
+_RF_CAVITY_PROPERTIES = ("frequency", "voltage")
 
 
 def _properties_for_uuid_or_spec(uuid: str, prop_spec=None) -> list:
@@ -190,7 +220,7 @@ def _properties_for_uuid_or_spec(uuid: str, prop_spec=None) -> list:
     if uuid in _uuid_to_prop:
         return _properties_for_uuid(uuid, _uuid_to_prop)
     if uuid in set(get_rf_cavity_uuids()):
-        return ["frequency", "voltage"]
+        return list(_RF_CAVITY_PROPERTIES)
     return ["main_strength"]
 
 
@@ -324,6 +354,23 @@ def refresh_one_from_lattice(uuid: str, prop_spec=None) -> None:
     _initial_strength_cache[uuid] = values.get("main_strength", 0.0)
 
 
+def read_device_value(device_id: str, prop: str):
+    """Present value of a device property from the lattice, through the
+    liaison manager and translation service (see device_values); None if it
+    can not be read or translated (e.g. design view)."""
+    if _sync_proxy is None:
+        return None
+    from dt4acc.custom_tango.ioc.device_values import device_value
+    from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import _get_load_managers
+
+    try:
+        _, lm, ts = _get_load_managers()()
+        return device_value(lm, ts, _sync_proxy.sync_peek, device_id, prop)
+    except Exception as exc:
+        logger.warning("read_device_value(%s, %s) failed: %s", device_id, prop, exc)
+        return None
+
+
 def _preload_initial_values(sync_proxy, magnet_uuids: list, uuid_to_prop: dict = None) -> None:
     """
     Bulk-read initial values for all magnets before Tango starts.
@@ -439,7 +486,7 @@ def main_loop(server_name: str, instance_name: str, event=None):
                 if mtype == "RFCavity":
                     _add_cache_element(
                         uuid=uuid,
-                        props=props,
+                        props=[*props, *_RF_CAVITY_PROPERTIES],
                         uuids=my_uuids,
                         seen_uuids=seen_uuids,
                         uuid_to_prop=uuid_to_prop,
@@ -463,7 +510,7 @@ def main_loop(server_name: str, instance_name: str, event=None):
                 continue
             _add_cache_element(
                 uuid=m.get("uuid", ""),
-                props=_properties_for_element(m["name"], "RFCavity"),
+                props=[*_properties_for_element(m["name"], "RFCavity"), *_RF_CAVITY_PROPERTIES],
                 uuids=my_uuids,
                 seen_uuids=seen_uuids,
                 uuid_to_prop=uuid_to_prop,

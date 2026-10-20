@@ -41,7 +41,7 @@ class SyncMexecProxy:
         """Read a single element property directly from AT backend,
         bypassing liaison and translator. Used by MultipoleDevice polling
         to stay in sync with PC writes in device view.
-        element_id is a FamName uuid (e.g. 'sqfi73'), prop is the AT
+        element_id is the lattice element's uuid, prop is the AT
         property name (e.g. 'main_strength').
         """
         logger.debug("sync_peek: element_id=%r prop=%r", element_id, prop)
@@ -115,6 +115,17 @@ class SyncMexecProxy:
             )
             fut.result(timeout=30)
             logger.warning("SyncMexecProxy.sync_reinit: backend reinit done")
+            # the reloaded lattice file is not at the supplies' nominal
+            # currents: settle it again, as at start-up
+            from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import (
+                _settle_supplies,
+                settle_supplies_enabled,
+            )
+            if settle_supplies_enabled():
+                n = asyncio.run_coroutine_threadsafe(
+                    _settle_supplies(self.mexec), self.service_loop
+                ).result(timeout=600)
+                logger.warning("SyncMexecProxy.sync_reinit: %d power supplies set to their nominal current", n)
         except Exception as exc:
             logger.error("SyncMexecProxy.sync_reinit failed: %s", exc)
             raise
