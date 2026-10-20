@@ -41,7 +41,7 @@ class SyncMexecProxy:
         """Read a single element property directly from AT backend,
         bypassing liaison and translator. Used by MultipoleDevice polling
         to stay in sync with PC writes in device view.
-        element_id is a FamName uuid (e.g. 'sqfi73'), prop is the AT
+        element_id is the lattice element's uuid, prop is the AT
         property name (e.g. 'main_strength').
         """
         logger.debug("sync_peek: element_id=%r prop=%r", element_id, prop)

@@ -8,8 +8,8 @@ A device drives several lattice element properties (a combined-function
 supply: every slice's dipole, quadrupole and sextupole share). Each of them,
 translated forward with that device's own conversion, gives a value for the
 device; where the lattice was written through the liaison they all agree.
-The lattice file the twin starts from need not lie in that image (e.g. MAX IV
-R1: no dipole share on the quadrupole slices), so the device value is the
+The lattice file the twin starts from need not lie in that image (e.g. no
+dipole share on combined-function quadrupole slices), so the device value is the
 median of them: the outliers drop out, no rule on property names needed.
 """
 from statistics import median

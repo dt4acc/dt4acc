@@ -27,7 +27,7 @@ from dt4acc_lib.interfaces.backend.calculation_states import CalculationStates
 from dt4acc_lib.model.utils.tango_resource_locator import TangoResourceLocator
 
 from dt4acc.config.data.querries import get_controlled_elements, get_unique_magnet_power_converters, get_elements_per_power_converter
-from dt4acc.config.data.querries import get_rf_cavity_uuids, element_uuid
+from dt4acc.config.data.querries import get_rf_cavity_uuids
 from dt4acc.core.bl.controller import Controller
 from dt4acc.custom_tango.views.view import TangoView
 from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import (
@@ -135,7 +135,7 @@ _nominal_cache: dict = {}           # uuid -> {property: value}
 _my_magnet_uuids: list = []         # UUIDs of elements in this server process
 _uuid_to_prop: dict = {}            # uuid -> lattice properties
 _sync_proxy = None                  # MexecService proxy for live reads
-_device_view = False                # True only for device-view facilities (e.g. MAX IV)
+_device_view = False                # True only in device view
 
 
 def _default_lattice_values() -> dict:
@@ -154,8 +154,8 @@ def _default_lattice_values() -> dict:
 
 def enable_device_view_readback() -> None:
     """Call from facility startup script to enable live AT readback on polling.
-    Must be called before tango.server.run() — e.g. in run_maxiv_r1_twin.py.
-    In design view (SOLEIL) this is never called so peek_from_lattice returns 0.0.
+    Must be called before tango.server.run(), from the facility's run script.
+    In design view this is never called so peek_from_lattice returns 0.0.
     """
     global _device_view
     _device_view = True
@@ -163,8 +163,8 @@ def enable_device_view_readback() -> None:
 
 def peek_from_lattice(element_id: str, prop: str) -> float:
     """Live read of a single element property from AT via MexecService.
-    Only active in device view (MAX IV). Returns 0.0 in design view (SOLEIL)
-    so the cached value is kept unchanged — no regression for SOLEIL.
+    Only active in device view. Returns 0.0 in design view
+    so the cached value is kept unchanged there.
     """
     global _sync_proxy, _device_view # noqa: F824
     if not _device_view or _sync_proxy is None:
@@ -478,7 +478,7 @@ def main_loop(server_name: str, instance_name: str, event=None):
         for pc_name in get_unique_magnet_power_converters():
             for m in get_elements_per_power_converter(pc_name):
                 magnet_name = m["name"]
-                uuid = element_uuid(m)
+                uuid = m.get("uuid", "")
                 mtype = m.get("type", "")
                 subtype = m.get("subtype", "")
                 props = _properties_for_element(magnet_name, mtype, subtype=subtype)
@@ -509,7 +509,7 @@ def main_loop(server_name: str, instance_name: str, event=None):
             if m.get("type") != "RFCavity":
                 continue
             _add_cache_element(
-                uuid=element_uuid(m),
+                uuid=m.get("uuid", ""),
                 props=[*_properties_for_element(m["name"], "RFCavity"), *_RF_CAVITY_PROPERTIES],
                 uuids=my_uuids,
                 seen_uuids=seen_uuids,

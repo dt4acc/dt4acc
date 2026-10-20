@@ -8,12 +8,20 @@ brho 5.0035 T m). Do not edit them by hand; regenerate instead.
 
 Start the twin with `dt4acc_maxiv_r1` (or `python run_maxiv_r1_twin.py`).
 It reads its data from `~/Documents/dt4acc_config_data/`, the folder of
-whichever twin is run: copy `R1_lat_indexed.json` there, and
+whichever twin is run: copy `R1_lat_indexed.json` there (with its BPMs as
+`Monitor`s carrying `UUID` = name, made by dt4acc_agent
+`scripts/maxiv_r1_lattice.py` from MAX IV's file, whose BPMs are Markers), and
 `resources/accelerator_setup_maxiv_r1.json` as `accelerator_setup.json`
 (or set `DT4ACC_LATTICE_FILE` / `DT4ACC_ACCELERATOR_SETUP_FILE`).
 It only starts the devices it finds in the Tango database: on a fresh
 database register them first with `dt4acc_maxiv_r1_register` (or
 `python register_devices.py`; `--check` only reports present / missing).
+The liaison / translator tables are read from `resources/created/` unless
+`DT4ACC_MAXIV_R1_SETUP_DIR` names another directory; their file names are
+the defaults of `SetupFiles` (pass your own to `build_managers`).
+Every device entry carries "uuid", the one lattice element dt4acc
+addresses it by (a combined-function magnet: its first slice; all slices
+are in "uuids").
 **Requires dt4acc-lib with the curve conversion fix (PR #29)**: without it
 131 of 180 power supplies are 1–45 % off.
 

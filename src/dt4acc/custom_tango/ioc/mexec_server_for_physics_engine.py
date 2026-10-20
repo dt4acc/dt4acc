@@ -27,7 +27,7 @@ logger = get_logger()
 # Callable that returns (yellow_pages, liaison_manager, translator_service)
 LOAD_MANAGERS_FN = None
 
-# Expected view for output — "design" for SOLEIL (commands in lattice space),
+# Expected view for output — "design" (commands in lattice space),
 # "device" where the Tango devices are a facility's own devices (power
 # converters, magnets) translated by the liaison manager / translation service.
 # Read it through expected_view(): a launch script sets DT4ACC_VIEW (inherited
@@ -185,7 +185,7 @@ async def _settle_supplies(mexec) -> int:
     lattice (device_values), back through the liaison once: the twin then
     starts at its supplies' nominal currents, and writing a device's own
     value back is a no-op. The lattice file need not be in the liaison's
-    image (MAX IV R1: the combined-function quadrupoles' dipole shares)."""
+    image (e.g. dipole shares of combined-function magnets missing)."""
     from dt4acc.custom_tango.ioc.device_values import device_value_from, lattice_ids, supply_names
 
     _, lm, ts = _get_load_managers()()

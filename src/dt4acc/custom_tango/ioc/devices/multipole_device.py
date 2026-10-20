@@ -5,7 +5,7 @@ Tango device for Quadrupoles, Sextupoles, Octupoles and Multipoles.
 Exposes: magnetic_strength (READ_WRITE) + magnetic_strength_readback (READ).
 
 The `lattice_property` DB property stores the correct AT property name
-per subtype (B2/B3/B4 for MAX IV, main_strength for SOLEIL design view).
+per subtype (B2/B3/B4 in device view, main_strength in design view).
 """
 
 from tango.server import attribute, command, device_property
@@ -24,8 +24,8 @@ class MultipoleDevice(BaseMagnetDevice):
     """
 
     # AT property name — set at registration time by tango_device_setup.py.
-    # Quad→"B2", Sext→"B3", Oct→"B4" for device-view (MAX IV).
-    # Defaults to "main_strength" for design-view facilities (SOLEIL).
+    # Quad→"B2", Sext→"B3", Oct→"B4" in device view.
+    # Defaults to "main_strength" (design view).
     lattice_property = device_property(dtype=str, default_value="main_strength")
 
     def init_device(self):

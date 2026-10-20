@@ -68,9 +68,9 @@ class BaseMagnetDevice(Device):
         """Send a set command to the backend via TangoController.
 
         cmd.id = self.lattice_id (the AT element uuid stored in element_uuid
-        DB property). In design view (SOLEIL) the command rewriter does no
+        DB property). In design view the command rewriter does no
         translation so the uuid goes directly to acc.get(). In device view
-        (MAX IV) the uuid is also the correct identifier.
+        the uuid is also the correct identifier.
         """
         from dt4acc_lib.model.utils.command import Command, BehaviourOnError
         self._async(

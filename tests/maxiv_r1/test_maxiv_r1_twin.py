@@ -22,8 +22,9 @@ from .conftest import read_array, wait_until
 # ---------------------------------------------------------------------------
 
 class TestBpmLatticePositions:
-    """R1 BPMs are Markers named by their setup uuid ("BPM10"), not at.Monitor
-    elements with a UUID: each must still get its orbit index and s position."""
+    """R1 BPMs are at.Monitor elements whose UUID is their setup uuid ("BPM10",
+    see dt4acc_agent scripts/maxiv_r1_lattice.py): each gets its orbit index
+    and s position."""
 
     @pytest.fixture
     def resolved(self, r1_setup):

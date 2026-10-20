@@ -1,13 +1,3 @@
-# import os
-#
-# import pymongo
-
-# from dt4acc import mongodb_
-#
-# client = pymongo.MongoClient(mongodb_)
-# DB_NAME = os.environ.get("MONGODB_DB", "bessyii")
-# db = client[DB_NAME]
-# collection = db['accelerator.setup']
 # TODO
 # this is a temporary solution to avoid the MongoDB dependency
 # rework this to use the file repository along with mongodb
@@ -70,7 +60,7 @@ def get_elements_per_power_converter(pc: str) -> List[Dict[str, Any]]:
 
 def get_unique_magnet_power_converters() -> List[str]:
     """Distinct list of power-converter names for magnetic elements.
-    Skips entries where pc is None (e.g. SOLEIL design view has no PCs)."""
+    Skips entries where pc is None (e.g. a design view without PCs)."""
     wanted = {
         "Quadrupole", "Sextupole", "Steerer", "SkewQuadrupoleCorrector", "QuadrupoleCorrector",
         "Multipole", "Bend", "Octupole"
@@ -103,21 +93,13 @@ def get_unique_power_converters_type_specified(type_list: Iterable[str]) -> List
     return get_unique_power_converters_for_types(type_list)
 
 
-def element_uuid(doc: Dict[str, Any]) -> str:
-    """The one lattice element a device is addressed by: "uuid" (one element
-    per device), else the first of "uuids" (a combined-function magnet
-    spanning several slices). Not the full element list: the liaison manager
-    fans a write to this element out to all slices of the magnet."""
-    return doc.get("uuid") or next(iter(doc.get("uuids") or []), "")
-
-
 def get_rf_cavity_uuids() -> List[str]:
     """UUIDs of non-harmonic (main) RF cavities for design-view fan-out."""
     return [
-        element_uuid(d) for d in _data()
+        d["uuid"] for d in _data()
         if d.get("type") == "RFCavity"
         and "HARM" not in (d.get("FamName") or "")
-        and element_uuid(d)
+        and d.get("uuid")
     ]
 
 

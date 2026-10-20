@@ -6,7 +6,7 @@ from dt4acc_lib.model.utils.command import BehaviourOnError, Command
 from tango import DevState, DevFailed
 from tango.server import Device, attribute, command, device_property, AttrWriteType
 
-from dt4acc.config.data.querries import get_elements_per_power_converter, element_uuid
+from dt4acc.config.data.querries import get_elements_per_power_converter
 from dt4acc.core.utils.logger import get_logger
 from dt4acc.custom_tango.ioc.controller_registry import get_controller
 from dt4acc.custom_tango.ioc.devices.write_value_sync import sync_write_value
@@ -121,7 +121,7 @@ class CavityPowerConverterDevice(Device):
     """
     Shared RF power converter for all cavities.
 
-    In SOLEIL design view the command rewriter does no liaison translation —
+    In design view the command rewriter does no liaison translation —
     commands go straight to the AT backend using the lattice element UUID as
     the identifier. This device therefore fans out to each cavity UUID directly,
     setting property "voltage" on every cavity it controls.
@@ -140,7 +140,7 @@ class CavityPowerConverterDevice(Device):
         self._voltage = 0.0
 
         cavities = get_elements_per_power_converter(self.pc_name)
-        self._cavity_uuids = [element_uuid(c) for c in cavities if element_uuid(c)]
+        self._cavity_uuids = [c["uuid"] for c in cavities if c.get("uuid")]
         logger.info("%s: controlling cavity UUIDs: %s", self.pc_name, self._cavity_uuids)
 
         self._current = self._initial_cavity_voltage()
