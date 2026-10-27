@@ -5,8 +5,13 @@ simulation engine, and the hand over of the beam between them:
 
 * storage ring: the BESSY II ring twin, PVs as there (``<P>:Q1PDR:set``,
   ``<P>:beam:orbit:x``, ...)
-* transfer line: the transfer line twin cut at the injection septum exit,
-  PVs one level down (``<P>:TL:Q1PT:set``, ``<P>:TL:FOMZ1T:x``, ...)
+* transfer line: the transfer line twin cut at the injection septum exit.
+  Its devices keep their machine names, as in the transfer line twin
+  (``<P>:Q1PT:set``, ``<P>:Q1MT:Cm:rdbk``, ``<P>:FOMZ1T:x``; they do not
+  clash with the ring's: line names end in T, ring names in R). Only its
+  model PVs, which the ring has under the same names, are one level down:
+  ``<P>:TL:beam:orbit:*``, ``<P>:TL:beam:twiss:*``, ``<P>:TL:survey:*``,
+  ``<P>:TL:ORBITCC:*``
 * hand over: ``<P>:INJ:...`` (see ``pvs.py``): the beam leaving the line,
   put into the ring at ``MSEPEXIT`` and tracked turn by turn; recomputed
   whenever line, ring or its settings change
@@ -33,7 +38,12 @@ from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encap
 from dt4acc.custom_facility.bessyii.run_bessyii_twin import initialise_pvs as ring_pvs
 from dt4acc.custom_facility.bessyii_injection.coupler import InjectionCoupler
 from dt4acc.custom_facility.bessyii_injection.pvs import InjectionPVs, hook_track_updates
-from dt4acc.custom_facility.bessytl.run_bessytl_twin import initialise_pvs as line_pvs
+from dt4acc.custom_epics.ioc.pv_setup import (
+    initialize_orbit_pvs,
+    initialize_power_converter_pvs,
+    initialize_survey_info_pvs,
+    initialize_twiss_pvs,
+)
 from dt4acc.custom_facility.bessytl.twin_setup import (
     ACCELERATOR_SETUP,
     bessytl_lattice,
@@ -41,7 +51,7 @@ from dt4acc.custom_facility.bessytl.twin_setup import (
     load_twiss_in,
     monitor_names,
 )
-from dt4acc.custom_facility.bessytl.view import TransferLineView
+from dt4acc.custom_facility.bessytl.view import TransferLineView, initialize_monitor_pvs
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
 from dt4acc_lib.model.utils.command import ReadCommand
 from dt4acc_lib.pyat_simulator.accelerator_simulator import PyATAcceleratorSimulator
@@ -97,11 +107,22 @@ async def main():
     ring_bpms = [e.FamName for e in ring_backend.acc.acc if isinstance(e, at.Monitor) and e.FamName.startswith("BPMZ")]
     coupler = InjectionCoupler(line=line_backend, ring=ring_backend, monitors=ring_bpms)
 
+    # machine names: ring, hand over, transfer line devices
     builder.SetDeviceName(prefix)
     ring_view.update_process_variables(await ring_pvs(builder=builder, models=ring_pv_col.vars, controller=ring))
     injection = InjectionPVs(coupler)
+    line_view.update_process_variables({
+        **await initialize_power_converter_pvs(builder, controller=tl),
+        **initialize_monitor_pvs(line_monitors),
+    })
+    # model PVs of the transfer line: the ring has the same names
     builder.SetDeviceName(f"{prefix}:TL")
-    line_view.update_process_variables(await line_pvs(builder, tl, line_monitors, n_elements=len(line) + 1))
+    n_elements = len(line) + 1
+    line_view.update_process_variables({
+        **initialize_survey_info_pvs(builder, n_elements=n_elements),
+        **initialize_orbit_pvs(builder, n_elements=n_elements),
+        **initialize_twiss_pvs(builder, n_elements=n_elements),
+    })
     hook_track_updates(ring_view, injection)
     hook_track_updates(line_view, injection)
 

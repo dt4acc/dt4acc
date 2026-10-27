@@ -34,7 +34,8 @@ PVs, prefixed with `DT4ACC_PREFIX` (`<P>`, default: the user name):
 | PVs | what |
 |---|---|
 | `<P>:Q1PDR:set`, `<P>:beam:orbit:x`, `<P>:ORBITCC:rdBpm`, ... | the storage ring, as the ring twin |
-| `<P>:TL:Q1PT:set`, `<P>:TL:FOMZ1T:x`, `<P>:TL:beam:orbit:x`, `<P>:TL:ORBITCC:rdBpm`, ... | the transfer line up to the septum exit, as the transfer line twin, one level down |
+| `<P>:Q1PT:set`, `<P>:Q1MT:Cm:rdbk`, `<P>:FOMZ1T:x`, ... | the transfer line's supplies, magnets and monitors (up to the septum exit), machine names as in the transfer line twin; they do not clash with the ring's (line names end in T, ring names in R) |
+| `<P>:TL:beam:orbit:*`, `<P>:TL:beam:twiss:*`, `<P>:TL:survey:*`, `<P>:TL:ORBITCC:*` | the transfer line's model PVs: the ring has PVs of the same names, so these are one level down |
 | `<P>:INJ:geometry:{x,xp,y,yp}` | line axis against ring axis at the septum exit [m, rad] (writable) |
 | `<P>:INJ:n_turns` | turns tracked in the ring (1 ... 256, writable) |
 | `<P>:INJ:line_exit:{x,xp,y,yp}` | centroid leaving the line, line frame |
@@ -78,7 +79,7 @@ python scripts/bessyii_injection/live_plot.py
 **3. Change something** (third terminal), e.g.:
 
 ```bash
-caput BI:TL:H5PT:set 0.4          # transfer line steerer supply [A]
+caput BI:H5PT:set 0.4          # transfer line steerer supply [A]
 caput BI:INJ:geometry:x -0.002    # line axis against ring axis [m]
 caput BI:INJ:n_turns 5            # turns tracked in the ring
 caput BI:Q1PDR:set 207.85         # ring quadrupole supply [A] (was 205.79)
@@ -94,12 +95,12 @@ placeholders):
 | change | transfer line | injected beam | ring BPMs (x rms per turn) |
 |---|---|---|---|
 | none | on axis | 0 | ~0.01 mm: the beam follows the closed orbit (it differs a little from the ideal axis in 6D) |
-| `TL:H5PT:set` 0.4 A | bends from H5MT on, -3.5 mm at 19.7 m | x -1.17 mm, x' +0.66 mrad | 6.0, 5.6 mm: betatron oscillation, a different pattern every turn |
+| `H5PT:set` 0.4 A | bends from H5MT on, -3.5 mm at 19.7 m | x -1.17 mm, x' +0.66 mrad | 6.0, 5.6 mm: betatron oscillation, a different pattern every turn |
 | + `INJ:geometry:x` -2 mm, `xp` 0.1 mrad | unchanged | x -3.17 mm, x' +0.76 mrad | 7.4, 6.6, 6.8, 7.0, 6.6 mm (5 turns) |
 | + `Q1PDR:set` +1 % | unchanged | unchanged | 7.8, 9.6, 13.4 mm, then NaN: the horizontal tune moves from .85 to ~.96, close to an integer; the oscillation grows and the beam is lost in turn 4 (`INJ:survived` 0) |
 | steerer and geometry back to 0 | on axis | 0 | ~0.01 mm again |
 
-![steered: TL:H5PT 0.4 A, geometry -2 mm, 3 turns](docs/steered.png)
+![steered: H5PT 0.4 A, geometry -2 mm, 3 turns](docs/steered.png)
 
 Any supply of the line or the ring can be set the same way (lists:
 `../bessytl/PV_LIST.md`, `../bessyii/PV_LIST.md`); `BI:<bpm>:tbt:x` gives one

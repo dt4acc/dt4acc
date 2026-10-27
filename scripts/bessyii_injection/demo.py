@@ -17,7 +17,7 @@ from p4p.client.thread import Context
 STEPS = [
     ("start", [], "Line not steered, geometry 0: the beam enters the ring on its axis and stays close "
                   "to the closed orbit (a few 10 um at the BPMs)."),
-    ("steer the transfer line", [("TL:H5PT:set", 0.4)],
+    ("steer the transfer line", [("H5PT:set", 0.4)],
      "H5PT (horizontal steerer H5MT) 0.4 A: the trajectory in the line bends from H5MT on; the beam "
      "leaves the line about -1.2 mm / +0.7 mrad off; in the ring it oscillates around the closed orbit, "
      "a few mm at the BPMs, a different pattern every turn (betatron oscillation, tune ~17.85)."),
@@ -29,7 +29,7 @@ STEPS = [
      "Ring quadrupole supply Q1PDR +1 %: the horizontal tune moves from .85 to about .96, close to an "
      "integer: the oscillation of the injected beam (3 mm off) grows turn by turn and the beam is lost "
      "after 3 turns (NaN at the BPMs, INJ:survived drops to 0); the line does not change."),
-    ("steer back", [("TL:H5PT:set", 0.0), ("INJ:geometry:x", 0.0), ("INJ:geometry:xp", 0.0)],
+    ("steer back", [("H5PT:set", 0.0), ("INJ:geometry:x", 0.0), ("INJ:geometry:xp", 0.0)],
      "Back on axis: the oscillation is gone (the Q1PDR change stays until the end)."),
 ]
 

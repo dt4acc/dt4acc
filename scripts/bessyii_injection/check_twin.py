@@ -89,19 +89,25 @@ def compare(label, steerers, geometry, n_turns):
 
 
 def main():
-    for name in ("TL:Q1PT:set", "TL:FOMZ1T:x", "TL:beam:orbit:x", "Q1PDR:set", "beam:orbit:x", "INJ:tbt:names"):
+    for name in ("Q1PT:set", "FOMZ1T:x", "TL:beam:orbit:x", "Q1PDR:set", "beam:orbit:x", "INJ:tbt:names"):
         try:
             get(name)
             check(True, f"{name} served")
         except Exception as exc:
             check(False, f"{name} served ({exc})")
+    for name in ("TL:Q1PT:set", "TL:FOMZ1T:x"):
+        try:
+            ctx.get(pv(name), timeout=2)
+            check(False, f"{name} not served (machine name without TL:)")
+        except Exception:
+            check(True, f"{name} not served (machine name without TL:)")
     check(list(get("INJ:tbt:names")) == BPMS, f"INJ:tbt:names: the {len(BPMS)} ring BPMs in ring order")
 
     count = wait_count(0)
     n_turns = int(get("INJ:n_turns"))
     compare("start", {}, InjectionGeometry(), n_turns)
 
-    ctx.put(pv("TL:H5PT:set"), 0.4)
+    ctx.put(pv("H5PT:set"), 0.4)
     count = wait_count(count)
     compare("line steered (H5PT 0.4 A)", {"H5PT": 0.4}, InjectionGeometry(), n_turns)
 
