@@ -11,6 +11,7 @@ Welcome to dt4acc's documentation!
    :caption: Contents:
 
    api/api
+   howto/howto
 
 Indices and tables
 ==================

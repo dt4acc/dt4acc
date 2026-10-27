@@ -13,6 +13,7 @@ Todo:
 import asyncio
 import datetime
 import itertools
+import logging
 from typing import Any, Mapping, Sequence
 
 from dt4acc_lib.interfaces.backend.backend import BackendRW
@@ -20,9 +21,11 @@ from dt4acc_lib.interfaces.backend.calculation_states import CalculationStates
 from dt4acc_lib.interfaces.utils.command_execution_engine import CommandExecutionEngine
 from dt4acc_lib.interfaces.utils.command_rewritter import CommandRewriterBase
 from dt4acc_lib.model.utils.command import ReadCommand, Command
+from dt4acc_lib.model.utils.identifiers import DevicePropertyID, LatticeElementPropertyID
 from dt4acc_lib.model.output.result import SingleReading, ReadTogether,  \
     TranslatedReading, ReadTogetherAndTranslated
 
+logger = logging.getLogger("dt4acc")
 
 
 class TranslatingCommandExecutionEngine(CommandExecutionEngine):
@@ -58,22 +61,24 @@ class TranslatingCommandExecutionEngine(CommandExecutionEngine):
             read commands? i.e. a delegation to
             liaison manager
         """
-        rcmds = convert_read_commands(
+        requested = rcmds
+        per_request = convert_read_commands(
             cmd_rewriter=self.cmd_rewriter,
-            commands=rcmds,
+            commands=requested,
             output_view=self.get_expected_view_for_output(),
             backend_view=self.backend.get_natural_view_name(),
         )
         # convert read commands ... does not collapse them ...
-        rcmds = list(itertools.chain(*rcmds))
+        rcmds = list(itertools.chain(*per_request))
+        # the read command each backend read answers
+        origins = [rcmd for rcmd, converted in zip(requested, per_request) for _ in converted]
         start = datetime.datetime.now()
         data = await read_and_encapsulate(self.backend, rcmds)
         end = datetime.datetime.now()
-        # Todo: how to convert data back ... I think
-        #       that gets difficult as soon as there is no 1-to-1 mapping any more
-        #       how to handle delta_ ... I need to be able to access reference storage
-        converted_data = convert_data_seq(
+        # Todo: how to handle delta_ ... I need to be able to access reference storage
+        converted_data = convert_readings_to_requested(
             cmd_rewriter=self.cmd_rewriter,
+            requested=origins,
             detectors=rcmds,
             data=data.data,
             data_view=self.backend.get_natural_view_name(),
@@ -219,6 +224,76 @@ def convert_set_commands(
         return tmp
         return list(itertools.chain(*tmp))
     raise AssertionError("Did not expect to end up here!")
+
+
+def convert_readings_to_requested(
+    *,
+    cmd_rewriter: CommandRewriterBase,
+    requested: Sequence[ReadCommand],
+    detectors: Sequence[ReadCommand],
+    data: Sequence[SingleReading],
+    data_view: str,
+    target_view: str,
+) -> Sequence[TranslatedReading]:
+    """Convert each reading back to the device property that was asked for
+
+    A device property is read as one or more lattice properties
+    (``requested[i]`` -> ``detectors[i]``). Converting the lattice value
+    forward through the liaison manager would give the value of the
+    *forward* devices of that lattice property, e.g. a magnet's strength
+    read back as the current of its supply. Here the conversion of the
+    pair (lattice property, requested device property) is used instead.
+
+    One translated reading per detector, in the order of the detectors (as
+    :func:`convert_data_seq`). Where the translation table has no conversion
+    for the pair, the forward conversion of :func:`convert_data_seq` is kept
+    and a warning logged.
+    """
+    forward_translate_one = getattr(cmd_rewriter, "forward_translate_one", None)
+    if data_view == target_view or not (data_view == "design" and target_view == "device") \
+            or forward_translate_one is None:
+        return convert_data_seq(
+            cmd_rewriter=cmd_rewriter, detectors=detectors, data=data,
+            data_view=data_view, target_view=target_view,
+        )
+    if not (len(requested) == len(detectors) == len(data)):
+        raise AssertionError(
+            f"Converting data from {data_view} to {target_view}:"
+            f" requested {len(requested)} read commands {len(detectors)} data {len(data)}"
+        )
+
+    r = []
+    for origin, det, datum in zip(requested, detectors, data):
+        lat_p = LatticeElementPropertyID(element_name=det.id, property=det.property)
+        dev_p = DevicePropertyID(device_name=origin.id, property=origin.property)
+        try:
+            ncmd = forward_translate_one(
+                Command(id=det.id, property=det.property, value=datum.payload, behaviour_on_error=None),
+                lat_p,
+                dev_p,
+            )
+        except KeyError:
+            logger.warning(
+                "no conversion %s -> %s: reading converted to the forward device(s) instead", lat_p, dev_p
+            )
+            r.extend(convert_data_seq(
+                cmd_rewriter=cmd_rewriter, detectors=[det], data=[datum],
+                data_view=data_view, target_view=target_view,
+            ))
+            continue
+        r.append(
+            TranslatedReading(
+                cmd=det,
+                readings=[
+                    SingleReading(
+                        name=f"{origin.id}-{origin.property}",
+                        cmd=ReadCommand(id=origin.id, property=origin.property),
+                        payload=ncmd.value,
+                    )
+                ],
+            )
+        )
+    return r
 
 
 def convert_data_seq(

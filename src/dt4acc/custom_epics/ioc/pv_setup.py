@@ -1,10 +1,11 @@
 import math
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Sequence
 
 from softioc.pythonSoftIoc import RecordWrapper
 import numpy as np
 
-from dt4acc_lib.model.utils.command import ReadCommand, Command
+from dt4acc_lib.model.output.track import ParticleState
+from dt4acc_lib.model.utils.command import ReadCommand, Command, BehaviourOnError
 from dt4acc.core.interfaces.controller_interface import ControllerInterface
 from ..data.constants import config, special_pvs, cavity_names
 from dt4acc.config.data.querries import (
@@ -179,7 +180,24 @@ async def add_pc_pvs(
         )
         logger.debug("%s:%s updating rdbk val=%s", device_id, property_id, value)
         rdbk.set(value)
+        await refresh_magnet_readbacks()
         return r
+
+    async def refresh_magnet_readbacks():
+        """The magnets this supply drives follow its current"""
+        for magnet_name in element["magnets"]:
+            rcmd = ReadCommand(id=magnet_name, property="main_strength_rdbk")
+            record = d.get(rcmd)
+            if record is None:
+                continue
+            try:
+                vals = await controller.trigger_read([rcmd])
+                (single,) = vals.all_readings()
+            except Exception as exc:
+                # e.g. no lookup for this magnet's readback: leave it as it is
+                logger.debug("%s: no readback for %s: %s", pc_name, magnet_name, exc)
+                continue
+            record.set(single.payload)
 
     return d
 
@@ -387,6 +405,47 @@ def initialize_bpm_pvs_obsolete(builder):
     builder.longOut(f"{special_pvs['bpm_pv']}:count", initial_value=0)
 
 
+async def initialize_turn_by_turn_p0(builder, controller: ControllerInterface) -> Dict[ReadCommand, RecordWrapper]:
+    # "Setpoint(
+    #    pv_name="simulator_ring:turn_by_turn:start_vec",
+    #    rcmd=ReadCommand("turn_by_turn_start", "p0"),
+    #    record_type="waveform_out[float]",
+    #    treat_returned_data="single",
+    #    # 10 particls per Athena core
+    #    default_waveform_length=6 * 1024 * 10,
+    #    prec=0,
+    #    reads=[]
+    rcmd = ReadCommand("turn_by_turn_start", "p0")
+    pkg = await controller.trigger_read([rcmd])
+    (translated,) = pkg.data
+    (expected_single,) = translated.readings
+    initial_vecs = expected_single.payload
+    tmp = np.array([p0.as_array() for p0 in initial_vecs])
+    inital_vector = tmp.ravel()
+
+    async def update(val: Sequence[float]):
+        vecs = np.reshape(val, (-1, 6))
+        start_vecs = [ParticleState.from_sequence(p0) for p0 in vecs]
+        return await controller.update(
+            cmd=Command(
+                id=rcmd.id,
+                property=rcmd.property,
+                value=start_vecs,
+                behaviour_on_error=BehaviourOnError.ignore,
+            ),
+            reads=[],
+            delayed_reads=[]
+        )
+
+    rec = builder.WaveformOut(
+        "simulator_ring:turn_by_turn:start_vec",
+        initial_value=inital_vector,
+        length=6 * 1024,
+        on_update=update,
+    )
+    return {rcmd: rec}
+
+
 def initialize_orbit_object_pvs(builder) -> Dict[ReadCommand, RecordWrapper]:
     """
     Todo:
@@ -436,4 +495,21 @@ async def initialize_cavity_pvs(
         ReadCommand(id=cavity_name, property="freq"):
         builder.aIn(f"{cavity_name}:freq", initial_value=start_val, EGU="kHz", PREC=3)
         for cavity_name in cavity_names
+    }
+
+
+def initialize_calculation_state_pvs(builder, controller):
+    assert callable(controller.mexec.backend.reset)
+    assert callable(controller.mexec.backend.reinit)
+    return {
+        ReadCommand(id="simulator_ring", property="reset"):
+            builder.longOut(
+                "simulator_ring:reset", initial_value=0,
+                on_update=lambda val: controller.mexec.backend.reset()
+        ),
+        ReadCommand(id="simulator_ring", property="reinit"):
+            builder.stringOut(
+                "simulator_ring:reinit", initial_value="",
+                on_update=lambda val: controller.mexec.backend.reinit()
+            ),
     }

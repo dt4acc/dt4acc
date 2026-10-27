@@ -1,4 +1,4 @@
-"""Write the static BESSY II twin PV list (``custom_facility/bessyii/PV_LIST.md``)
+"""Write the static BESSY II twin PV list (``custom_facility/bessyii/pv_list.md``)
 from a PV dump of a running twin and the device database.
 
 Groups: power supplies and magnets, each sub-grouped by magnet type (from
@@ -23,7 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DB = ROOT / "src/dt4acc/custom_epics/data/standard/accelerator_setup.json"
-OUT = ROOT / "src/dt4acc/custom_facility/bessyii/PV_LIST.md"
+OUT = ROOT / "src/dt4acc/custom_facility/bessyii/pv_list.md"
 
 # on the machine: "yes" (names checked against the BESSY II MML channel names),
 # "similar" (the twin's version of a machine PV; its name or format may differ

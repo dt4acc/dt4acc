@@ -229,11 +229,11 @@ async def read_and_dispatch(
     controller: ControllerInterface, view: ViewInterface, rcmds: Sequence[ReadCommand]
 ):
     read_result = [await read_one_by_one(controller, rcmd) for rcmd in rcmds]
-    read_result = [
-        (rcmd, translated) for rcmd, translated in read_result if translated is not None
-    ]
     # Need to combine translated...
     for rcmd, translated in read_result:
+        if translated is None:
+            logger.warning(f"Omitting pushing {rcmd} to view as no translated data available")
+            continue
         for data in translated.data:
             await view.dispatch(rcmd, data)
         logger.debug(f"Controller/View: successful startup at {rcmd}")
@@ -244,7 +244,7 @@ async def read_one_by_one(controller: ControllerInterface, rcmd: ReadCommand):
     try:
         r = await controller.trigger_read([rcmd])
     except Exception as ex:
-        logger.warning(f"{controller} failed to retrieve data for {rcmd}")
+        logger.warning(f"{controller} failed to retrieve data for {rcmd}. Reason {ex}")
         # can be still useful to report in one batch
         return rcmd, None
     return rcmd, r
