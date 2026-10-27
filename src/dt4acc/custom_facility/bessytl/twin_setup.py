@@ -43,7 +43,8 @@ logger = logging.getLogger("dt4acc-bessytl")
 
 #: BESSY II injects at full energy
 ENERGY = 1.7185e9
-#: magnetic rigidity [T m] (ultra relativistic electrons)
+#: magnetic rigidity [T m] (ultra relativistic electrons); the steerers'
+#: kick per current is given at this energy (the design energy)
 BRHO = ENERGY / c
 
 ACCELERATOR_SETUP = ("custom_epics", "data", "transfer_line", "accelerator_setup.json")
@@ -85,15 +86,25 @@ def kick_plane(magnet_name: str) -> str:
 
 
 def slope(magnet: dict) -> float:
-    """Field per current of a magnet: [T/m/A] for quadrupoles, [T m/A] for steerers
+    """Gradient per current of a quadrupole [T/m/A]: ``K = slope * I / brho``"""
+    if magnet["type"] != "Quadrupole":
+        raise ValueError(f"{magnet['name']}: a gradient per current is given for quadrupoles only")
+    return magnet["magnetic_strength"]
 
-    ``K = slope * I / brho`` (quadrupoles), ``kick = slope * I / brho`` (steerers).
-    The setup gives steerers as kick per current at the design energy.
+
+def calibration(magnet: dict) -> PolynomCoefficients:
+    """Supply current for the magnet's lattice value (``I = c * lattice``)
+
+    The conversion handles the energy: quadrupoles are given as gradient per
+    current (per brho), steerers as kick per current at the design energy
+    (``reference_brho``: the conversion scales the kick with the beam's brho).
     """
     if magnet["type"] == "Quadrupole":
-        return magnet["magnetic_strength"]
+        return PolynomCoefficients([0.0, 1.0 / slope(magnet)], energy_dependent=True)
     if magnet["type"] == "Steerer":
-        return magnet["magnetic_strength"] * BRHO
+        return PolynomCoefficients(
+            [0.0, 1.0 / magnet["magnetic_strength"]], energy_dependent=True, reference_brho=BRHO
+        )
     raise ValueError(f"{magnet['name']}: no calibration for type {magnet['type']}")
 
 
@@ -159,7 +170,7 @@ def build_lookup_tables(
         name, pc = magnet["name"], magnet["pc"]
         lat_p = LatticeElementPropertyID(element_name=name, property=lattice_property)
         # supply current: I = K * brho / slope
-        per_current = PolynomCoefficients([0.0, 1.0 / slope(magnet)], energy_dependent=True)
+        per_current = calibration(magnet)
         add(DevicePropertyID(device_name=pc, property="set_current"), lat_p, per_current, forward=True)
         add(DevicePropertyID(device_name=pc, property="rdbk_current"), lat_p, per_current, forward=False)
         # magnet strength in lattice units

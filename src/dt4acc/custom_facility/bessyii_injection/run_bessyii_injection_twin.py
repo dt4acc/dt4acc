@@ -36,7 +36,7 @@ from dt4acc.custom_epics.ioc.view import View
 from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_managers
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
 from dt4acc.custom_facility.bessyii.run_bessyii_twin import initialise_pvs as ring_pvs
-from dt4acc.custom_facility.bessyii_injection.coupler import InjectionCoupler
+from dt4acc.custom_facility.bessyii_injection.handover import InjectionHandover
 from dt4acc.custom_facility.bessyii_injection.pvs import InjectionPVs, hook_track_updates
 from dt4acc.custom_epics.ioc.pv_setup import (
     initialize_orbit_pvs,
@@ -105,12 +105,12 @@ async def main():
 
     # hand over
     ring_bpms = [e.FamName for e in ring_backend.acc.acc if isinstance(e, at.Monitor) and e.FamName.startswith("BPMZ")]
-    coupler = InjectionCoupler(line=line_backend, ring=ring_backend, monitors=ring_bpms)
+    handover = InjectionHandover(line=line_backend, ring=ring_backend, monitors=ring_bpms)
 
     # machine names: ring, hand over, transfer line devices
     builder.SetDeviceName(prefix)
     ring_view.update_process_variables(await ring_pvs(builder=builder, models=ring_pv_col.vars, controller=ring))
-    injection = InjectionPVs(coupler)
+    injection = InjectionPVs(handover)
     line_view.update_process_variables({
         **await initialize_power_converter_pvs(builder, controller=tl),
         **initialize_monitor_pvs(line_monitors),

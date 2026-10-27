@@ -14,12 +14,14 @@ in one IOC, with the beam handed from the line to the ring.
   the element where the beam is handed over belongs to the downstream one:
   the line ends at the septum exit (after `SEK2D1R`); the screen `FOMZ2D1R`
   and the kickers `KIK3D1R`, `KIK4D1R` are the ring's.
-* **Hand over** (`coupler.py`): the centroid leaving the line (line frame),
-  plus the injection geometry (the line's axis against the ring's axis at the
-  septum exit), is the injected beam at the ring's `MSEPEXIT`. It is tracked
-  from there for `n_turns` and read at the ring's BPMs. The ring lattice
-  starts with a drift up to `MSEPEXIT`: the beam is moved back through it to
-  the start of the lattice, where tracking begins.
+* **Hand over** (`handover.py`): the centroid leaving the line (line frame,
+  a 6D state), plus the injection geometry, is the injected beam at the ring's
+  `MSEPEXIT`. The geometry is a difference state (x, x', y, y', delta, ct): the
+  line's reference against the ring's at the septum exit; delta is a momentum
+  offset of the injected beam (e.g. a booster energy that differs from the
+  ring's). The injected beam is tracked from `MSEPEXIT` for `n_turns`
+  (dt4acc-lib's turn by turn tracking starts at that element: turn 1 begins
+  there) and read at the ring's BPMs.
 * The hand over is recomputed whenever the line or the ring is recalculated
   (any supply change) or its settings change.
 
@@ -36,10 +38,10 @@ PVs, prefixed with `DT4ACC_PREFIX` (`<P>`, default: the user name):
 | `<P>:Q1PDR:set`, `<P>:beam:orbit:x`, `<P>:ORBITCC:rdBpm`, ... | the storage ring, as the ring twin |
 | `<P>:Q1PT:set`, `<P>:Q1MT:Cm:rdbk`, `<P>:FOMZ1T:x`, ... | the transfer line's supplies, magnets and monitors (up to the septum exit), machine names as in the transfer line twin; they do not clash with the ring's (line names end in T, ring names in R) |
 | `<P>:TL:beam:orbit:*`, `<P>:TL:beam:twiss:*`, `<P>:TL:survey:*`, `<P>:TL:ORBITCC:*` | the transfer line's model PVs: the ring has PVs of the same names, so these are one level down |
-| `<P>:INJ:geometry:{x,xp,y,yp}` | line axis against ring axis at the septum exit [m, rad] (writable) |
+| `<P>:INJ:geometry:{x,xp,y,yp,delta,ct}` | the line's reference against the ring's at the septum exit, a difference state [m, rad, 1, m] (writable) |
 | `<P>:INJ:n_turns` | turns tracked in the ring (1 ... 256, writable) |
-| `<P>:INJ:line_exit:{x,xp,y,yp}` | centroid leaving the line, line frame |
-| `<P>:INJ:injected:{x,xp,y,yp}` | the injected beam, ring frame, at `MSEPEXIT` |
+| `<P>:INJ:line_exit:{x,xp,y,yp,delta,ct}` | centroid leaving the line, line frame |
+| `<P>:INJ:injected:{x,xp,y,yp,delta,ct}` | the injected beam, ring frame, at `MSEPEXIT` |
 | `<P>:INJ:tbt:x`, `<P>:INJ:tbt:y`, `<P>:INJ:tbt:names` | position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... [m] |
 | `<P>:<bpm>:tbt:x`, `<P>:<bpm>:tbt:y` | one ring BPM, turn after turn [m] |
 | `<P>:INJ:survived` | particles still there after each turn |
@@ -103,7 +105,7 @@ placeholders):
 ![steered: H5PT 0.4 A, geometry -2 mm, 3 turns](docs/steered.png)
 
 Any supply of the line or the ring can be set the same way (lists:
-`../bessytl/PV_LIST.md`, `../bessyii/PV_LIST.md`); `BI:<bpm>:tbt:x` gives one
+`../bessytl/pv_list.md`, `../bessyii/pv_list.md`); `BI:<bpm>:tbt:x` gives one
 ring BPM turn after turn.
 
 ## Check

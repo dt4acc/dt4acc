@@ -16,7 +16,8 @@ import numpy as np
 from p4p.client.thread import Context
 
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_lattice
-from dt4acc.custom_facility.bessyii_injection.coupler import INJECTION_ELEMENT, InjectionGeometry
+from dt4acc.custom_facility.bessyii_injection.handover import INJECTION_ELEMENT, no_offset, to_ring
+from dt4acc_lib.model.output.track import ParticleState
 from dt4acc.custom_facility.bessytl.twin_setup import bessytl_lattice, load_accelerator_setup, load_twiss_in
 
 P = os.environ.get("DT4ACC_PREFIX", "")
@@ -64,7 +65,7 @@ def reference(steerer_currents, geometry, n_turns):
             by_name[magnet["name"]].KickAngle = np.array(angles)
     x0 = np.array(load_twiss_in().closed_orbit, dtype=float).reshape(6, 1)
     out, *_ = line.track(x0.copy(), refpts=len(line), nturns=1)
-    injected = geometry.to_ring(out[:, 0, 0, 0])
+    injected = to_ring(ParticleState.from_sequence(out[:, 0, 0, 0]), geometry).as_array()
     (idx,) = [i for i, e in enumerate(RING) if e.FamName == INJECTION_ELEMENT]
     rotated = RING.rotate(idx)
     refpts = [i for i, e in enumerate(rotated) if e.FamName in BPMS]
@@ -105,18 +106,26 @@ def main():
 
     count = wait_count(0)
     n_turns = int(get("INJ:n_turns"))
-    compare("start", {}, InjectionGeometry(), n_turns)
+    compare("start", {}, no_offset(), n_turns)
 
     ctx.put(pv("H5PT:set"), 0.4)
     count = wait_count(count)
-    compare("line steered (H5PT 0.4 A)", {"H5PT": 0.4}, InjectionGeometry(), n_turns)
+    compare("line steered (H5PT 0.4 A)", {"H5PT": 0.4}, no_offset(), n_turns)
 
-    geometry = InjectionGeometry(x=-2e-3, xp=1e-4)
+    geometry = ParticleState.from_sequence([-2e-3, 1e-4, 0.0, 0.0, 0.0, 0.0])
     ctx.put(pv("INJ:geometry:x"), geometry.x)
-    ctx.put(pv("INJ:geometry:xp"), geometry.xp)
+    ctx.put(pv("INJ:geometry:xp"), geometry.px)
     ctx.put(pv("INJ:n_turns"), 5)
     count = wait_count(count)
     compare("geometry -2 mm / 0.1 mrad, 5 turns", {"H5PT": 0.4}, geometry, 5)
+
+    # an energy offset of the injected beam: delta in the geometry
+    geometry = ParticleState.from_sequence([-2e-3, 1e-4, 0.0, 0.0, 2e-3, 0.0])
+    ctx.put(pv("INJ:geometry:delta"), geometry.delta)
+    count = wait_count(count)
+    compare("geometry + delta 2e-3, 5 turns", {"H5PT": 0.4}, geometry, 5)
+    ctx.put(pv("INJ:geometry:delta"), 0.0)
+    count = wait_count(count)
 
     before = np.asarray(get("INJ:tbt:x"))[: 5 * len(BPMS)].copy()
     ctx.put(pv("Q1PDR:set"), float(get("Q1PDR:set")) * 1.01)

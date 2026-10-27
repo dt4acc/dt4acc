@@ -56,14 +56,14 @@ Conversions, one supply per magnet:
 python src/dt4acc/custom_facility/bessytl/run_bessytl_twin.py
 ```
 
-All PVs, with what a write does and the protocol: [PV_LIST.md](PV_LIST.md)
+All PVs, with what a write does and the protocol: [pv_list.md](pv_list.md)
 (`scripts/bessyii/dump_twin_pvs.sh` + `scripts/bessytl/make_pv_list.py` from a running twin).
 In short, prefixed with `DT4ACC_PREFIX` (default: the user name):
 
 | PV | what |
 |---|---|
 | `<supply>:set`, `<supply>:rdbk` | supply current [A]: `Q1PT` ... `Q12PT`, `H1PT` ... `H7PT`, `V1PT` ... `V8PT` |
-| `<monitor>:x`, `<monitor>:y` | trajectory at the monitor [m]: `FOMZ*` (FOMs, screens), `BPMZ*` (BPMs), `SLZ*` (striplines) |
+| `<monitor>:x`, `<monitor>:y` | trajectory at the monitor [mm]: `FOMZ*` (FOMs, screens), `BPMZ*` (BPMs), `SLZ*` (striplines) |
 | `beam:orbit:{x,y,names,uids}` | trajectory along the line, at every element and the exit |
 | `beam:twiss:{x,y}:{beta,alpha,nu}`, `beam:twiss:{names,uids}` | optics along the line |
 | `survey:s` | position along the line [m] |

@@ -119,8 +119,8 @@ the beam entering the line.
 
 | PV | | write | protocol | machine |
 |---|---|---|---|---|
-| `<monitor>:x` | horizontal beam position (m) |  | CA + PVA | no |
-| `<monitor>:y` | vertical beam position (m) |  | CA + PVA | no |
+| `<monitor>:x` | horizontal beam position (mm) |  | CA + PVA | no |
+| `<monitor>:y` | vertical beam position (mm) |  | CA + PVA | no |
 
 ```text
 FOMZ1T FOMZ2T FOMZ3T FOMZ4T FOMZ5T FOMZ6T FOMZ7T FOMZ8T FOMZ2D1R
@@ -130,8 +130,8 @@ FOMZ1T FOMZ2T FOMZ3T FOMZ4T FOMZ5T FOMZ6T FOMZ7T FOMZ8T FOMZ2D1R
 
 | PV | | write | protocol | machine |
 |---|---|---|---|---|
-| `<monitor>:x` | horizontal beam position (m) |  | CA + PVA | no |
-| `<monitor>:y` | vertical beam position (m) |  | CA + PVA | no |
+| `<monitor>:x` | horizontal beam position (mm) |  | CA + PVA | no |
+| `<monitor>:y` | vertical beam position (mm) |  | CA + PVA | no |
 
 ```text
 BPMZ1T BPMZ2T BPMZ3T BPMZ4T BPMZ5T
@@ -141,8 +141,8 @@ BPMZ1T BPMZ2T BPMZ3T BPMZ4T BPMZ5T
 
 | PV | | write | protocol | machine |
 |---|---|---|---|---|
-| `<monitor>:x` | horizontal beam position (m) |  | CA + PVA | no |
-| `<monitor>:y` | vertical beam position (m) |  | CA + PVA | no |
+| `<monitor>:x` | horizontal beam position (mm) |  | CA + PVA | no |
+| `<monitor>:y` | vertical beam position (mm) |  | CA + PVA | no |
 
 ```text
 SLZ1T SLZ2T SLZ3T

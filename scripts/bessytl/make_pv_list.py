@@ -1,5 +1,5 @@
 """Write the static BESSY II transfer line twin PV list
-(``custom_facility/bessytl/PV_LIST.md``) from a PV dump of a running twin and
+(``custom_facility/bessytl/pv_list.md``) from a PV dump of a running twin and
 the device database.
 
 Groups: power supplies and magnets, each sub-grouped by magnet type (from
@@ -24,7 +24,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DB = ROOT / "src/dt4acc/custom_epics/data/transfer_line/accelerator_setup.json"
-OUT = ROOT / "src/dt4acc/custom_facility/bessytl/PV_LIST.md"
+OUT = ROOT / "src/dt4acc/custom_facility/bessytl/pv_list.md"
 
 # on the machine: "similar" (named after the machine's device, PV name and
 # format not checked against the machine), "no" (twin only)
@@ -48,8 +48,8 @@ TYPES = [("Quadrupole", "Quadrupoles", QUAD_FIELDS),
          ("Steerer:H", "Horizontal steerers", STEERER_FIELDS),
          ("Steerer:V", "Vertical steerers", STEERER_FIELDS)]
 
-MONITOR_FIELDS = [("x", "horizontal beam position (m)", RO, NO),
-                  ("y", "vertical beam position (m)", RO, NO)]
+MONITOR_FIELDS = [("x", "horizontal beam position (mm)", RO, NO),
+                  ("y", "vertical beam position (mm)", RO, NO)]
 MONITORS = [("FOMZ", "FOMs (screens)"), ("BPMZ", "Beam position monitors"), ("SLZ", "Striplines (beam position monitors of another geometry)")]
 
 # virtual devices: (section, [(pv, description, write, machine)]); a PV the dump lacks is left out

@@ -71,7 +71,8 @@ def main() -> int:
     # 2. without steerers: monitors read the trajectory of the entering beam
     ref, ed = reference(currents, {})
     for name in monitors:
-        x, y = get(f"{name}:x"), get(f"{name}:y")
+        # monitor PVs in mm
+        x, y = get(f"{name}:x") * 1e-3, get(f"{name}:y") * 1e-3
         check(np.allclose([x, y], ref[name], atol=1e-12), f"{name} at start: {x:.3e} {y:.3e}")
 
     # 3. steerers: set supplies over EPICS, compare with pyAT
@@ -87,9 +88,9 @@ def main() -> int:
             kicks[m["name"]] = angles
     ref, ed = reference(currents, kicks)
     last = monitors[-2]
-    wait_for(f"{last}:x", ref[last][0], 1e-12)
+    wait_for(f"{last}:x", ref[last][0] * 1e3, 1e-9)
     for name in monitors:
-        x, y = get(f"{name}:x"), get(f"{name}:y")
+        x, y = get(f"{name}:x") * 1e-3, get(f"{name}:y") * 1e-3
         check(np.allclose([x, y], ref[name], atol=1e-12),
               f"{name} after steerers: {x * 1e3:+.4f} {y * 1e3:+.4f} mm (pyAT {ref[name][0] * 1e3:+.4f} {ref[name][1] * 1e3:+.4f})")
     for pc, current in steer.items():
