@@ -94,17 +94,23 @@ def slope(magnet: dict) -> float:
     raise ValueError(f"{magnet['name']}: no calibration for type {magnet['type']}")
 
 
-def bessytl_lattice(setup: Sequence[dict] = None, currents: Dict[str, float] = None) -> at.Lattice:
+def bessytl_lattice(
+    setup: Sequence[dict] = None, currents: Dict[str, float] = None, end_after: str = None
+) -> at.Lattice:
     """The transfer line with the quadrupoles set from the supply currents
 
     Element positions, lengths and bends: lat2db's ``bessy2_TL`` (quadrupoles
-    there have K = 0, i.e. no currents).
+    there have K = 0, i.e. no currents). ``end_after``: cut the line after
+    this element (e.g. the injection septum, where the ring takes over).
     """
     from lat2db.tools.pyat.bessy2_TL_reflat import bessy2_TL
 
     setup = load_accelerator_setup() if setup is None else setup
     currents = load_operating_currents() if currents is None else currents
     line = bessy2_TL()
+    if end_after is not None:
+        (last,) = [i for i, elem in enumerate(line) if elem.FamName == end_after]
+        line = line[: last + 1]
     line.energy = ENERGY
     for elem in line:
         if hasattr(elem, "Energy"):

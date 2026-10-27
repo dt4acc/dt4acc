@@ -108,5 +108,5 @@ line and the ring this means:
 * the septa and kickers are elements of one model only: the kickers act on
   the stored beam, so they belong to the ring.
 
-Needed for that: the injection geometry, turn by turn tracking in dt4acc's
-main line, and the entering beam above.
+This is the injection twin: [../bessyii_injection](../bessyii_injection/README.md).
+Still needed: the injection geometry and the entering beam above.
