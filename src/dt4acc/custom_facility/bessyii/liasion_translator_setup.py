@@ -7,7 +7,9 @@ from typing import Tuple
 
 import jsons
 import yaml
+from pydantic import TypeAdapter
 
+from dt4acc.core.model.view import ProcessVariableCollection
 from dt4acc_lib.bl.liaison_manager import LiaisonManager
 from dt4acc_lib.bl.translator_service import TranslatorService
 from dt4acc_lib.bl.unit_conversion import LinearUnitConversion, EnergyDependentLinearUnitConversion
@@ -23,7 +25,7 @@ logger = logging.getLogger("dt4acc")
 
 
 @functools.lru_cache(maxsize=1)
-def load_managers() -> (YellowPagesBase, LiaisonManagerBase, TranslatorServiceBase):
+def load_managers() -> (YellowPagesBase, LiaisonManagerBase, TranslatorServiceBase, ProcessVariableCollection):
     """
 
     Todo:
@@ -47,7 +49,11 @@ def build_managers(config_dir: Tuple[str]):
     ts_lut = jsons.load(obj, TranslatorLookupTable)
     #: Todo: use correct brho!
     ts = TranslatorService(lut=ts_lut, brho=5.4)
-    return yp, lm, ts
+
+    obj = load_file(config_dir + ("bessyii_process_variables.yml",))
+    pv_col = TypeAdapter(ProcessVariableCollection).validate_python(obj)
+
+    return yp, lm, ts, pv_col
 
 def load_file(config_dir: Tuple[str]):
     t_file = files("dt4acc").joinpath(*(config_dir))

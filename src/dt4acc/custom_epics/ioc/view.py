@@ -1,10 +1,14 @@
+from copy import copy as _copy
 import math
 from typing import Optional, Dict
 
+import numpy as np
 from softioc import pythonSoftIoc
 
 from dt4acc.core.interfaces.view_interface import ViewInterface
 from dt4acc.core.utils.logger import get_logger
+from dt4acc_lib.model.output.result import TranslatedReading, SingleReading
+from dt4acc_lib.model.output.result import TranslatedReading
 from .orbit_pva import OrbitTwinServer
 from dt4acc_lib.model.utils.command import ReadCommand
 
@@ -44,6 +48,8 @@ class View(ViewInterface):
     def __init__(self, *, orbit_server: Optional[OrbitTwinServer] = None):
         self.process_variables: Dict[ReadCommand, pythonSoftIoc.RecordWrapper] = dict()
         self.orbit_server = orbit_server
+        # used for creating invalid data
+        self.last_data_cache = dict()
 
     def update_process_variables(
         self, variables: Dict[ReadCommand, pythonSoftIoc.RecordWrapper]
@@ -51,7 +57,22 @@ class View(ViewInterface):
         self.process_variables.update(variables)
 
     async def push_invalid(self) -> None:
-        raise NotImplementedError("push_invalid needs to be implemented for epics view")
+        rcmd = ReadCommand(id="twiss", property="transveral")
+        self.update_twiss(
+            rcmd,
+            TranslatedReading(
+                rcmd,
+                [SingleReading(cmd=rcmd, name="invalidate-twiss", payload=None)]
+            )
+        )
+        rcmd = ReadCommand(id="track", property="pos")
+        self.update_track(
+            rcmd,
+            TranslatedReading(
+                rcmd,
+                [SingleReading(cmd=rcmd, name="invalidate-track", payload=None)]
+            )
+        )
 
     async def dispatch(self, var: ReadCommand, pkg):
         """Update the value of a process variable.
@@ -78,6 +99,9 @@ class View(ViewInterface):
             return True
         elif var.id == "track":
             self.update_track(var, value)
+            return True
+        elif var.id == "turn_by_turn":
+            self.update_turn_by_turn(var, value)
             return True
         elif var.id == "survey":
             self.update_survey(var, value)
@@ -107,6 +131,19 @@ class View(ViewInterface):
         assert var.id == "track", f"Only prepared to process 'track' but got {var}"
         (single_reading,) = pkg.readings
         value = single_reading.payload
+        if value is None:
+            ref_value = self.last_data_cache.get(ReadCommand("track", "pos"))
+            if ref_value is None:
+                logger.warning(
+                    "%s.update_track got no data: calculation succeded?: but no reference data for producing invalid data",
+                    self.__class__.__name__
+                )
+                return
+            value = _copy(ref_value)
+            for pos in value.track:
+                pos.x = pos.y = math.nan
+        else:
+            self.last_data_cache[var] = value
 
         if var.property == "pos":
             x_vals = [pos.x for pos in value.track]
@@ -154,12 +191,62 @@ class View(ViewInterface):
         else:
             raise AssertionError(f"Don't know track property {var.property}")
 
+    def update_turn_by_turn(self, var: ReadCommand, pkg):
+        assert (
+            var.id == "turn_by_turn"
+        ), f"Only prepared to work on turn by turn data {var}"
+        (single_reading,) = pkg.readings
+        tbt_data = single_reading.payload
+        for elem_tbt in tbt_data.per_element:
+            # Assuming that the element names correspond to
+            # id uses for the record names
+            rcmd = ReadCommand(id=elem_tbt.uid.device_name, property="tbt_x")
+            rc = self.process_variables.get(rcmd)
+            x = elem_tbt.get_x().nanmean_per_turn()
+            if rc is None:
+                logger.warning("%s: no record for %s", self.__class__.__name__, rcmd)
+            else:
+                rc.set(x)
+            rcmd = ReadCommand(id=elem_tbt.uid.device_name, property="tbt_y")
+            rc = self.process_variables.get(rcmd)
+            y = elem_tbt.get_y().nanmean_per_turn()
+            if rc is None:
+                logger.warning("%s: no record for %s", self.__class__.__name__, rcmd)
+            else:
+                rc.set(y)
+
+            # Todo: handle sum signal in a smarter way
+            #       should it be calculated in view ?
+            #
+            #       correctly scale for current
+            survived = elem_tbt.get_survived()
+            n_particles = survived.get_n_particles_survived_per_turn()
+            rcmd = ReadCommand(id=elem_tbt.uid.device_name, property="tbt_sum")
+            rc = self.process_variables.get(rcmd)
+            if rc is None:
+                logger.warning("%s: no record for %s", self.__class__.__name__, rcmd)
+            else:
+                rc.set(n_particles)
+
     def update_tune(self, var: ReadCommand, pkg):
         assert (
             var.id == "twiss"
         ), f"Only prepared to extract tune from 'twiss' but got {var}"
         (single_reading,) = pkg.readings
         value = single_reading.payload
+
+        if value is None:
+            for plane in ("x", "y"):
+                rec = self.process_variables[
+                    ReadCommand(id="tune", property=f"flq_{plane}")
+                ]
+                rec.set(math.nan)
+                rec = self.process_variables[
+                    ReadCommand(id="tune", property=f"{plane}")
+                ]
+                rec.set(math.nan)
+            return
+
         for plane in ("x", "y"):
             twiss_data_of_last_element = getattr(value.twiss[-1], plane)
             # Hard coded dependency for AT: returns phase advance times 2pi
@@ -169,7 +256,8 @@ class View(ViewInterface):
             ]
             rec.set(flq)
 
-            mc_rec = self.process_variables.get(ReadCommand("master_clock", "freq"))
+            mc_rec = self.process_variables.get(ReadCommand("master_clock", "reference_frequency"))
+            assert mc_rec is not None
             # Todo: need to read the correct values e.g. from a variable
             n_buckets_rec = self.process_variables.get(
                 ReadCommand("ring", "n_rf_buckets")
@@ -191,6 +279,7 @@ class View(ViewInterface):
             logger.debug(f"Updated Tune for plane {plane}")
             pass
 
+
     def update_twiss(self, var: ReadCommand, pkg):
         """
         Todo:
@@ -200,6 +289,22 @@ class View(ViewInterface):
 
         (single_reading,) = pkg.readings
         value = single_reading.payload
+        if value is None:
+            ref_value = self.last_data_cache.get(ReadCommand("twiss", "parameters"))
+            if ref_value is None:
+                logger.warning(
+                    "%s.update_twiss got no data: calculation succeded?: but no reference data for producing invalid data",
+                    self.__class__.__name__
+                )
+                return
+            value = _copy(ref_value)
+            for item in value.twiss:
+                for vals_plane in item.x, item.y:
+                    vals_plane.beta = vals_plane.alpha = vals_plane.mu = math.nan
+            del item, vals_plane
+        else:
+            self.last_data_cache[var] = value
+
         for plane in ("x", "y"):
 
             rw = self.process_variables.get(ReadCommand("twiss", f"{plane}:nu"))
