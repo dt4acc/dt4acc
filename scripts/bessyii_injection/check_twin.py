@@ -20,7 +20,7 @@ from dt4acc.custom_facility.bessyii_injection.coupler import INJECTION_ELEMENT, 
 from dt4acc.custom_facility.bessytl.twin_setup import bessytl_lattice, load_accelerator_setup, load_twiss_in
 
 P = os.environ.get("DT4ACC_PREFIX", "")
-SEPTUM = "SEK2D2R"
+SEPTUM = "SEK2D1R"
 ctx = Context("pva", nt=False)
 failures = []
 RING = provide_lattice()

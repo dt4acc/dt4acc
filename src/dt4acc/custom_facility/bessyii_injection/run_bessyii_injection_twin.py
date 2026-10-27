@@ -63,7 +63,7 @@ logging.getLogger("transitions").setLevel(level=logging.WARNING)
 logger = logging.getLogger("dt4acc-bessyii-injection")
 
 #: the transfer line ends at the septum exit, where the ring takes over
-SEPTUM = "SEK2D2R"
+SEPTUM = "SEK2D1R"
 DELAYED = [ReadCommand("track", "pos"), ReadCommand("twiss", "parameters")]
 
 

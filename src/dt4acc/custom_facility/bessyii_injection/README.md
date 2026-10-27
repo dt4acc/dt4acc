@@ -12,7 +12,7 @@ in one IOC, with the beam handed from the line to the ring.
 * **Stages.** As in LUME's `StagedModel`: the beam leaving the first model is
   the beam entering the second. Each element belongs to one model only, and
   the element where the beam is handed over belongs to the downstream one:
-  the line ends at the septum exit (after `SEK2D2R`); the screen `FOMZ2D1R`
+  the line ends at the septum exit (after `SEK2D1R`); the screen `FOMZ2D1R`
   and the kickers `KIK3D1R`, `KIK4D1R` are the ring's.
 * **Hand over** (`coupler.py`): the centroid leaving the line (line frame),
   plus the injection geometry (the line's axis against the ring's axis at the

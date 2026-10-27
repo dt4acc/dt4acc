@@ -49,6 +49,9 @@ BRHO = ENERGY / c
 ACCELERATOR_SETUP = ("custom_epics", "data", "transfer_line", "accelerator_setup.json")
 INPUT_DIR = ("custom_facility", "bessytl", "resources", "input")
 
+#: names in lat2db's transfer line lattice that differ from the machine's
+RENAMED = {"SEK2D2R": "SEK2D1R", "DU_SEK2D2R": "DU_SEK2D1R"}
+
 #: results of the simulation engine, passed through unchanged
 RESULT_ELEMENTS = (("twiss", "parameters"), ("track", "pos"), ("survey", "s"))
 
@@ -108,6 +111,10 @@ def bessytl_lattice(
     setup = load_accelerator_setup() if setup is None else setup
     currents = load_operating_currents() if currents is None else currents
     line = bessy2_TL()
+    for elem in line:
+        # lat2db's lattice names the second injection septum SEK2D2R; it is SEK2D1R
+        if elem.FamName in RENAMED:
+            elem.FamName = RENAMED[elem.FamName]
     if end_after is not None:
         (last,) = [i for i, elem in enumerate(line) if elem.FamName == end_after]
         line = line[: last + 1]

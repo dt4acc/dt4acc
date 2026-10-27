@@ -1,7 +1,7 @@
 # BESSY II transfer line twin
 
 The transfer line brings the beam from the booster (extraction septum
-`SEK1S12B`) to the storage ring (injection septa `SEK1D1R`, `SEK2D2R`, kickers
+`SEK1S12B`) to the storage ring (injection septa `SEK1D1R`, `SEK2D1R`, kickers
 `KIK3D1R`, `KIK4D1R`). This directory holds its twin, and describes how it
 relates to the storage ring twin.
 
@@ -48,7 +48,7 @@ Conversions, one supply per magnet:
   convention.
 * Steerers H7, V7, V8: the 2020 table gives 0.005 T m/A, the setup the same
   kick per current as the other steerers.
-* `SEK2D2R` sits in straight D1R; the name may be meant as `SEK2D1R`.
+* The second injection septum is `SEK2D1R`; lat2db's lattice calls it `SEK2D2R` (a typo), the twin renames it when loading.
 
 ### Run
 
@@ -63,7 +63,7 @@ In short, prefixed with `DT4ACC_PREFIX` (default: the user name):
 | PV | what |
 |---|---|
 | `<supply>:set`, `<supply>:rdbk` | supply current [A]: `Q1PT` ... `Q12PT`, `H1PT` ... `H7PT`, `V1PT` ... `V8PT` |
-| `<monitor>:x`, `<monitor>:y` | trajectory at the monitor [m]: `FOMZ*` (screens), `BPMZ*`, `SLZ*` |
+| `<monitor>:x`, `<monitor>:y` | trajectory at the monitor [m]: `FOMZ*` (FOMs, screens), `BPMZ*` (BPMs), `SLZ*` (striplines) |
 | `beam:orbit:{x,y,names,uids}` | trajectory along the line, at every element and the exit |
 | `beam:twiss:{x,y}:{beta,alpha,nu}`, `beam:twiss:{names,uids}` | optics along the line |
 | `survey:s` | position along the line [m] |

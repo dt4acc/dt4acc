@@ -4,7 +4,7 @@ the device database.
 
 Groups: power supplies and magnets, each sub-grouped by magnet type (from
 ``custom_epics/data/transfer_line/accelerator_setup.json``; steerers split by
-plane), the monitors (screens, BPMs, slits), then the virtual devices
+plane), the monitors (FOMs, BPMs, striplines), then the virtual devices
 (trajectory, optics, survey, BPM structures). Per PV: a short description,
 what a write does, the protocol (CA and PVA for the soft IOC's records, PVA
 only for the twin's p4p server; measured: pvlist per server and caget) and
@@ -50,7 +50,7 @@ TYPES = [("Quadrupole", "Quadrupoles", QUAD_FIELDS),
 
 MONITOR_FIELDS = [("x", "horizontal beam position (m)", RO, NO),
                   ("y", "vertical beam position (m)", RO, NO)]
-MONITORS = [("FOMZ", "Screens"), ("BPMZ", "Beam position monitors"), ("SLZ", "Slits")]
+MONITORS = [("FOMZ", "FOMs (screens)"), ("BPMZ", "Beam position monitors"), ("SLZ", "Striplines (beam position monitors of another geometry)")]
 
 # virtual devices: (section, [(pv, description, write, machine)]); a PV the dump lacks is left out
 VIRTUAL = [

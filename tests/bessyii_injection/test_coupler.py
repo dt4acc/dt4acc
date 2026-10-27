@@ -18,7 +18,7 @@ from dt4acc.custom_facility.bessytl.twin_setup import bessytl_lattice, load_twis
 from dt4acc_lib.pyat_simulator.accelerator_simulator import PyATAcceleratorSimulator  # noqa: E402
 from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend  # noqa: E402
 
-SEPTUM = "SEK2D2R"
+SEPTUM = "SEK2D1R"
 GEOMETRY = InjectionGeometry(x=-2e-3, xp=1e-4, y=0.0, yp=0.0)
 
 

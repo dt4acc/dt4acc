@@ -115,7 +115,7 @@ V1MT (V1PT) V2MT (V2PT) V3MT (V3PT) V4MT (V4PT) V5MT (V5PT) V6MT (V6PT) V7MT (V7
 Beam position at each monitor of the lattice, in lattice order: the trajectory of
 the beam entering the line.
 
-#### Screens (9)
+#### FOMs (screens) (9)
 
 | PV | | write | protocol | machine |
 |---|---|---|---|---|
@@ -137,7 +137,7 @@ FOMZ1T FOMZ2T FOMZ3T FOMZ4T FOMZ5T FOMZ6T FOMZ7T FOMZ8T FOMZ2D1R
 BPMZ1T BPMZ2T BPMZ3T BPMZ4T BPMZ5T
 ```
 
-#### Slits (3)
+#### Striplines (beam position monitors of another geometry) (3)
 
 | PV | | write | protocol | machine |
 |---|---|---|---|---|
