@@ -56,7 +56,9 @@ Conversions, one supply per magnet:
 python src/dt4acc/custom_facility/bessytl/run_bessytl_twin.py
 ```
 
-PVs, prefixed with `DT4ACC_PREFIX` (default: the user name):
+All PVs, with what a write does and the protocol: [PV_LIST.md](PV_LIST.md)
+(`scripts/bessyii/dump_twin_pvs.sh` + `scripts/bessytl/make_pv_list.py` from a running twin).
+In short, prefixed with `DT4ACC_PREFIX` (default: the user name):
 
 | PV | what |
 |---|---|
