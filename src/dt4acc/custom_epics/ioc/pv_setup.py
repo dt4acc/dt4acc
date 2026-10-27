@@ -179,7 +179,24 @@ async def add_pc_pvs(
         )
         logger.debug("%s:%s updating rdbk val=%s", device_id, property_id, value)
         rdbk.set(value)
+        await refresh_magnet_readbacks()
         return r
+
+    async def refresh_magnet_readbacks():
+        """The magnets this supply drives follow its current"""
+        for magnet_name in element["magnets"]:
+            rcmd = ReadCommand(id=magnet_name, property="main_strength_rdbk")
+            record = d.get(rcmd)
+            if record is None:
+                continue
+            try:
+                vals = await controller.trigger_read([rcmd])
+                (single,) = vals.all_readings()
+            except Exception as exc:
+                # e.g. no lookup for this magnet's readback: leave it as it is
+                logger.debug("%s: no readback for %s: %s", pc_name, magnet_name, exc)
+                continue
+            record.set(single.payload)
 
     return d
 
