@@ -1,0 +1,17 @@
+# BESSY II transfer line (booster -> storage ring): supply currents the twin
+# starts with [A].
+#
+# Source: bact2_bessyii process_data/misc/power_converters_magnets.csv
+# (magnet table of 2020, section "T"). Steerers start at 0 A.
+# To be replaced by the currents of the operational optics once known.
+Q1PT: 15.835
+Q2PT: 42.616
+Q3PT: 41.019
+Q4PT: 39.139
+Q5PT: 27.42
+Q7PT: 58.071
+Q8PT: 37.383
+Q9PT: 41.339
+Q10PT: 46.324
+Q11PT: 23.134
+Q12PT: 80.625

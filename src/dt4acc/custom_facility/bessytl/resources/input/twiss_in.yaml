@@ -1,0 +1,10 @@
+# Beam entering the BESSY II transfer line at the booster extraction septum
+# SEK1S12B (see dt4acc_lib.model.input.TwissIn for units).
+#
+# PLACEHOLDER: not booster data. These are the entrance optics that keep the
+# largest beta along the line smallest (61 m) with the operating currents of
+# operating_currents.yaml. Replace them with the booster extraction optics.
+beta: [1.54, 1.83]
+alpha: [-0.16, -1.99]
+dispersion: [0.0, 0.0, 0.0, 0.0]
+closed_orbit: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
