@@ -2,7 +2,8 @@ import asyncio
 import getpass
 import logging
 import os
-from typing import Dict, Any, Sequence, Union
+from importlib import resources
+from typing import Dict, Any
 
 from softioc import builder, softioc
 
@@ -10,9 +11,12 @@ from dt4acc.core.bl.controller import Controller, read_and_dispatch
 from dt4acc.core.bl.translating_command_execution_engine import (
     TranslatingCommandExecutionEngine,
 )
+from dt4acc.config.data.querries import configure_data_file
 from dt4acc.core.interfaces.controller_interface import ControllerInterface
-from dt4acc.core.model.view import Monitor, Setpoint
 from dt4acc.custom_epics.ioc.pv_setup import (
+    initialize_master_clock_pvs,
+    initialize_cavity_pvs,
+    initialize_power_converter_pvs,
     initialize_machine_info_pvs,
     initialize_survey_info_pvs,
     initialize_orbit_object_pvs,
@@ -22,7 +26,6 @@ from dt4acc.custom_epics.ioc.pv_setup import (
     initialize_other_pvs,
     initialize_calculation_state_pvs,
 )
-from dt4acc.custom_epics.ioc.pv_setup_from_model import initialize_pvs_from_model
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
 from dt4acc_lib.model.utils.command import ReadCommand
@@ -37,6 +40,9 @@ logging.getLogger("transitions").setLevel(level=logging.WARNING)
 logging.getLogger("transitions.core").setLevel(level=logging.WARNING)
 logging.getLogger("lat2db").setLevel(level=logging.WARNING)
 logger = logging.getLogger("dt4acc-bessyii")
+
+#: device database of the storage ring: magnets, their supplies
+ACCELERATOR_SETUP = ("custom_epics", "data", "standard", "accelerator_setup.json")
 
 
 async def main():
@@ -56,7 +62,7 @@ async def main():
 
     """
     backend = provide_backend_encapsulating_lattice()
-    _, lm, ts, pv_col = load_managers()
+    _, lm, ts, _ = load_managers()
 
     command_rewriter = CommandRewriter(liaison_manager=lm, translation_service=ts)
 
@@ -97,11 +103,7 @@ async def main():
         builder.SetDeviceName(prefix)
 
     view.update_process_variables(
-        await initialise_pvs(
-            builder=builder,
-            models=pv_col.vars,
-            controller=controller
-        )
+        await initialise_pvs(builder=builder, controller=controller)
     )
     # Extra reads at startup
     await read_and_dispatch(
@@ -115,13 +117,22 @@ async def main():
 
 
 async def initialise_pvs(
-    builder,
-    models: Sequence[Union[Monitor, Setpoint]],
-    controller: ControllerInterface
+    builder, controller: ControllerInterface
 ) -> Dict[ReadCommand, Any]:
+    """PVs of the storage ring
 
+    Supplies (``<supply>:set``, ``<supply>:rdbk``) and the magnets they drive
+    (``<magnet>:Cm:set``, ``Cm:rdbk``, ``im:I``, ``x:set``, ``y:set``) from the
+    device database, master clock and cavities, then the model PVs. The PV
+    names are the twin's interface (``pv_list.md``,
+    ``tests/bessyii/test_ring_pvs.py``).
+    """
+    # the supplies' and magnets' PVs are made from the device database
+    configure_data_file(resources.files("dt4acc").joinpath(*ACCELERATOR_SETUP))
     return {
-        **await initialize_pvs_from_model(builder, models, controller),
+        **await initialize_master_clock_pvs(builder, controller=controller),
+        **await initialize_cavity_pvs(builder, controller=controller),
+        **await initialize_power_converter_pvs(builder, controller=controller),
         **initialize_machine_info_pvs(builder, n_ref_buckets=400),
         **initialize_survey_info_pvs(builder),
         **initialize_orbit_object_pvs(builder),

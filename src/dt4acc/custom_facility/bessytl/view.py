@@ -5,14 +5,14 @@ waveforms. Each monitor gets its own readings of the trajectory.
 """
 from typing import Dict, Sequence
 
-from softioc import builder
+from softioc import builder as softioc_builder
 from softioc.pythonSoftIoc import RecordWrapper
 
 from dt4acc.custom_epics.ioc.view import View
 from dt4acc_lib.model.utils.command import ReadCommand
 
 
-def initialize_monitor_pvs(names: Sequence[str]) -> Dict[ReadCommand, RecordWrapper]:
+def initialize_monitor_pvs(names: Sequence[str], builder=softioc_builder) -> Dict[ReadCommand, RecordWrapper]:
     """``<monitor>:x`` and ``<monitor>:y``: trajectory at the monitor [mm]"""
     d = dict()
     for name in names:

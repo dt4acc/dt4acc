@@ -22,7 +22,9 @@ import asyncio
 import getpass
 import logging
 import os
+from dataclasses import dataclass
 from importlib import resources
+from typing import List
 
 import at
 from softioc import builder, softioc
@@ -76,59 +78,92 @@ def engine(backend, lm, ts):
     )
 
 
-async def main():
-    prefix = os.environ.get("DT4ACC_PREFIX", getpass.getuser())
+@dataclass
+class InjectionTwin:
+    """Ring and transfer line, their controllers and views, and the hand over"""
+    ring_backend: SimulatorBackend
+    ring: Controller
+    ring_view: View
+    line: at.Lattice
+    line_backend: SimulatorBackend
+    line_monitors: List[str]
+    tl: Controller
+    line_view: TransferLineView
+    handover: InjectionHandover
+
+
+def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
+    """Models, controllers and views; ``orbit_servers``: the PVA servers of the
+    BPM structures (``ORBITCC``), left out in tests"""
+
+    def orbit_server(p):
+        return OrbitTwinServer(f"{p}:ORBITCC:rdBpm", f"{p}:ORBITCC:rdModel") if orbit_servers else None
 
     # storage ring
     ring_backend = provide_backend_encapsulating_lattice()
-    _, ring_lm, ring_ts, ring_pv_col = load_managers()
-    ring_view = View(orbit_server=OrbitTwinServer(f"{prefix}:ORBITCC:rdBpm", f"{prefix}:ORBITCC:rdModel"))
-    ring_view.orbit_server.start()
+    _, ring_lm, ring_ts, _ = load_managers()
+    ring_view = View(orbit_server=orbit_server(prefix))
     ring = Controller(name="ring", mexec=engine(ring_backend, ring_lm, ring_ts), view=ring_view,
                       default_delayed_reads=DELAYED)
 
     # transfer line, up to the septum exit
-    configure_data_file(resources.files("dt4acc").joinpath(*ACCELERATOR_SETUP))
     line = bessytl_lattice(end_after=SEPTUM)
     line_backend = SimulatorBackend(
         name="BESSYII_TL_on_PyAT", acc=PyATAcceleratorSimulator(at_lattice=line, twiss_in=load_twiss_in())
     )
     line_lm, line_ts = line_managers()
     line_monitors = monitor_names(line)
-    line_view = TransferLineView(
-        monitors=line_monitors,
-        orbit_server=OrbitTwinServer(f"{prefix}:TL:ORBITCC:rdBpm", f"{prefix}:TL:ORBITCC:rdModel"),
-    )
-    line_view.orbit_server.start()
+    line_view = TransferLineView(monitors=line_monitors, orbit_server=orbit_server(f"{prefix}:TL"))
     tl = Controller(name="transfer-line", mexec=engine(line_backend, line_lm, line_ts), view=line_view,
                     default_delayed_reads=DELAYED)
 
     # hand over
     ring_bpms = [e.FamName for e in ring_backend.acc.acc if isinstance(e, at.Monitor) and e.FamName.startswith("BPMZ")]
     handover = InjectionHandover(line=line_backend, ring=ring_backend, monitors=ring_bpms)
+    return InjectionTwin(ring_backend=ring_backend, ring=ring, ring_view=ring_view, line=line,
+                         line_backend=line_backend, line_monitors=line_monitors, tl=tl, line_view=line_view,
+                         handover=handover)
 
+
+async def initialise_pvs(builder, prefix: str, twin: InjectionTwin) -> InjectionPVs:
+    """Records of ring, hand over and transfer line, handed to their views
+
+    The PV names are the twin's interface (``pv_list.md``,
+    ``tests/bessyii_injection/test_injection_pvs.py``).
+    """
     # machine names: ring, hand over, transfer line devices
     builder.SetDeviceName(prefix)
-    ring_view.update_process_variables(await ring_pvs(builder=builder, models=ring_pv_col.vars, controller=ring))
-    injection = InjectionPVs(handover)
-    line_view.update_process_variables({
-        **await initialize_power_converter_pvs(builder, controller=tl),
-        **initialize_monitor_pvs(line_monitors),
+    twin.ring_view.update_process_variables(await ring_pvs(builder=builder, controller=twin.ring))
+    injection = InjectionPVs(twin.handover, builder=builder)
+    # the line's supplies and magnets come from its own device database
+    configure_data_file(resources.files("dt4acc").joinpath(*ACCELERATOR_SETUP))
+    twin.line_view.update_process_variables({
+        **await initialize_power_converter_pvs(builder, controller=twin.tl),
+        **initialize_monitor_pvs(twin.line_monitors, builder=builder),
     })
     # model PVs of the transfer line: the ring has the same names
     builder.SetDeviceName(f"{prefix}:TL")
-    n_elements = len(line) + 1
-    line_view.update_process_variables({
+    n_elements = len(twin.line) + 1
+    twin.line_view.update_process_variables({
         **initialize_survey_info_pvs(builder, n_elements=n_elements),
         **initialize_orbit_pvs(builder, n_elements=n_elements),
         **initialize_twiss_pvs(builder, n_elements=n_elements),
     })
-    hook_track_updates(ring_view, injection)
-    hook_track_updates(line_view, injection)
+    return injection
 
-    ring.start()
-    tl.start()
-    for controller, view in ((ring, ring_view), (tl, line_view)):
+
+async def main():
+    prefix = os.environ.get("DT4ACC_PREFIX", getpass.getuser())
+    twin = assemble(prefix)
+    for view in (twin.ring_view, twin.line_view):
+        view.orbit_server.start()
+    injection = await initialise_pvs(builder, prefix, twin)
+    hook_track_updates(twin.ring_view, injection)
+    hook_track_updates(twin.line_view, injection)
+
+    twin.ring.start()
+    twin.tl.start()
+    for controller, view in ((twin.ring, twin.ring_view), (twin.tl, twin.line_view)):
         await read_and_dispatch(
             controller=controller, view=view, rcmds=[ReadCommand("survey", "s")] + list(DELAYED)
         )
@@ -136,7 +171,7 @@ async def main():
     softioc.iocInit(dispatcher)
     logger.warning(
         "BESSY II injection twin: ring %d elements, transfer line %d elements up to %s, %d ring BPMs",
-        len(ring_backend.acc.acc), len(line), SEPTUM, len(ring_bpms),
+        len(twin.ring_backend.acc.acc), len(twin.line), SEPTUM, len(twin.handover.monitors),
     )
     softioc.interactive_ioc(globals())
 

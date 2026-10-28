@@ -99,6 +99,10 @@ VIRTUAL = [
         ("beam:rev_freq", "revolution frequency (kHz)", RO, NO),
         ("beam:machine:info:n_rf_buckets", "number of RF buckets (harmonic number)", RO, NO),
     ]),
+    ("Simulation", [
+        ("simulator_ring:reset", "a write clears the stored results and recalculates", ACTS, NO),
+        ("simulator_ring:reinit", "a write puts the lattice back to its start values, then recalculates", ACTS, NO),
+    ]),
 ]
 
 HEADER = """\
