@@ -17,7 +17,7 @@ import math
 from typing import Sequence
 
 import numpy as np
-from softioc import builder
+from softioc import builder as softioc_builder
 
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
 from .handover import InjectionHandover, InjectionResult
@@ -33,7 +33,7 @@ UNITS = {"x": "m", "xp": "rad", "y": "m", "yp": "rad", "delta": "", "ct": "m"}
 class InjectionPVs:
     """Records of the hand over; recomputes it whenever line, ring or settings change"""
 
-    def __init__(self, handover: InjectionHandover):
+    def __init__(self, handover: InjectionHandover, builder=softioc_builder):
         self.handover = handover
         self._dirty = False
         self._running = False

@@ -228,6 +228,19 @@ class View(ViewInterface):
             else:
                 rc.set(n_particles)
 
+    def master_clock_record(self):
+        """The master clock's frequency record
+
+        PVs made from the device database (``pv_setup``) key it
+        ``master_clock:freq``, PVs made from the device model
+        ``master_clock:reference_frequency``.
+        """
+        for prop in ("freq", "reference_frequency"):
+            rec = self.process_variables.get(ReadCommand("master_clock", prop))
+            if rec is not None:
+                return rec
+        raise KeyError("no master clock record (master_clock:freq or master_clock:reference_frequency)")
+
     def update_tune(self, var: ReadCommand, pkg):
         assert (
             var.id == "twiss"
@@ -256,8 +269,7 @@ class View(ViewInterface):
             ]
             rec.set(flq)
 
-            mc_rec = self.process_variables.get(ReadCommand("master_clock", "reference_frequency"))
-            assert mc_rec is not None
+            mc_rec = self.master_clock_record()
             # Todo: need to read the correct values e.g. from a variable
             n_buckets_rec = self.process_variables.get(
                 ReadCommand("ring", "n_rf_buckets")

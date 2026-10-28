@@ -108,6 +108,12 @@ Any supply of the line or the ring can be set the same way (lists:
 `../bessytl/pv_list.md`, `../bessyii/pv_list.md`); `BI:<bpm>:tbt:x` gives one
 ring BPM turn after turn.
 
+All PVs of this twin, by part (ring, transfer line, its model under `TL:`, hand
+over): [pv_list.md](pv_list.md) (`scripts/bessyii/dump_twin_pvs.sh` with each of
+the injection, ring and transfer line twins running, then
+`scripts/bessyii_injection/make_pv_list.py`). `tests/bessyii_injection/test_injection_pvs.py`
+checks that the twin serves exactly these PVs.
+
 ## Check
 
 ```bash
