@@ -3319,4 +3319,116 @@
   "magnetic_strength": 0.00297607,
   "pc": "VS3P1D1R",
   "k": null
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS3M1T1R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS3P1T1R",
+  "k": 0.0,
+  "host": "S3M1T1R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS3M2T1R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS3P2T1R",
+  "k": 0.0,
+  "host": "S3M2T1R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS2M2D2R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS2P2D2R",
+  "k": 0.0,
+  "host": "S2M2D2R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS3M1T2R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS3P1T2R",
+  "k": 0.0,
+  "host": "S3M1T2R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS2M1D3R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS2P1D3R",
+  "k": 0.0,
+  "host": "S2M1D3R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS3M1T3R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS3P1T3R",
+  "k": 0.0,
+  "host": "S3M1T3R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS3M2T3R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS3P2T3R",
+  "k": 0.0,
+  "host": "S3M2T3R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS3M2T4R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS3P2T4R",
+  "k": 0.0,
+  "host": "S3M2T4R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS3M2D5R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS3P2D5R",
+  "k": 0.0,
+  "host": "S3M2D5R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS2M2T5R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS2P2T5R",
+  "k": 0.0,
+  "host": "S2M2T5R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS3M1D6R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS3P1D6R",
+  "k": 0.0,
+  "host": "S3M1D6R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS3M2D6R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS3P2D6R",
+  "k": 0.0,
+  "host": "S3M2D6R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS2M2D6R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS2P2D6R",
+  "k": 0.0,
+  "host": "S2M2D6R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS3M2T6R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS3P2T6R",
+  "k": 0.0,
+  "host": "S3M2T6R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS3M1T7R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS3P1T7R",
+  "k": 0.0,
+  "host": "S3M1T7R"
+},{
+  "type": "SkewQuadrupoleCorrector",
+  "name": "CQS3M2T7R",
+  "magnetic_strength": 1.174999999924017,
+  "pc": "CQS3P2T7R",
+  "k": 0.0,
+  "host": "S3M2T7R"
 }]

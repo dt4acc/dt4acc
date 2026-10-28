@@ -3527,3 +3527,164 @@
     intercept: 0.0
     slope: 0.00297607
     conversion_type: linear  
+
+# skew quadrupoles (MML CQS): coils on the sextupole of the name without CQ; K * brho = slope * I
+- elem_id: CQS3M1T1R
+  dev_id: CQS3M1T1R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS3P1T1R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS3M2T1R
+  dev_id: CQS3M2T1R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS3P2T1R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS2M2D2R
+  dev_id: CQS2M2D2R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS2P2D2R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS3M1T2R
+  dev_id: CQS3M1T2R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS3P1T2R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS2M1D3R
+  dev_id: CQS2M1D3R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS2P1D3R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS3M1T3R
+  dev_id: CQS3M1T3R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS3P1T3R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS3M2T3R
+  dev_id: CQS3M2T3R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS3P2T3R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS3M2T4R
+  dev_id: CQS3M2T4R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS3P2T4R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS3M2D5R
+  dev_id: CQS3M2D5R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS3P2D5R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS2M2T5R
+  dev_id: CQS2M2T5R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS2P2T5R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS3M1D6R
+  dev_id: CQS3M1D6R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS3P1D6R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS3M2D6R
+  dev_id: CQS3M2D6R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS3P2D6R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS2M2D6R
+  dev_id: CQS2M2D6R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS2P2D6R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS3M2T6R
+  dev_id: CQS3M2T6R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS3P2T6R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS3M1T7R
+  dev_id: CQS3M1T7R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS3P1T7R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear
+
+- elem_id: CQS3M2T7R
+  dev_id: CQS3M2T7R
+  type: skew_quadrupole
+  family_member: [ coupling_correction ]
+  power_converter_id: CQS3P2T7R
+  conversion:
+    intercept: 0.0
+    slope: 1.174999999924017
+    conversion_type: linear

@@ -1,5 +1,5 @@
-# 
-# BESSY II yellow pages: 2026-06-17 15:45:30.854017
+#
+# BESSY II yellow pages: 2026-10-28 17:10:31.248210
 # WARNING: automatically generated data
 #          please check when it is updated if you edit it by hand!
 cavities: [CAVH1T8R, CAVH2T8R, CAVH3T8R, CAVH4T8R]
@@ -344,6 +344,40 @@ sextupoles:
 - S4M1T8R
 - S4M2T8R
 - S4M1D1R
+skew_quadrupoles:
+- CQS3M1T1R
+- CQS3M2T1R
+- CQS2M2D2R
+- CQS3M1T2R
+- CQS2M1D3R
+- CQS3M1T3R
+- CQS3M2T3R
+- CQS3M2T4R
+- CQS3M2D5R
+- CQS2M2T5R
+- CQS3M1D6R
+- CQS3M2D6R
+- CQS2M2D6R
+- CQS3M2T6R
+- CQS3M1T7R
+- CQS3M2T7R
+skew_quadrupoles_host:
+- S3M1T1R
+- S3M2T1R
+- S2M2D2R
+- S3M1T2R
+- S2M1D3R
+- S3M1T3R
+- S3M2T3R
+- S3M2T4R
+- S3M2D5R
+- S2M2T5R
+- S3M1D6R
+- S3M2D6R
+- S2M2D6R
+- S3M2T6R
+- S3M1T7R
+- S3M2T7R
 steerers:
 - HS4M2D1R
 - HS1MT1R

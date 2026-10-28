@@ -1244,3 +1244,115 @@
   response:
     settle_time: 0.5
     timeout: 2.0
+- id: CQS3P1T1R
+  interface:
+    setpoint: CQS3P1T1R:set
+    readback: CQS3P1T1R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS3P2T1R
+  interface:
+    setpoint: CQS3P2T1R:set
+    readback: CQS3P2T1R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS2P2D2R
+  interface:
+    setpoint: CQS2P2D2R:set
+    readback: CQS2P2D2R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS3P1T2R
+  interface:
+    setpoint: CQS3P1T2R:set
+    readback: CQS3P1T2R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS2P1D3R
+  interface:
+    setpoint: CQS2P1D3R:set
+    readback: CQS2P1D3R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS3P1T3R
+  interface:
+    setpoint: CQS3P1T3R:set
+    readback: CQS3P1T3R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS3P2T3R
+  interface:
+    setpoint: CQS3P2T3R:set
+    readback: CQS3P2T3R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS3P2T4R
+  interface:
+    setpoint: CQS3P2T4R:set
+    readback: CQS3P2T4R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS3P2D5R
+  interface:
+    setpoint: CQS3P2D5R:set
+    readback: CQS3P2D5R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS2P2T5R
+  interface:
+    setpoint: CQS2P2T5R:set
+    readback: CQS2P2T5R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS3P1D6R
+  interface:
+    setpoint: CQS3P1D6R:set
+    readback: CQS3P1D6R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS3P2D6R
+  interface:
+    setpoint: CQS3P2D6R:set
+    readback: CQS3P2D6R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS2P2D6R
+  interface:
+    setpoint: CQS2P2D6R:set
+    readback: CQS2P2D6R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS3P2T6R
+  interface:
+    setpoint: CQS3P2T6R:set
+    readback: CQS3P2T6R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS3P1T7R
+  interface:
+    setpoint: CQS3P1T7R:set
+    readback: CQS3P1T7R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
+- id: CQS3P2T7R
+  interface:
+    setpoint: CQS3P2T7R:set
+    readback: CQS3P2T7R:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
