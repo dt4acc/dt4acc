@@ -1,0 +1,1238 @@
+[
+ {
+  "type": "Quadrupole",
+  "family": "Q1",
+  "name": "Q1M2K1RP",
+  "pc": "Q1P2K1RP",
+  "amp2k": [
+   0.138213,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   65.55
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q1",
+  "name": "Q1M1L2RP",
+  "pc": "Q1P1L2RP",
+  "amp2k": [
+   0.138213,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   65.55
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q1",
+  "name": "Q1M2L2RP",
+  "pc": "Q1P2L2RP",
+  "amp2k": [
+   0.138213,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   65.55
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q1",
+  "name": "Q1M1K3RP",
+  "pc": "Q1P1K3RP",
+  "amp2k": [
+   0.138213,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   65.55
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q1",
+  "name": "Q1M2K3RP",
+  "pc": "Q1P2K3RP",
+  "amp2k": [
+   0.138213,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   65.55
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q1",
+  "name": "Q1M1L4RP",
+  "pc": "Q1P1L4RP",
+  "amp2k": [
+   0.138213,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   65.55
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q1",
+  "name": "Q1M2L4RP",
+  "pc": "Q1P2L4RP",
+  "amp2k": [
+   0.138213,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   65.55
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q1",
+  "name": "Q1M1K1RP",
+  "pc": "Q1P1K1RP",
+  "amp2k": [
+   0.138213,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   65.55
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q2",
+  "name": "Q2M2K1RP",
+  "pc": "Q2P2K1RP",
+  "amp2k": [
+   -0.132293,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q2",
+  "name": "Q2M1L2RP",
+  "pc": "Q2P1L2RP",
+  "amp2k": [
+   -0.131491,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q2",
+  "name": "Q2M2L2RP",
+  "pc": "Q2P2L2RP",
+  "amp2k": [
+   -0.131491,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q2",
+  "name": "Q2M1K3RP",
+  "pc": "Q2P1K3RP",
+  "amp2k": [
+   -0.132293,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q2",
+  "name": "Q2M2K3RP",
+  "pc": "Q2P2K3RP",
+  "amp2k": [
+   -0.132293,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q2",
+  "name": "Q2M1L4RP",
+  "pc": "Q2P1L4RP",
+  "amp2k": [
+   -0.132159,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q2",
+  "name": "Q2M2L4RP",
+  "pc": "Q2P2L4RP",
+  "amp2k": [
+   -0.132159,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q2",
+  "name": "Q2M1K1RP",
+  "pc": "Q2P1K1RP",
+  "amp2k": [
+   -0.132293,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q3",
+  "name": "Q3M2K1RP",
+  "pc": "Q3P2K1RP",
+  "amp2k": [
+   0.134965,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q3",
+  "name": "Q3M1L2RP",
+  "pc": "Q3P1L2RP",
+  "amp2k": [
+   0.134206,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q3",
+  "name": "Q3M2L2RP",
+  "pc": "Q3P2L2RP",
+  "amp2k": [
+   0.134206,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q3",
+  "name": "Q3M1K3RP",
+  "pc": "Q3P1K3RP",
+  "amp2k": [
+   0.134965,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q3",
+  "name": "Q3M2K3RP",
+  "pc": "Q3P2K3RP",
+  "amp2k": [
+   0.134965,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q3",
+  "name": "Q3M1L4RP",
+  "pc": "Q3P1L4RP",
+  "amp2k": [
+   0.134554,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q3",
+  "name": "Q3M2L4RP",
+  "pc": "Q3P2L4RP",
+  "amp2k": [
+   0.134554,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Quadrupole",
+  "family": "Q3",
+  "name": "Q3M1K1RP",
+  "pc": "Q3P1K1RP",
+  "amp2k": [
+   0.134965,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   100.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S1",
+  "name": "S1M2K1RP",
+  "pc": "S1P1RP",
+  "amp2k": [
+   -1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   4.23273,
+   1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S1",
+  "name": "S1M1L2RP",
+  "pc": "S1P1RP",
+  "amp2k": [
+   -1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   4.23273,
+   1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S1",
+  "name": "S1M2L4RP",
+  "pc": "S1P1RP",
+  "amp2k": [
+   -1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   4.23273,
+   1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S1",
+  "name": "S1M1K1RP",
+  "pc": "S1P1RP",
+  "amp2k": [
+   -1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   4.23273,
+   1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S1",
+  "name": "S1M2L2RP",
+  "pc": "S1P2RP",
+  "amp2k": [
+   -1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   4.23273,
+   1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S1",
+  "name": "S1M1K3RP",
+  "pc": "S1P2RP",
+  "amp2k": [
+   -1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   4.23273,
+   1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S1",
+  "name": "S1M2K3RP",
+  "pc": "S1P2RP",
+  "amp2k": [
+   -1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   4.23273,
+   1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S1",
+  "name": "S1M1L4RP",
+  "pc": "S1P2RP",
+  "amp2k": [
+   -1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   4.23273,
+   1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S2",
+  "name": "S2M2K1RP",
+  "pc": "S2P1RP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S2",
+  "name": "S2M1L2RP",
+  "pc": "S2P1RP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S2",
+  "name": "S2M2L4RP",
+  "pc": "S2P1RP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S2",
+  "name": "S2M1K1RP",
+  "pc": "S2P1RP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S2",
+  "name": "S2M2L2RP",
+  "pc": "S2P2LRP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   60.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S2",
+  "name": "S2M1K3RP",
+  "pc": "S2P2KRP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   60.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S2",
+  "name": "S2M2K3RP",
+  "pc": "S2P2KRP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   60.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S2",
+  "name": "S2M1L4RP",
+  "pc": "S2P2LRP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   60.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S3",
+  "name": "S3M2K1RP",
+  "pc": "S3P1RP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S3",
+  "name": "S3M1L2RP",
+  "pc": "S3P1RP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S3",
+  "name": "S3M2L4RP",
+  "pc": "S3P1RP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S3",
+  "name": "S3M1K1RP",
+  "pc": "S3P1RP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S3",
+  "name": "S3M2L2RP",
+  "pc": "S3P2RP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S3",
+  "name": "S3M1K3RP",
+  "pc": "S3P2RP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S3",
+  "name": "S3M2K3RP",
+  "pc": "S3P2RP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Sextupole",
+  "family": "S3",
+  "name": "S3M1L4RP",
+  "pc": "S3P2RP",
+  "amp2k": [
+   1.7066e-08,
+   0.0,
+   0.0,
+   0.0,
+   -4.23273,
+   -1.22127
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   0.0,
+   25.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "HCM",
+  "name": "HS3M2K1RP",
+  "pc": "HS3P2K1RP",
+  "amp2k": [
+   0.00268011,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -3.5,
+   3.5
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "HCM",
+  "name": "HS1M2K1RP",
+  "pc": "HS1P2K1RP",
+  "amp2k": [
+   0.00268011,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -3.5,
+   3.5
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "HCM",
+  "name": "HS3M1L2RP",
+  "pc": "HS3P1L2RP",
+  "amp2k": [
+   0.00268011,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -3.5,
+   3.5
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "HCM",
+  "name": "HS3M2L2RP",
+  "pc": "HS3P2L2RP",
+  "amp2k": [
+   0.00268011,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -3.5,
+   3.5
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "HCM",
+  "name": "HS1M1K3RP",
+  "pc": "HS1P1K3RP",
+  "amp2k": [
+   0.00268011,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -3.5,
+   3.5
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "HCM",
+  "name": "HS3M1K3RP",
+  "pc": "HS3P1K3RP",
+  "amp2k": [
+   0.00268011,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -3.5,
+   3.5
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "HCM",
+  "name": "HS3M2K3RP",
+  "pc": "HS3P2K3RP",
+  "amp2k": [
+   0.00268011,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -3.5,
+   3.5
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "HCM",
+  "name": "HS1M2K3RP",
+  "pc": "HS1P2K3RP",
+  "amp2k": [
+   0.00268011,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -3.5,
+   3.5
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "HCM",
+  "name": "HS3M1L4RP",
+  "pc": "HS3P1L4RP",
+  "amp2k": [
+   0.00268011,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -3.5,
+   3.5
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "HCM",
+  "name": "HS3M2L4RP",
+  "pc": "HS3P2L4RP",
+  "amp2k": [
+   0.00268011,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -3.5,
+   3.5
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "HCM",
+  "name": "HS1M1K1RP",
+  "pc": "HS1P1K1RP",
+  "amp2k": [
+   0.00268011,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -3.5,
+   3.5
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "HCM",
+  "name": "HS3M1K1RP",
+  "pc": "HS3P1K1RP",
+  "amp2k": [
+   0.00268011,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -3.5,
+   3.5
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS3M2K1RP",
+  "pc": "VS3P2K1RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS2M2K1RP",
+  "pc": "VS2P2K1RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS2M1L2RP",
+  "pc": "VS2P1L2RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS3M1L2RP",
+  "pc": "VS3P1L2RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS3M2L2RP",
+  "pc": "VS3P2L2RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS2M2L2RP",
+  "pc": "VS2P2L2RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS2M1K3RP",
+  "pc": "VS2P1K3RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS3M1K3RP",
+  "pc": "VS3P1K3RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS3M2K3RP",
+  "pc": "VS3P2K3RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS2M2K3RP",
+  "pc": "VS2P2K3RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS2M1L4RP",
+  "pc": "VS2P1L4RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS3M1L4RP",
+  "pc": "VS3P1L4RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS3M2L4RP",
+  "pc": "VS3P2L4RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS2M2L4RP",
+  "pc": "VS2P2L4RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS2M1K1RP",
+  "pc": "VS2P1K1RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ },
+ {
+  "type": "Steerer",
+  "family": "VCM",
+  "name": "VS3M1K1RP",
+  "pc": "VS3P1K1RP",
+  "amp2k": [
+   0.00201269,
+   0.0
+  ],
+  "amp2k_scale": 1.0,
+  "range": [
+   -7.0,
+   7.0
+  ]
+ }
+]
