@@ -108,5 +108,10 @@ async def initialise_pvs(builder, controller: ControllerInterface, monitors, *, 
     }
 
 
-if __name__ == "__main__":
+def run():
+    """console script: the twin runs until its IOC shell ends"""
     asyncio.run(main())
+
+
+if __name__ == "__main__":
+    run()
