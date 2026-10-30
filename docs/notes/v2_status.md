@@ -17,7 +17,8 @@ topic.
 
 Status: **done** (merged), **in review** (PR open), **partial**, **open**
 (nothing yet), **needs a user story** (not clear what it shall provide).
-Commits are merge commits on `dev/main`; `lib` is dt4acc-lib.
+Commits are merge commits on `dev/main`; for a PR still in review, its
+commits (see *Pull requests in review*). `lib` is dt4acc-lib.
 
 ## Overview
 
@@ -33,13 +34,14 @@ Commits are merge commits on `dev/main`; `lib` is dt4acc-lib.
 | 2 | Turn by turn data: turns, start vector, start element, where to output | PDF | done | lib#27 `fe31346`, lib#33 `29bd38d` (start_at) | |
 | 2a | track an ensemble of particles; BPM centre of mass and sum (particles survived) | minutes | done | lib#27 `fe31346` (survived), BPM `tbt_x` / `tbt_y` / `tbt_sum` (view) | |
 | 2b | arbitrary stops for the beam | minutes | open | | #75 |
-| 2c | fluorescent screens: stop the beam or observe | minutes | open | | #76 |
+| 2c | fluorescent screens: stop the beam or observe | minutes | open | todo in dt4acc#71 `466ea37` | #76 |
 | 2d | fault injection for turn by turn data | minutes | needs a user story | | #84 |
 | 2e | kickers (injection, extraction) in turn by turn | minutes | open | | #77 |
-| 3 | Beam current measurement: fixed value, ≈ 0 if the beam is lost | PDF, minutes, dt4acc#33 | in review | dt4acc#71, lib#35 | #33 |
-| 3a | current decay (lifetime) and top-up | minutes | needs a user story | | #84 |
+| 2f | beam loss monitors: where and when particles are lost | review of dt4acc#71 | partial (in review) | lib#35 `00180b6`: `ParticleLosses` (pyAT's loss map), `compute_track(..., losses=True)`, `BeamSurvival.losses`; BLM PVs: todo in dt4acc#71 `df18a75` (`view.update_beam_survival`) | |
+| 3 | Beam current measurement: fixed value, ≈ 0 if the beam is lost | PDF, minutes, dt4acc#33 | in review | dt4acc#71 `369255f`, `466ea37`, `df18a75`; lib#35 `d0efe75`, `00180b6` | #33 |
+| 3a | current decay (lifetime) and top-up | minutes | needs a user story | todo in dt4acc#71 `466ea37` | #84 |
 | 3b | different lifetimes per bunch; fill pattern | minutes | needs a user story | | #84 |
-| 3c | BPM sum signal for the closed orbit (reflecting the current) | minutes | open | turn by turn sum exists (2a) | #78 |
+| 3c | BPM sum signal for the closed orbit (reflecting the current) | minutes | open | turn by turn sum exists (2a); todo in dt4acc#71 `466ea37`: the turn by turn sum shall factor in the beam current | #78 |
 | 4 | Pinhole camera: centre x, y and size σx, σy; image of the Gaussian beam from twiss and emittance | PDF, minutes | open | beam size at one location exists in lib#35 (`BeamSurvival.sigma`) | #79 |
 | 5 | Inputs validated by hardware limits (static: power converter min / max current) | PDF | open | limits in the device data for MLS (dt4acc#69, `range`) | #80 |
 | 6 | Different lattices (with errors, with corrections) loaded at run time | PDF | partial | lattice file at start: `DT4ACC_LATTICE_FILE` (`core/bl/handle_lattice.py`); no switch at run time | #81 |
@@ -50,14 +52,23 @@ Commits are merge commits on `dev/main`; `lib` is dt4acc-lib.
 | 10 | Improve documentation | minutes | partial | dt4acc#29 `d80c8b1` (published doc), `pv_list.md` | |
 | 11 | Better names: ring simulator reset → reinject beam, reinit → reset lattice to nominal | PDF | not planned (decided 2026-10-30) | | |
 
+## Pull requests in review
+
+| PR | What | Commits | Review |
+|---|---|---|---|
+| lib#34 | polynomial calibrations (MML's amp2k), e.g. the MLS sextupoles | `b85abb0`; review `89ebd75`: `PolynomialCalibration` merged into `PolynomCoefficients` (`polynomial_of` lattice / device, coeffs lowest order first) | changes requested, addressed |
+| dt4acc#69 | MLS storage ring twin; needs lib#34 | `82577b9`, `3f103db` (amp2k for every magnet as `PolynomCoefficients(polynomial_of="device")`) | changes requested, addressed |
+| lib#35 | beam survival (3) | `d0efe75`; review `00180b6`: tracked with `compute_track`, computations in `bl/beam_survival.py`, `ParticleLosses` | changes requested, addressed |
+| dt4acc#71 | beam current PVs (3); needs lib#35 | `369255f`; review `466ea37` (todos: BLMs, screens, decay / top-up, turn by turn sum), `df18a75` | changes requested, addressed |
+
 ## Found while implementing (bugs)
 
 | Item | Status | PR / commit | Issue |
 |---|---|---|---|
-| `beam:orbit:found` never set back to False | in review | dt4acc#71 | |
-| `simulator_ring:reset` / `reinit` do not refresh the model PVs | in review | dt4acc#71 | |
+| `beam:orbit:found` never set back to False | in review | dt4acc#71 `369255f` | |
+| `simulator_ring:reset` / `reinit` do not refresh the model PVs | in review | dt4acc#71 `369255f` | |
 | BESSY II: steerer `<magnet>:Cm:set` raises `KeyError` (no `main_strength_rdbk`); sextupole magnets have no `main_strength` lookup entry | open | | #83 |
-| unstable ring (pyAT `AtError`) not handled as failed optics | in review | lib#35 | |
+| unstable ring (pyAT `AtError`) not handled as failed optics | in review | lib#35 `d0efe75` | |
 
 ## Log
 
@@ -65,3 +76,7 @@ Commits are merge commits on `dev/main`; `lib` is dt4acc-lib.
   dt4acc-lib) and the issues and PRs of both repositories. Issues #72 - #84
   opened; #86 (BESSY II undulators). Not planned: renaming reset / reinit. Twin only PVs: done with
   the PV wiki.
+* 2026-10-30: reviews of lib#34, dt4acc#69, lib#35, dt4acc#71 addressed
+  (commits above); beam loss monitors (2f) added from the review of
+  dt4acc#71, no issue yet. Tests on z3: dt4acc-lib, dt4acc offline, MLS,
+  live BESSY II twin (beam current) pass.
