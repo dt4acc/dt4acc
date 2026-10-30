@@ -138,11 +138,11 @@ class View(ViewInterface):
         #       is now fixed (beam_current) or 0; lifetime from the lattice or
         #       a fixed value, top-up interval and step, per bunch / fill
         #       pattern. Needs a user story first (#84), can be a separate PR
-        # Todo: beam loss monitors: BeamSurvival.lost says per particle if it
-        #       is lost; keep where (element) and when (turn), as pyAT's loss
-        #       map gives it, and serve it as BLM PVs at the facility's BLM
+        # Todo: beam loss monitors: BeamSurvival.losses (dt4acc-lib's
+        #       ParticleLosses) says per particle where (element) and when
+        #       (turn) it is lost; serve it as BLM PVs at the facility's BLM
         #       positions, scaled to the beam current. Also for turn by turn
-        #       tracking and the transfer line
+        #       tracking (compute_track(..., losses=True)) and the transfer line
         # Todo: fluorescent screens (real or artificial, #76): stop the beam
         #       (losses in the BLMs behind it) or observe it and let it pass
         self.set_beam_current(self.beam_current if stored else 0.0)
