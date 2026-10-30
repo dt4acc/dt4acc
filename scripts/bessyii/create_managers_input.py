@@ -228,6 +228,27 @@ def build_liaison_manager_lut(
                 )
                 process_variable_views.extend([monitor, setp, monitor_mag])
 
+    # skew quadrupoles: coils on sextupoles as the steerers; the supply and the
+    # magnet act on the host's skew quadrupole component (A2, PolynomA[1])
+    for entry in magnet_info:
+        if entry.elem_id not in yp.get("skew_quadrupoles"):
+            continue
+        dev_name = str(pc_magnet_is_connected_to[entry.elem_id])
+        host_magnet_name = str(entry.elem_id)[2:]
+        assert host_magnet_name in yp.get("skew_quadrupoles_host")
+        lat_p = LatticeElementPropertyID(element_name=host_magnet_name, property="A2")
+        pc_dev_p = DevicePropertyID(device_name=dev_name, property="set_current")
+        fwd_d[lat_p].append(pc_dev_p)
+        inv_d[pc_dev_p].append(lat_p)
+        inv_d[DevicePropertyID(device_name=dev_name, property="rdbk_current")].append(lat_p)
+        for prop in ("main_strength", "main_strength_rdbk"):
+            inv_d[DevicePropertyID(device_name=str(entry.dev_id), property=prop)].append(lat_p)
+        monitor = Monitor(pv_name=f"{dev_name}:rdbk", rcmd=ReadCommand(dev_name, "rdbk_current"), prec=3,
+                          record_type="ai", treat_returned_data="single")
+        setp = Setpoint(pv_name=f"{dev_name}:set", rcmd=ReadCommand(dev_name, "set_current"), prec=3,
+                        record_type="ao", reads=[monitor.rcmd], treat_returned_data="single")
+        process_variable_views.extend([monitor, setp])
+
     lut_fwd += [
         LiaisonManagerForwardLookupElement(lat_id=k, dev_ids=v)
         for k, v in fwd_d.items()
@@ -538,6 +559,25 @@ def build_translator_manager_lut(
             )
         )
 
+    # skew quadrupoles: the supply by the skew magnet's conversion (not the host
+    # sextupole's); the magnet itself in lattice units
+    all_keys, unhandled = unhandled, []
+    skew_magnets = set(yp.get("skew_quadrupoles"))
+    skew_supplies = {mag_info_lut[m].power_converter_id for m in skew_magnets}
+    for dev_p in all_keys:
+        if dev_p.device_name in skew_supplies and dev_p.property in ("set_current", "rdbk_current"):
+            (lat_p,) = lm_inv.get(dev_p)
+            conv = mag_info_lut["CQ" + lat_p.element_name].conversion
+            assert conv.conversion_type == "linear"
+            coeffs = PolynomCoefficients([conv.intercept, 1.0 / conv.slope], energy_dependent=True)
+        elif dev_p.device_name in skew_magnets and dev_p.property in ("main_strength", "main_strength_rdbk"):
+            (lat_p,) = lm_inv.get(dev_p)
+            coeffs = PolynomCoefficients([0.0, 1.0], energy_dependent=False)
+        else:
+            unhandled.append(dev_p)
+            continue
+        lut.append(TranslatorLookupTableElement(ConversionID(lat_p, dev_p), coeffs))
+
     all_keys, unhandled = unhandled, []
 
     for dev_p in all_keys:
@@ -810,9 +850,17 @@ def create_yellow_pages_lut_from_config(
             vertical_steerer_not_co_wound,
         )
 
+    # skew quadrupoles (MML CQS): coils on sextupoles, CQS3M1T1R on S3M1T1R
+    skew_quadrupoles = [m.elem_id for m in magnet_info if m.type == "skew_quadrupole"]
+    skew_quadrupoles_host = [sq[2:] for sq in skew_quadrupoles]
+    not_on_sextupoles = [h for h in skew_quadrupoles_host if h not in sextupoles]
+    assert not not_on_sextupoles, f"skew quadrupoles not on sextupoles: {not_on_sextupoles}"
+
     r = dict(
         horizontal_steerers=horizontal_steerers,
         vertical_steerers=vertical_steerers,
+        skew_quadrupoles=skew_quadrupoles,
+        skew_quadrupoles_host=skew_quadrupoles_host,
         horizontal_steerers_host=horizontal_steerers_host,
         vertical_steerers_host=vertical_steerers_host,
         steerers=steerers,

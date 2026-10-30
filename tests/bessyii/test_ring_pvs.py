@@ -67,7 +67,7 @@ def test_every_magnet_has_its_pvs(ring_pvs):
     pvs = set(ring_pvs)
     magnets = [e["name"] for e in db if e.get("pc")]
     supplies = {e["pc"] for e in db if e.get("pc")}
-    assert len(magnets) == 369 and len(supplies) == 179
+    assert len(magnets) == 385 and len(supplies) == 195      # with the 16 skew quadrupoles (CQS)
     missing = [f"{m}:{f}" for m in magnets for f in sorted(MAGNET_FIELDS) if f"{m}:{f}" not in pvs]
     missing += [f"{s}:{f}" for s in sorted(supplies) for f in sorted(SUPPLY_FIELDS) if f"{s}:{f}" not in pvs]
     assert not missing, f"{len(missing)} missing, e.g. {missing[:5]}"

@@ -40,7 +40,8 @@ MAGNET_FIELDS = [("Cm:set", "main strength setpoint", ACTS, NO),
                  ("x:set", "horizontal offset (m)", ACTS, NO),
                  ("y:set", "vertical offset (m)", ACTS, NO)]
 TYPES = [("Quadrupole", "Quadrupoles"), ("Sextupole", "Sextupoles"),
-         ("Steerer:H", "Horizontal steerers"), ("Steerer:V", "Vertical steerers")]
+         ("Steerer:H", "Horizontal steerers"), ("Steerer:V", "Vertical steerers"),
+         ("SkewQuadrupoleCorrector", "Skew quadrupoles (MML CQS; coils on sextupoles)")]
 
 # virtual devices: (section, [(pv, description, write, machine)]); a PV the dump lacks is left out
 VIRTUAL = [
