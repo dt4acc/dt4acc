@@ -16,8 +16,9 @@ The Metrology Light Source (MLS) storage ring, 629 MeV, as an EPICS soft IOC
 
 Calibration as MML's `amp2k.m`: `K = polyval(amp2k, I) / Brho`. Quadrupoles and
 steerers are linear (exact); the sextupoles have a 5th-order term (up to 5 % at
-60 A): they get an excitation curve sampled from the polynomial every 0.5 A over the
-setpoint range. A steerer kicks the sextupole it is wound on (`HS3M2K1RP` kicks
+60 A): they use the polynomial itself (dt4acc-lib's `PolynomialCalibration`;
+current for a strength: the real root closest to the linear solution, as MML's
+`k2amp`). A steerer kicks the sextupole it is wound on (`HS3M2K1RP` kicks
 `S3M2K1RP`).
 
 ## Run

@@ -14,15 +14,14 @@ it is wound on (``HS3M2K1RP`` kicks the sextupole ``S3M2K1RP``).
 
 Calibration, as MML's ``amp2k.m``: ``K = polyval(amp2k, I / scale) / Brho``.
 For a linear ``amp2k`` (quadrupoles, steerers) it is a linear conversion,
-exact; for the sextupoles (a 5th-order term, up to 5 % at 60 A) an excitation
-curve sampled from the polynomial every 0.5 A over the setpoint range
-(dt4acc-lib's ``EnergyIndependentCurveUnitConversion``, which divides by
-the beam's brho as amp2k does), extended linearly beyond it.
+exact; for the sextupoles (a 5th-order term, up to 5 % at 60 A) the
+polynomial itself (dt4acc-lib's ``PolynomialCalibration``, which divides by
+the beam's brho as amp2k does and inverts it as MML's ``k2amp``).
 """
 import json
 from collections import defaultdict
 from importlib.resources import files
-from typing import Dict, List, Sequence, Tuple, Union
+from typing import List, Sequence, Tuple, Union
 
 import at
 import numpy as np
@@ -30,8 +29,7 @@ from scipy.constants import c
 
 from dt4acc_lib.bl.liaison_manager import LiaisonManager
 from dt4acc_lib.bl.translator_service import TranslatorService
-from dt4acc_lib.bl.unit_conversion import EnergyIndependentCurveUnitConversion
-from dt4acc_lib.model.utils.identifiers import ConversionID, CurvePoint, DevicePropertyID, LatticeElementPropertyID
+from dt4acc_lib.model.utils.identifiers import ConversionID, DevicePropertyID, LatticeElementPropertyID
 from dt4acc_lib.model.utils.liaison_manager_lookup_table import (
     LiaisonManagerForwardLookupElement,
     LiaisonManagerForwardLookupTable,
@@ -41,6 +39,8 @@ from dt4acc_lib.model.utils.liaison_manager_lookup_table import (
 from dt4acc_lib.model.utils.translator_manager_lookup_table import (
     IdentityMapper,
     PolynomCoefficients,
+    PolynomialCalibration,
+    Range,
     TranslatorLookupTable,
     TranslatorLookupTableElement,
 )
@@ -48,6 +48,9 @@ from dt4acc_lib.model.utils.translator_manager_lookup_table import (
 #: MLS runs at 629 MeV
 ENERGY = 629e6
 #: magnetic rigidity [T m] (ultra relativistic electrons)
+#: Todo: clear up brho / energy: ENERGY / c ignores the rest mass, dt4acc-lib's
+#:       calculate_brho does not; MML's getbrho for the MLS to be checked.
+#:       Needs to be done for the MLS
 BRHO = ENERGY / c
 #: RF buckets (harmonic number)
 HARMONIC_NUMBER = 80
@@ -95,10 +98,6 @@ def lattice_property(magnet: dict) -> str:
     raise ValueError(f"{magnet['name']}: no lattice property for type {magnet['type']}")
 
 
-#: sampling of a nonlinear amp2k [A]
-CURVE_STEP = 0.5
-
-
 def amp2k(magnet: dict) -> np.ndarray:
     return np.trim_zeros(np.asarray(magnet["amp2k"], dtype=float), "f")
 
@@ -107,63 +106,36 @@ def is_linear(magnet: dict) -> bool:
     return len(amp2k(magnet)) <= 2
 
 
-def calibration(magnet: dict) -> Union[PolynomCoefficients, List[CurvePoint]]:
+def calibration(magnet: dict) -> Union[PolynomCoefficients, PolynomialCalibration]:
     """A linear amp2k: ``I = Brho * (intercept + slope * K)``, with ``K * Brho =
-    c1 * I / scale + c0``; else the curve ``K * Brho`` over ``I``"""
+    c1 * I / scale + c0``; else amp2k's polynomial ``K * Brho = polyval(amp2k,
+    I / scale)``"""
     coeffs = amp2k(magnet)
     scale = magnet.get("amp2k_scale", 1.0)
     if is_linear(magnet):
         c1, c0 = (coeffs[0], coeffs[1]) if len(coeffs) == 2 else (coeffs[0], 0.0)
         c1 = c1 / scale
         return PolynomCoefficients([-c0 / c1 / BRHO, 1.0 / c1], energy_dependent=True)
-    if not magnet.get("range"):
-        raise ValueError(f"{magnet['name']}: nonlinear amp2k without a setpoint range to sample")
-    lo, hi = magnet["range"]
-    currents = np.linspace(lo, hi, int(round((hi - lo) / CURVE_STEP)) + 1)
-    return [CurvePoint(indep=float(i), dep=float(np.polyval(coeffs, i / scale))) for i in currents]
-
-
-def conversion_object(magnet: dict, brho: float = BRHO) -> EnergyIndependentCurveUnitConversion:
-    """the excitation curve of a nonlinear amp2k: ``K = curve(I) / Brho``"""
-    points = calibration(magnet)
-    return EnergyIndependentCurveUnitConversion(fwd_points=points, bwd_points=points, brho=brho,
-                                                flip_dep_sign=False, length=None)
-
-
-class TranslatorWithCurves(TranslatorService):
-    """dt4acc-lib's TranslatorService, with ready-made conversions (excitation
-    curves) for the conversions its lookup table cannot describe"""
-
-    def __init__(self, *, lut: TranslatorLookupTable, brho: float, curves: Dict[ConversionID, object]):
-        super().__init__(lut=lut, brho=brho)
-        self.curves = curves
-
-    def get(self, id_: ConversionID):
-        if id_ in self.curves:
-            return self.curves[id_]
-        return super().get(id_)
+    rng = Range(*magnet["range"]) if magnet.get("range") else None
+    return PolynomialCalibration(coeffs=[float(v) for v in coeffs], energy_dependent=True, scale=scale, range=rng)
 
 
 def build_lookup_tables(setup: Sequence[dict]):
     fwd = defaultdict(list)
     inv = defaultdict(list)
     conversions = []
-    curves = {}
 
     def add(dev_p, lat_p, conversion, *, forward: bool):
         if forward:
             fwd[lat_p].append(dev_p)
         inv[dev_p].append(lat_p)
-        if isinstance(conversion, EnergyIndependentCurveUnitConversion):
-            curves[ConversionID(lat_p, dev_p)] = conversion
-        else:
-            conversions.append(TranslatorLookupTableElement(ConversionID(lat_p, dev_p), conversion))
+        conversions.append(TranslatorLookupTableElement(ConversionID(lat_p, dev_p), conversion))
 
     same = PolynomCoefficients([0.0, 1.0], energy_dependent=False)
     for magnet in setup:
         name, pc = magnet["name"], magnet["pc"]
         lat_p = LatticeElementPropertyID(element_name=lattice_element(magnet), property=lattice_property(magnet))
-        per_current = calibration(magnet) if is_linear(magnet) else conversion_object(magnet)
+        per_current = calibration(magnet)
         add(DevicePropertyID(device_name=pc, property="set_current"), lat_p, per_current, forward=True)
         add(DevicePropertyID(device_name=pc, property="rdbk_current"), lat_p, per_current, forward=False)
         # the magnet in lattice units (twin only)
@@ -188,18 +160,18 @@ def build_lookup_tables(setup: Sequence[dict]):
 
     lut_fwd = [LiaisonManagerForwardLookupElement(lat_id=k, dev_ids=v) for k, v in fwd.items()]
     lut_inv = [LiaisonManagerInverseLookupElement(dev_id=k, lat_ids=v) for k, v in inv.items()]
-    return lut_fwd, lut_inv, conversions, curves
+    return lut_fwd, lut_inv, conversions
 
 
 def build_managers(setup: Sequence[dict] = None) -> Tuple[LiaisonManager, TranslatorService]:
     setup = load_accelerator_setup() if setup is None else setup
-    lut_fwd, lut_inv, conversions, curves = build_lookup_tables(setup)
+    lut_fwd, lut_inv, conversions = build_lookup_tables(setup)
     fwd = LiaisonManagerForwardLookupTable(lut_fwd)
     inv = LiaisonManagerInverseLookupTable(lut_inv)
     fwd.verify()
     inv.verify()
     lm = LiaisonManager(forward_lut=fwd, inverse_lut=inv)
-    ts = TranslatorWithCurves(lut=TranslatorLookupTable(lut=conversions), brho=BRHO, curves=curves)
+    ts = TranslatorService(lut=TranslatorLookupTable(lut=conversions), brho=BRHO)
     return lm, ts
 
 
@@ -208,4 +180,4 @@ def bpm_names(ring: at.Lattice) -> List[str]:
 
 
 __all__ = ["ENERGY", "BRHO", "HARMONIC_NUMBER", "ACCELERATOR_SETUP", "mls_lattice", "build_managers",
-           "calibration", "conversion_object", "is_linear", "bpm_names", "load_accelerator_setup"]
+           "calibration", "is_linear", "bpm_names", "load_accelerator_setup"]

@@ -1,8 +1,7 @@
 """MLS storage ring twin: calibration as MML, PVs named as on the machine
 
 Calibration: the conversion reproduces MML's ``amp2k.m`` (``K =
-polyval(amp2k, I) / Brho``): exactly for the linear families, within 1e-4 for
-the sextupoles (a curve sampled from the polynomial); the design lattice needs
+polyval(amp2k, I) / Brho``), exactly; the design lattice needs
 supply currents inside MML's setpoint ranges. PVs: supplies
 ``setCur`` / ``rdCur``, BPMs ``rdX`` / ``rdY``, RF ``MCLKHGP:setFrq`` /
 ``rdFrq``, beam current ``CUM1ZK3RP:rdCur`` (``ao_mls.json``); magnets
@@ -15,12 +14,12 @@ import pytest
 # loads the EPICS record types, before any module that imports softioc's records
 from softioc import builder as _softioc_builder  # noqa: F401
 
-from dt4acc_lib.bl.translator_service import create_translation_object_for_polynom_coefficients
+from dt4acc_lib.bl.translator_service import create_translation_object_for_data_model
 from dt4acc_lib.pyat_simulator.accelerator_simulator import PyATAcceleratorSimulator
 from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend
 from dt4acc.custom_facility.mls.run_mls_twin import initialise_pvs, make_controller
 from dt4acc.custom_facility.mls.twin_setup import (
-    BRHO, bpm_names, calibration, conversion_object, is_linear, lattice_element, load_accelerator_setup, mls_lattice,
+    BRHO, bpm_names, calibration, lattice_element, load_accelerator_setup, mls_lattice,
 )
 from dt4acc.custom_facility.mls.view import MLSView
 
@@ -57,17 +56,11 @@ def test_device_database(setup):
 
 def test_calibration_as_mml_amp2k(setup):
     for m in setup:
-        if is_linear(m):
-            conv = create_translation_object_for_polynom_coefficients(calibration(m), brho=BRHO)
-        else:
-            conv = conversion_object(m)
+        conv = create_translation_object_for_data_model(calibration(m), brho=BRHO)
         currents = np.linspace(*m["range"], 13)
         mml = np.polyval(m["amp2k"], currents / m["amp2k_scale"]) / BRHO
         twin = np.array([conv.inverse(i) for i in currents])
-        if is_linear(m):
-            np.testing.assert_allclose(twin, mml, rtol=1e-12, atol=1e-15, err_msg=m["name"])
-        else:
-            assert np.max(np.abs(twin - mml)) <= 1e-4 * np.max(np.abs(mml)), m["name"]
+        np.testing.assert_allclose(twin, mml, rtol=1e-12, atol=1e-15, err_msg=m["name"])
         # round trip
         for i in currents:
             assert conv.forward(conv.inverse(i)) == pytest.approx(i, abs=1e-9)
