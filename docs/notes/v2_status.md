@@ -29,6 +29,7 @@ Commits are merge commits on `dev/main`; `lib` is dt4acc-lib.
 | 1a | single machines next to the whole complex | minutes | done | `dt4acc_bessyii`, `dt4acc_bessytl`, `dt4acc_bessyii_injection` (dt4acc#67 `0fd645a`) | |
 | 1b | injection line to booster, booster | minutes (optional) | open | | #74 |
 | 1c | kicker strength variations, start distribution at injection | PDF (discuss) | needs a user story | | #84 |
+| 1u | BESSY II: undulators (gap, phase) and their effect on the beam | request for BESSY II | open | | #86 |
 | 2 | Turn by turn data: turns, start vector, start element, where to output | PDF | done | lib#27 `fe31346`, lib#33 `29bd38d` (start_at) | |
 | 2a | track an ensemble of particles; BPM centre of mass and sum (particles survived) | minutes | done | lib#27 `fe31346` (survived), BPM `tbt_x` / `tbt_y` / `tbt_sum` (view) | |
 | 2b | arbitrary stops for the beam | minutes | open | | #75 |
@@ -62,5 +63,5 @@ Commits are merge commits on `dev/main`; `lib` is dt4acc-lib.
 
 * 2026-10-30: document started; status checked against `dev/main` (dt4acc,
   dt4acc-lib) and the issues and PRs of both repositories. Issues #72 - #84
-  opened. Not planned: renaming reset / reinit. Twin only PVs: done with
+  opened; #86 (BESSY II undulators). Not planned: renaming reset / reinit. Twin only PVs: done with
   the PV wiki.
