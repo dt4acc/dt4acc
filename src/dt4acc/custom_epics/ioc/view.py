@@ -134,6 +134,17 @@ class View(ViewInterface):
         (single_reading,) = pkg.readings
         survival = single_reading.payload
         stored = survival is not None and survival.stored
+        # Todo: decaying beam current (lifetime) and top-up mode: the current
+        #       is now fixed (beam_current) or 0; lifetime from the lattice or
+        #       a fixed value, top-up interval and step, per bunch / fill
+        #       pattern. Needs a user story first (#84), can be a separate PR
+        # Todo: beam loss monitors: BeamSurvival.lost says per particle if it
+        #       is lost; keep where (element) and when (turn), as pyAT's loss
+        #       map gives it, and serve it as BLM PVs at the facility's BLM
+        #       positions, scaled to the beam current. Also for turn by turn
+        #       tracking and the transfer line
+        # Todo: fluorescent screens (real or artificial, #76): stop the beam
+        #       (losses in the BLMs behind it) or observe it and let it pass
         self.set_beam_current(self.beam_current if stored else 0.0)
 
     def update_survey(self, var: ReadCommand, pkg):
@@ -257,7 +268,10 @@ class View(ViewInterface):
             # Todo: handle sum signal in a smarter way
             #       should it be calculated in view ?
             #
-            #       correctly scale for current
+            #       factor in the beam current: now it is the number of
+            #       particles survived per turn; shall be proportional to
+            #       beam_current (the fraction survived after a loss).
+            #       Together with the closed orbit sum signal (#78)
             survived = elem_tbt.get_survived()
             n_particles = survived.get_n_particles_survived_per_turn()
             rcmd = ReadCommand(id=elem_tbt.uid.device_name, property="tbt_sum")

@@ -30,7 +30,8 @@ def reading(rcmd: ReadCommand, payload):
     return TranslatedReading(rcmd, [SingleReading(cmd=rcmd, name="test", payload=payload)])
 
 
-def track(x: float):
+def orbit_reading(x: float):
+    """closed orbit payload as ReadCommand("track", "pos") delivers it"""
     pos = SimpleNamespace(fam_name="Q1", uid="Q1", x=x, y=0.0)
     return SimpleNamespace(track=[pos, SimpleNamespace(fam_name="Q2", uid="Q2", x=0.0, y=0.0)])
 
@@ -63,7 +64,7 @@ def test_no_survival_data_no_current(view):
 def test_no_closed_orbit(view):
     rcmd = ReadCommand("track", "pos")
     survival = ReadCommand("beam_survival", "stored")
-    view.update_special_values(rcmd, reading(rcmd, track(1e-3)))
+    view.update_special_values(rcmd, reading(rcmd, orbit_reading(1e-3)))
     view.update_special_values(survival, reading(survival, SimpleNamespace(stored=True)))
     assert view.process_variables[ReadCommand("beam", "found")].value is True
     assert currents(view) == [DEFAULT_BEAM_CURRENT] * 2
