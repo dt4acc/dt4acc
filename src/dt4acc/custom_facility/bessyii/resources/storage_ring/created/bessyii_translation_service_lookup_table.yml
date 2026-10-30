@@ -25783,4 +25783,12 @@ lut:
       element_name: survey
       property: s
   conversion_info: {}
+- conversion_id:
+    device_property_id:
+      device_name: beam_survival
+      property: stored
+    lattice_property_id:
+      element_name: beam_survival
+      property: stored
+  conversion_info: {}
 # EOF

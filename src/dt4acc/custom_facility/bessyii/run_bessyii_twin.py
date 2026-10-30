@@ -24,6 +24,7 @@ from dt4acc.custom_epics.ioc.pv_setup import (
     initialize_twiss_pvs,
     initialize_tune_pvs,
     initialize_other_pvs,
+    initialize_beam_current_pvs,
     initialize_calculation_state_pvs,
 )
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
@@ -43,6 +44,8 @@ logger = logging.getLogger("dt4acc-bessyii")
 
 #: device database of the storage ring: magnets, their supplies
 ACCELERATOR_SETUP = ("custom_epics", "data", "standard", "accelerator_setup.json")
+#: beam current as on the machine [mA]; ``MDIZ3T5G:current`` (initialize_other_pvs) kept too
+BEAM_CURRENT_PV = "TOPUPCC:rdCur"
 
 
 async def main():
@@ -96,6 +99,8 @@ async def main():
         default_delayed_reads=[
             ReadCommand("track", "pos"),
             ReadCommand("twiss", "parameters"),
+            # the beam current (TOPUPCC:rdCur, MDIZ3T5G:current)
+            ReadCommand("beam_survival", "stored"),
         ],
     )
     controller.start()
@@ -140,6 +145,7 @@ async def initialise_pvs(
         **initialize_twiss_pvs(builder),
         **initialize_tune_pvs(builder),
         **initialize_other_pvs(builder),
+        **initialize_beam_current_pvs(builder, [BEAM_CURRENT_PV]),
         **initialize_calculation_state_pvs(builder, controller),
     }
 

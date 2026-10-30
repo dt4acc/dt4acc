@@ -3441,4 +3441,8 @@ lut:
   lat_id:
     element_name: survey
     property: s
+- dev_ids: [{device_name: beam_survival, property: stored}]
+  lat_id:
+    element_name: beam_survival
+    property: stored
 # EOF

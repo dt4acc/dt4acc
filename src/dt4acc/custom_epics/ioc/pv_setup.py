@@ -388,10 +388,22 @@ def initialize_other_pvs(builder, current_pv_name: str | None = None) -> Dict[Re
             lattice/catalog-independent name instead.
     """
     pv_name = current_pv_name if current_pv_name is not None else special_pvs['current']
+    return initialize_beam_current_pvs(builder, [f"{pv_name}:current"], record=builder.aOut)
+
+
+def initialize_beam_current_pvs(builder, pv_names: Sequence[str], record=None) -> Dict[ReadCommand, RecordWrapper]:
+    """Beam current PVs [mA], one per name: the view sets them all from the
+    closed orbit (:meth:`View.update_track`)
+
+    Args:
+        builder: The SoftIOC PV builder instance.
+        pv_names: full PV names (BESSY II: ``TOPUPCC:rdCur``, ``MDIZ3T5G:current``)
+        record: record type, default ``builder.aIn``
+    """
+    record = builder.aIn if record is None else record
     return {
-        ReadCommand("ring", "current"): builder.aOut(
-            f"{pv_name}:current", initial_value=0
-        )
+        ReadCommand(id="beam_current", property=name): record(name, initial_value=0.0, EGU="mA", PREC=3)
+        for name in pv_names
     }
 
 
@@ -501,15 +513,23 @@ async def initialize_cavity_pvs(
 def initialize_calculation_state_pvs(builder, controller):
     assert callable(controller.mexec.backend.reset)
     assert callable(controller.mexec.backend.reinit)
+
+    async def reset(val):
+        await controller.mexec.backend.reset()
+        # the model PVs (orbit, twiss, beam current) follow the recalculation
+        await controller.reread_default_readings()
+
+    async def reinit(val):
+        await controller.mexec.backend.reinit()
+        await controller.reread_default_readings()
+
     return {
         ReadCommand(id="simulator_ring", property="reset"):
             builder.longOut(
-                "simulator_ring:reset", initial_value=0,
-                on_update=lambda val: controller.mexec.backend.reset()
+                "simulator_ring:reset", initial_value=0, on_update=reset, always_update=True,
         ),
         ReadCommand(id="simulator_ring", property="reinit"):
             builder.stringOut(
-                "simulator_ring:reinit", initial_value="",
-                on_update=lambda val: controller.mexec.backend.reinit()
+                "simulator_ring:reinit", initial_value="", on_update=reinit, always_update=True,
             ),
     }

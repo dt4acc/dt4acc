@@ -1,6 +1,6 @@
 from copy import copy as _copy
 import math
-from typing import Optional, Dict
+from typing import Optional, Dict, Sequence
 
 import numpy as np
 from softioc import pythonSoftIoc
@@ -16,6 +16,15 @@ logger = get_logger()
 
 #: EPICS string PVs (DBF_STRING) cannot hold more than 39 characters.
 MAX_EPICS_STRING_LENGTH = 39
+
+#: beam current [mA] while the beam is stored (zero order: no lifetime, no
+#: injection), see :meth:`View.update_beam_survival`
+DEFAULT_BEAM_CURRENT = 300.0
+
+
+def orbit_found(x: Sequence[float], y: Sequence[float]) -> bool:
+    """a closed orbit: finite at every element"""
+    return len(x) > 0 and bool(np.all(np.isfinite(x)) and np.all(np.isfinite(y)))
 
 
 def assert_epics_string_lengths(values, *, context: str) -> None:
@@ -45,9 +54,16 @@ class View(ViewInterface):
     :class:`OrbitTwinServer` when one is registered.
     """
 
-    def __init__(self, *, orbit_server: Optional[OrbitTwinServer] = None):
+    def __init__(
+        self,
+        *,
+        orbit_server: Optional[OrbitTwinServer] = None,
+        beam_current: float = DEFAULT_BEAM_CURRENT,
+    ):
         self.process_variables: Dict[ReadCommand, pythonSoftIoc.RecordWrapper] = dict()
         self.orbit_server = orbit_server
+        #: beam current [mA] while the beam is stored
+        self.beam_current = beam_current
         # used for creating invalid data
         self.last_data_cache = dict()
 
@@ -106,7 +122,30 @@ class View(ViewInterface):
         elif var.id == "survey":
             self.update_survey(var, value)
             return True
+        elif var.id == "beam_survival":
+            self.update_beam_survival(var, value)
+            return True
         return False
+
+    def update_beam_survival(self, var: ReadCommand, pkg):
+        """beam current: ``beam_current`` if the particles tracked around the
+        closed orbit survived (dt4acc-lib's ``BeamSurvival``), else 0"""
+        assert var.id == "beam_survival", f"Only prepared to process 'beam_survival' but got {var}"
+        (single_reading,) = pkg.readings
+        survival = single_reading.payload
+        stored = survival is not None and survival.stored
+        # Todo: decaying beam current (lifetime) and top-up mode: the current
+        #       is now fixed (beam_current) or 0; lifetime from the lattice or
+        #       a fixed value, top-up interval and step, per bunch / fill
+        #       pattern. Needs a user story first (#84), can be a separate PR
+        # Todo: beam loss monitors (#87): BeamSurvival.losses (dt4acc-lib's
+        #       ParticleLosses) says per particle where (element) and when
+        #       (turn) it is lost; serve it as BLM PVs at the facility's BLM
+        #       positions, scaled to the beam current. Also for turn by turn
+        #       tracking (compute_track(..., losses=True)) and the transfer line
+        # Todo: fluorescent screens (real or artificial, #76): stop the beam
+        #       (losses in the BLMs behind it) or observe it and let it pass
+        self.set_beam_current(self.beam_current if stored else 0.0)
 
     def update_survey(self, var: ReadCommand, pkg):
         assert var.id == "survey"
@@ -138,6 +177,7 @@ class View(ViewInterface):
                     "%s.update_track got no data: calculation succeded?: but no reference data for producing invalid data",
                     self.__class__.__name__
                 )
+                self.set_beam_current(0.0)
                 return
             value = _copy(ref_value)
             for pos in value.track:
@@ -174,8 +214,12 @@ class View(ViewInterface):
             rw_found = self.process_variables.get(
                 ReadCommand(id="beam", property="found")
             )
+            found = orbit_found(x_vals, y_vals)
             if rw_found is not None:
-                rw_found.set(True)
+                rw_found.set(found)
+            # without a closed orbit no beam; with one: beam_survival decides
+            if not found:
+                self.set_beam_current(0.0)
 
             # PVA NTTable
             if self.orbit_server is not None:
@@ -190,6 +234,12 @@ class View(ViewInterface):
                     logger.error("OrbitTwinServer.push failed: %s", exc)
         else:
             raise AssertionError(f"Don't know track property {var.property}")
+
+    def set_beam_current(self, value: float) -> None:
+        """every beam current PV (``ReadCommand(id="beam_current", ...)``) [mA]"""
+        for rc, record in self.process_variables.items():
+            if rc.id == "beam_current":
+                record.set(value)
 
     def update_turn_by_turn(self, var: ReadCommand, pkg):
         assert (
@@ -218,7 +268,10 @@ class View(ViewInterface):
             # Todo: handle sum signal in a smarter way
             #       should it be calculated in view ?
             #
-            #       correctly scale for current
+            #       factor in the beam current: now it is the number of
+            #       particles survived per turn; shall be proportional to
+            #       beam_current (the fraction survived after a loss).
+            #       Together with the closed orbit sum signal (#78)
             survived = elem_tbt.get_survived()
             n_particles = survived.get_n_particles_survived_per_turn()
             rcmd = ReadCommand(id=elem_tbt.uid.device_name, property="tbt_sum")
