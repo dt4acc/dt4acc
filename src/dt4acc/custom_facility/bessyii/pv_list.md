@@ -214,7 +214,7 @@ Computed by the twin from the lattice; some mirror machine PVs (see *machine*).
 |---|---|---|---|---|
 | `beam:orbit:x` | horizontal orbit (m) |  | CA + PVA | no |
 | `beam:orbit:y` | vertical orbit (m) |  | CA + PVA | no |
-| `beam:orbit:found` | closed orbit found |  | CA + PVA | no |
+| `beam:orbit:found` | closed orbit found (finite at every element) |  | CA + PVA | no |
 | `beam:orbit:names` | element names |  | CA + PVA | no |
 | `beam:orbit:uids` | element ids |  | CA + PVA | no |
 | `beam:orbit:x0` | not updated |  | CA + PVA | no |
@@ -259,7 +259,8 @@ Computed by the twin from the lattice; some mirror machine PVs (see *machine*).
 
 | PV | | write | protocol | machine |
 |---|---|---|---|---|
-| `MDIZ3T5G:current` | stored beam current | no effect | CA + PVA | yes |
+| `TOPUPCC:rdCur` | stored beam current (mA): 300 if particles at the closed orbit and at ±5σ survive 1000 turns, else 0 |  | CA + PVA | yes |
+| `MDIZ3T5G:current` | stored beam current (mA), as `TOPUPCC:rdCur` | no effect | CA + PVA | yes |
 | `beam:rev_freq` | revolution frequency (kHz) |  | CA + PVA | no |
 | `beam:machine:info:n_rf_buckets` | number of RF buckets (harmonic number) |  | CA + PVA | no |
 
