@@ -138,7 +138,7 @@ class View(ViewInterface):
         #       is now fixed (beam_current) or 0; lifetime from the lattice or
         #       a fixed value, top-up interval and step, per bunch / fill
         #       pattern. Needs a user story first (#84), can be a separate PR
-        # Todo: beam loss monitors: BeamSurvival.losses (dt4acc-lib's
+        # Todo: beam loss monitors (#87): BeamSurvival.losses (dt4acc-lib's
         #       ParticleLosses) says per particle where (element) and when
         #       (turn) it is lost; serve it as BLM PVs at the facility's BLM
         #       positions, scaled to the beam current. Also for turn by turn
