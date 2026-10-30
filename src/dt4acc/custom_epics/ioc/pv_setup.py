@@ -1,4 +1,5 @@
 import math
+from dataclasses import dataclass
 from typing import Dict, Iterable, Sequence
 
 from softioc.pythonSoftIoc import RecordWrapper
@@ -17,12 +18,31 @@ from ...core.utils.logger import get_logger
 logger = get_logger()
 
 
+@dataclass(frozen=True)
+class PVFields:
+    """Field names of a facility's supply and magnet PVs (``<device>:<field>``)
+
+    The defaults are BESSY II's; other facilities name them differently
+    (e.g. MLS: ``setCur`` / ``rdCur``).
+    """
+    supply_set: str = "set"
+    supply_rdbk: str = "rdbk"
+    magnet_set: str = "Cm:set"
+    magnet_rdbk: str = "Cm:rdbk"
+    magnet_current: str = "im:I"
+    magnet_x: str = "x:set"
+    magnet_y: str = "y:set"
+
+
+BESSYII_FIELDS = PVFields()
+
+
 def flag_not_handling(pv_name: str, val: object):
     logger.warning("Not handling update of pv %s to %s", pv_name, val)
 
 
 async def initialize_magnet_pvs(
-    builder, magnet, controller: ControllerInterface
+    builder, magnet, controller: ControllerInterface, fields: PVFields = BESSYII_FIELDS
 ) -> Dict[ReadCommand, RecordWrapper]:
     """
     Initializes the process variables (PVs) for a given magnet.
@@ -56,10 +76,10 @@ async def initialize_magnet_pvs(
         val = np.nan
 
     rcmd_for_rdbk = ReadCommand(id=magnet_name, property="main_strength_rdbk")
-    rdbk = builder.aIn(f"{magnet_name}:Cm:rdbk", initial_value=val)
+    rdbk = builder.aIn(f"{magnet_name}:{fields.magnet_rdbk}", initial_value=val)
     d[rcmd_for_rdbk] = rdbk
     d[rcmd_for_ref] = builder.aOut(
-        f"{magnet_name}:Cm:set",
+        f"{magnet_name}:{fields.magnet_set}",
         initial_value=val,
         on_update=lambda val: handle_magnet_update(
             device_id=magnet_name, property_id="main_strength", value=val
@@ -67,7 +87,7 @@ async def initialize_magnet_pvs(
     )
 
     d[ReadCommand(id=magnet_name, property="driving_current")] = builder.aOut(
-        f"{magnet_name}:im:I",
+        f"{magnet_name}:{fields.magnet_current}",
         initial_value=0.0,
         # Todo: what to do if current is set, should be rather read only
         # on_update=lambda val: handle_device_update(f"{magnet_name}:im:I", val)
@@ -88,7 +108,7 @@ async def initialize_magnet_pvs(
         return r
 
     d[ReadCommand(id=magnet_name, property="x")] = builder.aOut(
-        f"{magnet_name}:x:set",
+        f"{magnet_name}:{fields.magnet_x}",
         initial_value=0.0,
         on_update=lambda val: controller.update(
             cmd=Command(
@@ -99,7 +119,7 @@ async def initialize_magnet_pvs(
         ),
     )
     d[ReadCommand(id=magnet_name, property="y")] = builder.aOut(
-        f"{magnet_name}:y:set",
+        f"{magnet_name}:{fields.magnet_y}",
         initial_value=0.0,
         on_update=lambda val: controller.update(
             cmd=Command(
@@ -113,7 +133,7 @@ async def initialize_magnet_pvs(
 
 
 async def initialize_power_converter_pvs(
-    builder, controller: ControllerInterface
+    builder, controller: ControllerInterface, fields: PVFields = BESSYII_FIELDS
 ):
     """
     Initializes power converter PVs and associated magnets.
@@ -124,12 +144,12 @@ async def initialize_power_converter_pvs(
     """
     d = dict()
     for pc_name in get_unique_magnet_power_converters():
-        d.update(await add_pc_pvs(builder, pc_name, controller))
+        d.update(await add_pc_pvs(builder, pc_name, controller, fields=fields))
     return d
 
 
 async def add_pc_pvs(
-    builder, pc_name: str, controller: ControllerInterface
+    builder, pc_name: str, controller: ControllerInterface, fields: PVFields = BESSYII_FIELDS
 ) -> Dict[str, RecordWrapper]:
     """
     Adds PVs for a specific power converter and its associated magnets.
@@ -147,7 +167,7 @@ async def add_pc_pvs(
     d = dict()
     # Initialize PVs for each magnet connected to this (pc_name) power converter
     for magnet_data in magnets:
-        d.update(await initialize_magnet_pvs(builder, magnet_data, controller))
+        d.update(await initialize_magnet_pvs(builder, magnet_data, controller, fields=fields))
 
     # Create power converter setpoint and readback PVs
     # Todo: put it to power converters directly
@@ -160,10 +180,10 @@ async def add_pc_pvs(
         logger.warning(f"At startup peeking failed for {pc_name} 'set_current': {ke}")
         start_val = np.nan
 
-    rdbk = builder.aOut(f"{pc_name}:rdbk", initial_value=start_val, PREC=2)
+    rdbk = builder.aOut(f"{pc_name}:{fields.supply_rdbk}", initial_value=start_val, PREC=2)
     d[ReadCommand(id=pc_name, property="rdbk_current")] = rdbk
     d[ReadCommand(id=pc_name, property="set_current")] = builder.aOut(
-        f"{pc_name}:set",
+        f"{pc_name}:{fields.supply_set}",
         initial_value=start_val,
         on_update=lambda val: handle_pc_update(pc_name, "set_current", val),
         PREC=2,
@@ -317,7 +337,8 @@ def initialize_machine_info_pvs(
 
 
 async def initialize_master_clock_pvs(
-    builder, controller: ControllerInterface, master_clock_pv_name: str | None = None
+    builder, controller: ControllerInterface, master_clock_pv_name: str | None = None,
+    set_field: str = "freq", rdbk_field: str | None = None,
 ) -> Dict[ReadCommand, RecordWrapper]:
     """initialise master clock pv
 
@@ -326,6 +347,9 @@ async def initialize_master_clock_pvs(
             ``special_pvs['master_clock']`` (a BESSY II legacy device name);
             facilities without a matching real device should pass an explicit
             lattice/catalog-independent name instead.
+        set_field: field of the frequency setpoint (BESSY II: ``freq``)
+        rdbk_field: field of a frequency readback that follows the setpoint
+            (e.g. MLS: ``rdFrq``); none by default
 
     Warning:
         note for running the twin as a shadow it will
@@ -344,14 +368,15 @@ async def initialize_master_clock_pvs(
     pv_name = master_clock_pv_name if master_clock_pv_name is not None else special_pvs['master_clock']
 
     d = dict()
+    rdbk = None
+    if rdbk_field is not None:
+        rdbk = builder.aIn(f"{pv_name}:{rdbk_field}", initial_value=start_val, EGU="kHz", PREC=3)
+        d[ReadCommand(id="master_clock", property="freq_rdbk")] = rdbk
 
-    d[ReadCommand(id="master_clock", property="freq")] = builder.aOut(
-        f"{pv_name}:freq",
-        initial_value=start_val,
-        always_update=True,
-        EGU="kHz",
-        PREC=3,
-        on_update=lambda val: controller.update(
+    def handle_update(val):
+        if rdbk is not None:
+            rdbk.set(val)
+        return controller.update(
             cmd=Command(
                 id="master_clock",
                 property="reference_frequency",
@@ -360,7 +385,15 @@ async def initialize_master_clock_pvs(
             ),
             reads=[],
             delayed_reads=[],
-        ),
+        )
+
+    d[ReadCommand(id="master_clock", property="freq")] = builder.aOut(
+        f"{pv_name}:{set_field}",
+        initial_value=start_val,
+        always_update=True,
+        EGU="kHz",
+        PREC=3,
+        on_update=handle_update,
     )
 
     #: todo ... comment these values
@@ -377,7 +410,9 @@ async def initialize_master_clock_pvs(
     return d
 
 
-def initialize_other_pvs(builder, current_pv_name: str | None = None) -> Dict[ReadCommand, RecordWrapper]:
+def initialize_other_pvs(
+    builder, current_pv_name: str | None = None, current_field: str = "current"
+) -> Dict[ReadCommand, RecordWrapper]:
     """Initialises miscellaneous PVs (dummy values).
 
     Args:
@@ -386,11 +421,12 @@ def initialize_other_pvs(builder, current_pv_name: str | None = None) -> Dict[Re
             ``special_pvs['current']`` (a BESSY II legacy device name);
             facilities without a matching real device should pass an explicit
             lattice/catalog-independent name instead.
+        current_field: field of the beam current PV (BESSY II: ``current``)
     """
     pv_name = current_pv_name if current_pv_name is not None else special_pvs['current']
     return {
         ReadCommand("ring", "current"): builder.aOut(
-            f"{pv_name}:current", initial_value=0
+            f"{pv_name}:{current_field}", initial_value=0
         )
     }
 
