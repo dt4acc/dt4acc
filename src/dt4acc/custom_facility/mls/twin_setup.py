@@ -12,16 +12,17 @@ Supplies drive magnets: one supply per quadrupole and steerer, one per
 sextupole family string (``S1P1RP`` drives 4 S1). A steerer kicks the magnet
 it is wound on (``HS3M2K1RP`` kicks the sextupole ``S3M2K1RP``).
 
-Calibration, as MML's ``amp2k.m``: ``K = polyval(amp2k, I / scale) / Brho``.
-For a linear ``amp2k`` (quadrupoles, steerers) it is a linear conversion,
-exact; for the sextupoles (a 5th-order term, up to 5 % at 60 A) the
-polynomial itself (dt4acc-lib's ``PolynomialCalibration``, which divides by
-the beam's brho as amp2k does and inverts it as MML's ``k2amp``).
+Calibration, as MML's ``amp2k.m``: ``K = polyval(amp2k, I / scale) / Brho``,
+for every magnet amp2k's polynomial itself (dt4acc-lib's
+``PolynomCoefficients`` with ``polynomial_of="device"``, which divides by the
+beam's brho as amp2k does and inverts it as MML's ``k2amp``): linear for the
+quadrupoles and steerers, a 5th-order term for the sextupoles (up to 5 % at
+60 A).
 """
 import json
 from collections import defaultdict
 from importlib.resources import files
-from typing import List, Sequence, Tuple, Union
+from typing import List, Sequence, Tuple
 
 import at
 import numpy as np
@@ -39,7 +40,6 @@ from dt4acc_lib.model.utils.liaison_manager_lookup_table import (
 from dt4acc_lib.model.utils.translator_manager_lookup_table import (
     IdentityMapper,
     PolynomCoefficients,
-    PolynomialCalibration,
     Range,
     TranslatorLookupTable,
     TranslatorLookupTableElement,
@@ -102,22 +102,17 @@ def amp2k(magnet: dict) -> np.ndarray:
     return np.trim_zeros(np.asarray(magnet["amp2k"], dtype=float), "f")
 
 
-def is_linear(magnet: dict) -> bool:
-    return len(amp2k(magnet)) <= 2
-
-
-def calibration(magnet: dict) -> Union[PolynomCoefficients, PolynomialCalibration]:
-    """A linear amp2k: ``I = Brho * (intercept + slope * K)``, with ``K * Brho =
-    c1 * I / scale + c0``; else amp2k's polynomial ``K * Brho = polyval(amp2k,
-    I / scale)``"""
-    coeffs = amp2k(magnet)
-    scale = magnet.get("amp2k_scale", 1.0)
-    if is_linear(magnet):
-        c1, c0 = (coeffs[0], coeffs[1]) if len(coeffs) == 2 else (coeffs[0], 0.0)
-        c1 = c1 / scale
-        return PolynomCoefficients([-c0 / c1 / BRHO, 1.0 / c1], energy_dependent=True)
+def calibration(magnet: dict) -> PolynomCoefficients:
+    """amp2k's polynomial ``K * Brho = polyval(amp2k, I / scale)``; amp2k is
+    highest order first (MATLAB), PolynomCoefficients lowest order first"""
     rng = Range(*magnet["range"]) if magnet.get("range") else None
-    return PolynomialCalibration(coeffs=[float(v) for v in coeffs], energy_dependent=True, scale=scale, range=rng)
+    return PolynomCoefficients(
+        coeffs=[float(v) for v in amp2k(magnet)[::-1]],
+        energy_dependent=True,
+        polynomial_of="device",
+        scale=magnet.get("amp2k_scale", 1.0),
+        range=rng,
+    )
 
 
 def build_lookup_tables(setup: Sequence[dict]):
@@ -180,4 +175,4 @@ def bpm_names(ring: at.Lattice) -> List[str]:
 
 
 __all__ = ["ENERGY", "BRHO", "HARMONIC_NUMBER", "ACCELERATOR_SETUP", "mls_lattice", "build_managers",
-           "calibration", "is_linear", "bpm_names", "load_accelerator_setup"]
+           "calibration", "bpm_names", "load_accelerator_setup"]

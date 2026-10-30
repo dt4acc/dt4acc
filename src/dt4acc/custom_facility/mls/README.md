@@ -14,10 +14,10 @@ The Metrology Light Source (MLS) storage ring, 629 MeV, as an EPICS soft IOC
   HCM, VCM, the supply that drives each (59 supplies; a sextupole supply drives a
   string of 2 or 4) and MML's calibration.
 
-Calibration as MML's `amp2k.m`: `K = polyval(amp2k, I) / Brho`. Quadrupoles and
-steerers are linear (exact); the sextupoles have a 5th-order term (up to 5 % at
-60 A): they use the polynomial itself (dt4acc-lib's `PolynomialCalibration`;
-current for a strength: the real root closest to the linear solution, as MML's
+Calibration as MML's `amp2k.m`: `K = polyval(amp2k, I) / Brho`, for every magnet
+the polynomial itself (dt4acc-lib's `PolynomCoefficients`, `polynomial_of="device"`).
+Quadrupoles and steerers are linear; the sextupoles have a 5th-order term (up to
+5 % at 60 A). Current for a strength: the real root closest to the linear solution, as MML's
 `k2amp`). A steerer kicks the sextupole it is wound on (`HS3M2K1RP` kicks
 `S3M2K1RP`).
 
