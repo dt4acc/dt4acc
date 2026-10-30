@@ -37,7 +37,7 @@ commits (see *Pull requests in review*). `lib` is dt4acc-lib.
 | 2c | fluorescent screens: stop the beam or observe | minutes | open | todo in dt4acc#71 `466ea37` | #76 |
 | 2d | fault injection for turn by turn data | minutes | needs a user story | | #84 |
 | 2e | kickers (injection, extraction) in turn by turn | minutes | open | | #77 |
-| 2f | beam loss monitors: where and when particles are lost | review of dt4acc#71 | partial (in review) | lib#35 `00180b6`: `ParticleLosses` (pyAT's loss map), `compute_track(..., losses=True)`, `BeamSurvival.losses`; BLM PVs: todo in dt4acc#71 `df18a75` (`view.update_beam_survival`) | |
+| 2f | beam loss monitors: where and when particles are lost | review of dt4acc#71 | partial (in review) | lib#35 `00180b6`: `ParticleLosses` (pyAT's loss map), `compute_track(..., losses=True)`, `BeamSurvival.losses`; BLM PVs: todo in dt4acc#71 `df18a75` (`view.update_beam_survival`) | #87 |
 | 3 | Beam current measurement: fixed value, ≈ 0 if the beam is lost | PDF, minutes, dt4acc#33 | in review | dt4acc#71 `369255f`, `466ea37`, `df18a75`; lib#35 `d0efe75`, `00180b6` | #33 |
 | 3a | current decay (lifetime) and top-up | minutes | needs a user story | todo in dt4acc#71 `466ea37` | #84 |
 | 3b | different lifetimes per bunch; fill pattern | minutes | needs a user story | | #84 |
@@ -77,6 +77,6 @@ commits (see *Pull requests in review*). `lib` is dt4acc-lib.
   opened; #86 (BESSY II undulators). Not planned: renaming reset / reinit. Twin only PVs: done with
   the PV wiki.
 * 2026-10-30: reviews of lib#34, dt4acc#69, lib#35, dt4acc#71 addressed
-  (commits above); beam loss monitors (2f) added from the review of
-  dt4acc#71, no issue yet. Tests on z3: dt4acc-lib, dt4acc offline, MLS,
+  (commits above); beam loss monitors (2f, #87) added from the review of
+  dt4acc#71. Tests on z3: dt4acc-lib, dt4acc offline, MLS,
   live BESSY II twin (beam current) pass.
