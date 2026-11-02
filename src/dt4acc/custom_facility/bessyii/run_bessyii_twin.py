@@ -33,7 +33,8 @@ from dt4acc.custom_epics.ioc.orbit_pva import OrbitTwinServer
 from dt4acc.custom_epics.ioc.controller import dispatcher
 from dt4acc.custom_epics.ioc.view import View
 from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_managers
-from dt4acc.custom_facility.bessyii.turn_by_turn import RingTurnByTurn, TurnByTurnPVs, hook_track_updates
+from dt4acc.custom_epics.ioc.turn_by_turn import TurnByTurnPVs, hook_track_updates
+from dt4acc.custom_facility.bessyii.turn_by_turn import ring_turn_by_turn
 from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend
 
 logging.basicConfig(level=logging.WARNING)
@@ -154,7 +155,7 @@ def initialise_turn_by_turn_pvs(builder, backend: SimulatorBackend) -> TurnByTur
     Not part of :func:`initialise_pvs`: the injection twin uses those and
     serves the BPMs' turn by turn data of its own hand over.
     """
-    return TurnByTurnPVs(RingTurnByTurn(backend), builder=builder)
+    return TurnByTurnPVs(ring_turn_by_turn(backend), builder=builder)
 
 
 def run():

@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
-from dt4acc.custom_facility.bessyii.turn_by_turn import RingTurnByTurn
+from dt4acc.custom_facility.bessyii.turn_by_turn import ring_turn_by_turn
 from dt4acc_lib.model.output.track import ParticleState
 
 #: design tunes of the BESSY II twin (TUNEZR:flq:rdH / rdV)
@@ -19,7 +19,7 @@ def backend():
 
 
 def run(backend, offset, n_turns=128):
-    tbt = RingTurnByTurn(backend, offset=ParticleState.from_sequence(offset), n_turns=n_turns)
+    tbt = ring_turn_by_turn(backend, offset=ParticleState.from_sequence(offset), n_turns=n_turns)
     return asyncio.run(tbt.compute())
 
 
@@ -57,5 +57,5 @@ def test_oscillates_with_the_tune(backend, plane):
 def test_start_is_closed_orbit_plus_offset(backend):
     offset = np.array([2e-4, 0, -1e-4, 0, 0, 0])
     r = run(backend, offset, n_turns=2)
-    co = RingTurnByTurn(backend).closed_orbit()
+    co = ring_turn_by_turn(backend).closed_orbit()
     np.testing.assert_allclose(r.start.as_array(), co + offset, rtol=0, atol=1e-15)

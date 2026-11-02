@@ -9,7 +9,9 @@ machine where MML knows them (``ao_mls.json``):
 * beam current: ``<P>:CUM1ZK3RP:rdCur``
 * twin only: magnets ``<P>:<magnet>:Cm:setCur``, ``Cm:rdCur``, ``im:I``,
   ``x:setCur``, ``y:setCur``; the model (``beam:orbit:*``, ``beam:twiss:*``,
-  ``survey:*``, ``TUNEZR:*``, ``ORBITCCP:rdBpm`` / ``rdModel`` over PVA)
+  ``survey:*``, ``TUNEZR:*``, ``ORBITCCP:rdBpm`` / ``rdModel`` over PVA);
+  turn by turn data at the BPMs (``<P>:<bpm>:tbt:x``, ``tbt:y`` [m];
+  ``<P>:TBT:*``, as the BESSY II ring twin)
 """
 import asyncio
 import getpass
@@ -25,6 +27,7 @@ from dt4acc.core.bl.translating_command_execution_engine import TranslatingComma
 from dt4acc.core.interfaces.controller_interface import ControllerInterface
 from dt4acc.custom_epics.ioc.controller import dispatcher
 from dt4acc.custom_epics.ioc.orbit_pva import OrbitTwinServer
+from dt4acc.custom_epics.ioc.turn_by_turn import RingTurnByTurn, TurnByTurnPVs, hook_track_updates
 from dt4acc.custom_epics.ioc.pv_setup import (
     PVFields,
     initialize_calculation_state_pvs,
@@ -102,6 +105,11 @@ async def initialise_pvs(builder, controller: ControllerInterface, bpms: Sequenc
     }
 
 
+def initialise_turn_by_turn_pvs(builder, backend: SimulatorBackend, bpms: Sequence[str]) -> TurnByTurnPVs:
+    """Turn by turn PVs (``TBT:...``, ``<bpm>:tbt:x``, ``<bpm>:tbt:y``), as the BESSY II ring twin"""
+    return TurnByTurnPVs(RingTurnByTurn(backend, bpms), builder=builder)
+
+
 async def main():
     ring = mls_lattice()
     backend = SimulatorBackend(name="MLS_on_PyAT", acc=PyATAcceleratorSimulator(at_lattice=ring))
@@ -117,6 +125,8 @@ async def main():
         builder.SetDeviceName(prefix)
 
     view.update_process_variables(await initialise_pvs(builder, controller, bpms, n_elements=len(ring) + 1))
+    # turn by turn data at the BPMs, recomputed after each new closed orbit
+    hook_track_updates(view, initialise_turn_by_turn_pvs(builder, backend, bpms))
     await read_and_dispatch(
         controller=controller, view=view, rcmds=[ReadCommand("survey", "s")] + list(controller.default_delayed_reads)
     )
