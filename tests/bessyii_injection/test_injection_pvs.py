@@ -77,7 +77,7 @@ def handover_pvs():
 
 def test_ring_pvs_as_the_ring_twin(twin_and_pvs):
     _, pvs = twin_and_pvs
-    expected = expected_from_pv_list(pv_list("bessyii"))
+    expected = expected_from_pv_list(pv_list("bessyii"), turn_by_turn=False)
     assert not expected - pvs, f"ring PVs not served: {sorted(expected - pvs)[:10]}"
 
 
@@ -101,7 +101,7 @@ def test_line_devices_and_model(twin_and_pvs):
 
 def test_pvs_are_exactly_the_parts(twin_and_pvs):
     twin, pvs = twin_and_pvs
-    ring = expected_from_pv_list(pv_list("bessyii"))
+    ring = expected_from_pv_list(pv_list("bessyii"), turn_by_turn=False)
     line_dev = line_device_pvs(twin.line_monitors)
     line_model = line_model_pvs()
     handover = handover_pvs()
