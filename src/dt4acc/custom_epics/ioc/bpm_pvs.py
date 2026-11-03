@@ -19,8 +19,11 @@ from dt4acc_lib.model.utils.command import ReadCommand
 SA_FIELDS = (("x", "signal:sa:X"), ("y", "signal:sa:Y"))
 #: plane, PV field: turn by turn
 TBT_FIELDS = (("x", "signal:tbt:X"), ("y", "signal:tbt:Y"))
-#: m -> mm
-MM = 1e3
+#: m -> mm: the model's positions [m] to the BPM PVs' [mm]
+#: Todo: revisit how the BPM and turn by turn data are converted (e.g. when
+#:       doing it for SOLEIL): with the translation service's objects, as
+#:       the supplies and magnets, instead of a fixed factor here
+M2MM = 1e3
 
 
 def initialize_bpm_pvs(names: Sequence[str], builder=softioc_builder) -> Dict[ReadCommand, RecordWrapper]:
@@ -32,4 +35,4 @@ def initialize_bpm_pvs(names: Sequence[str], builder=softioc_builder) -> Dict[Re
     }
 
 
-__all__: Sequence[str] = ["MM", "SA_FIELDS", "TBT_FIELDS", "initialize_bpm_pvs"]
+__all__: Sequence[str] = ["M2MM", "SA_FIELDS", "TBT_FIELDS", "initialize_bpm_pvs"]

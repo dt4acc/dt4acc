@@ -21,7 +21,7 @@ import numpy as np
 from softioc import builder as softioc_builder
 
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
-from dt4acc.custom_epics.ioc.bpm_pvs import MM, TBT_FIELDS
+from dt4acc.custom_epics.ioc.bpm_pvs import M2MM, TBT_FIELDS
 from .handover import InjectionHandover, InjectionResult
 
 logger = logging.getLogger("dt4acc-bessyii-injection")
@@ -99,8 +99,8 @@ class InjectionPVs:
         self.rec["tbt:x"].set(x.ravel())
         self.rec["tbt:y"].set(y.ravel())
         for k, bpm in enumerate(r.monitors):
-            self.rec[f"{bpm}:x"].set(x[:, k] * MM)
-            self.rec[f"{bpm}:y"].set(y[:, k] * MM)
+            self.rec[f"{bpm}:x"].set(x[:, k] * M2MM)
+            self.rec[f"{bpm}:y"].set(y[:, k] * M2MM)
         survived = r.survived()
         self.rec["survived"].set(np.asarray(survived, dtype=float))
         self.count += 1

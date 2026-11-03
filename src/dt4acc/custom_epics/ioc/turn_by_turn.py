@@ -19,6 +19,10 @@ the ring lattice, at the closed orbit plus an offset, e.g. a kicked beam:
 
 Recomputed when one of the settings changes and after each new closed orbit
 (lattice change), as the injection twin's hand over.
+
+Todo: revisit the conversion of the turn by turn data (m -> mm by a fixed
+      factor, ``bpm_pvs.M2MM``), e.g. when implementing it for SOLEIL: use
+      translation objects there too, as for the supplies and magnets?
 """
 import asyncio
 import logging
@@ -30,7 +34,7 @@ import numpy as np
 from softioc import builder as softioc_builder
 
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
-from dt4acc.custom_epics.ioc.bpm_pvs import MM, TBT_FIELDS
+from dt4acc.custom_epics.ioc.bpm_pvs import M2MM, TBT_FIELDS
 from dt4acc_lib.model.output.track import ParticleState
 from dt4acc_lib.model.output.track_as_np_wrapper import NPStatesForTurns
 from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend
@@ -171,8 +175,8 @@ class TurnByTurnPVs:
         self.rec["tbt:x"].set(x.ravel())
         self.rec["tbt:y"].set(y.ravel())
         for k, bpm in enumerate(r.monitors):
-            self.rec[f"{bpm}:x"].set(x[:, k] * MM)
-            self.rec[f"{bpm}:y"].set(y[:, k] * MM)
+            self.rec[f"{bpm}:x"].set(x[:, k] * M2MM)
+            self.rec[f"{bpm}:y"].set(y[:, k] * M2MM)
         survived = r.survived()
         self.rec["survived"].set(np.asarray(survived, dtype=float))
         self.count += 1

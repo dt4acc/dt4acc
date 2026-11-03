@@ -9,7 +9,7 @@ from dt4acc.core.interfaces.view_interface import ViewInterface
 from dt4acc.core.utils.logger import get_logger
 from dt4acc_lib.model.output.result import TranslatedReading, SingleReading
 from dt4acc_lib.model.output.result import TranslatedReading
-from .bpm_pvs import MM
+from .bpm_pvs import M2MM
 from .orbit_pva import OrbitTwinServer
 from dt4acc_lib.model.utils.command import ReadCommand
 
@@ -203,7 +203,7 @@ class View(ViewInterface):
             for plane, value in (("x", pos.x), ("y", pos.y)):
                 rec = self.process_variables.get(ReadCommand(id=pos.fam_name, property=plane))
                 if rec is not None:
-                    rec.set(value * MM)
+                    rec.set(value * M2MM)
 
     def update_turn_by_turn(self, var: ReadCommand, pkg):
         assert (
