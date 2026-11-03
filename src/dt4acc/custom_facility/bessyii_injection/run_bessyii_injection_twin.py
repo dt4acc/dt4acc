@@ -102,7 +102,8 @@ def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
     # storage ring
     ring_backend = provide_backend_encapsulating_lattice()
     _, ring_lm, ring_ts, _ = load_managers()
-    ring_view = View(orbit_server=orbit_server(prefix))
+    ring_bpms = [e.FamName for e in ring_backend.acc.acc if isinstance(e, at.Monitor) and e.FamName.startswith("BPMZ")]
+    ring_view = View(orbit_server=orbit_server(prefix), bpms=ring_bpms)
     ring = Controller(name="ring", mexec=engine(ring_backend, ring_lm, ring_ts), view=ring_view,
                       default_delayed_reads=DELAYED)
 
@@ -118,7 +119,6 @@ def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
                     default_delayed_reads=DELAYED)
 
     # hand over
-    ring_bpms = [e.FamName for e in ring_backend.acc.acc if isinstance(e, at.Monitor) and e.FamName.startswith("BPMZ")]
     handover = InjectionHandover(line=line_backend, ring=ring_backend, monitors=ring_bpms)
     return InjectionTwin(ring_backend=ring_backend, ring=ring, ring_view=ring_view, line=line,
                          line_backend=line_backend, line_monitors=line_monitors, tl=tl, line_view=line_view,
@@ -133,7 +133,7 @@ async def initialise_pvs(builder, prefix: str, twin: InjectionTwin) -> Injection
     """
     # machine names: ring, hand over, transfer line devices
     builder.SetDeviceName(prefix)
-    twin.ring_view.update_process_variables(await ring_pvs(builder=builder, controller=twin.ring))
+    twin.ring_view.update_process_variables(await ring_pvs(builder=builder, controller=twin.ring, bpms=twin.handover.monitors))
     injection = InjectionPVs(twin.handover, builder=builder)
     # the line's supplies and magnets come from its own device database
     configure_data_file(resources.files("dt4acc").joinpath(*ACCELERATOR_SETUP))

@@ -50,6 +50,9 @@ TYPES = [("Quadrupole", "Quadrupoles", QUAD_FIELDS),
 
 MONITOR_FIELDS = [("x", "horizontal beam position (mm)", RO, NO),
                   ("y", "vertical beam position (mm)", RO, NO)]
+#: BPMs and striplines: named as the BPM system (dt4acc.custom_epics.ioc.bpm_pvs)
+BPM_FIELDS = [("signal:sa:X", "horizontal beam position (mm)", RO, SIMILAR),
+              ("signal:sa:Y", "vertical beam position (mm)", RO, SIMILAR)]
 MONITORS = [("FOMZ", "FOMs (screens)"), ("BPMZ", "Beam position monitors"), ("SLZ", "Striplines (beam position monitors of another geometry)")]
 
 # virtual devices: (section, [(pv, description, write, machine)]); a PV the dump lacks is left out
@@ -199,12 +202,16 @@ def main(a):
 
     lines += ["## Monitors", "",
               "Beam position at each monitor of the lattice, in lattice order: the trajectory of",
-              "the beam entering the line.", ""]
+              "the beam entering the line. BPMs and striplines are named as the BPM system",
+              "(`<bpm>:signal:sa:X` / `Y`), screens `<screen>:x` / `y`.", ""]
     monitor_devs = [d for d in devices_with_pvs if any(d.startswith(m) for m, _ in MONITORS)]
     for stem, title in MONITORS:
         devs = sorted((d for d in monitor_devs if d.startswith(stem)), key=lambda d: (d.endswith("R"), number(d)))
         if devs:
-            lines += group(title, MONITOR_FIELDS, devs, "<monitor>")
+            if stem == "FOMZ":
+                lines += group(title, MONITOR_FIELDS, devs, "<screen>")
+            else:
+                lines += group(title, BPM_FIELDS, devs, "<bpm>")
 
     lines += ["## Virtual devices", "", "Computed by the twin from the lattice.", ""]
     for title, pvdescs in VIRTUAL:

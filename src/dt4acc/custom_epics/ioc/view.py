@@ -1,6 +1,6 @@
 from copy import copy as _copy
 import math
-from typing import Optional, Dict
+from typing import Dict, Optional, Sequence
 
 import numpy as np
 from softioc import pythonSoftIoc
@@ -9,6 +9,7 @@ from dt4acc.core.interfaces.view_interface import ViewInterface
 from dt4acc.core.utils.logger import get_logger
 from dt4acc_lib.model.output.result import TranslatedReading, SingleReading
 from dt4acc_lib.model.output.result import TranslatedReading
+from .bpm_pvs import MM
 from .orbit_pva import OrbitTwinServer
 from dt4acc_lib.model.utils.command import ReadCommand
 
@@ -45,9 +46,11 @@ class View(ViewInterface):
     :class:`OrbitTwinServer` when one is registered.
     """
 
-    def __init__(self, *, orbit_server: Optional[OrbitTwinServer] = None):
+    def __init__(self, *, orbit_server: Optional[OrbitTwinServer] = None, bpms: Sequence[str] = ()):
+        """``bpms``: their slow acquisition records (``bpm_pvs``) follow the track"""
         self.process_variables: Dict[ReadCommand, pythonSoftIoc.RecordWrapper] = dict()
         self.orbit_server = orbit_server
+        self.bpms = set(bpms)
         # used for creating invalid data
         self.last_data_cache = dict()
 
@@ -157,6 +160,7 @@ class View(ViewInterface):
             assert rw_y is not None
             rw_x.set(x_vals)
             rw_y.set(y_vals)
+            self.update_bpms(value.track)
 
             rw_names = self.process_variables.get(
                 ReadCommand(id="beam", property="names")
@@ -190,6 +194,16 @@ class View(ViewInterface):
                     logger.error("OrbitTwinServer.push failed: %s", exc)
         else:
             raise AssertionError(f"Don't know track property {var.property}")
+
+    def update_bpms(self, track) -> None:
+        """``<bpm>:signal:sa:X`` / ``Y`` [mm] of the BPMs in the track"""
+        for pos in track:
+            if pos.fam_name not in self.bpms:
+                continue
+            for plane, value in (("x", pos.x), ("y", pos.y)):
+                rec = self.process_variables.get(ReadCommand(id=pos.fam_name, property=plane))
+                if rec is not None:
+                    rec.set(value * MM)
 
     def update_turn_by_turn(self, var: ReadCommand, pkg):
         assert (

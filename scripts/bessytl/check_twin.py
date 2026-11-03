@@ -26,6 +26,11 @@ ctx = Context("pva", nt=False)
 failures = []
 
 
+
+def monitor_pv(name: str, plane: str) -> str:
+    """screens ``<screen>:x``, BPMs and striplines ``<bpm>:signal:sa:X`` [mm]"""
+    return f"{name}:{plane}" if name.startswith("FOMZ") else f"{name}:signal:sa:{plane.upper()}"
+
 def pv(name: str) -> str:
     return f"{PREFIX}:{name}" if PREFIX else name
 
@@ -72,7 +77,7 @@ def main() -> int:
     ref, ed = reference(currents, {})
     for name in monitors:
         # monitor PVs in mm
-        x, y = get(f"{name}:x") * 1e-3, get(f"{name}:y") * 1e-3
+        x, y = get(monitor_pv(name, "x")) * 1e-3, get(monitor_pv(name, "y")) * 1e-3
         check(np.allclose([x, y], ref[name], atol=1e-12), f"{name} at start: {x:.3e} {y:.3e}")
 
     # 3. steerers: set supplies over EPICS, compare with pyAT
@@ -88,9 +93,9 @@ def main() -> int:
             kicks[m["name"]] = angles
     ref, ed = reference(currents, kicks)
     last = monitors[-2]
-    wait_for(f"{last}:x", ref[last][0] * 1e3, 1e-9)
+    wait_for(monitor_pv(last, "x"), ref[last][0] * 1e3, 1e-9)
     for name in monitors:
-        x, y = get(f"{name}:x") * 1e-3, get(f"{name}:y") * 1e-3
+        x, y = get(monitor_pv(name, "x")) * 1e-3, get(monitor_pv(name, "y")) * 1e-3
         check(np.allclose([x, y], ref[name], atol=1e-12),
               f"{name} after steerers: {x * 1e3:+.4f} {y * 1e3:+.4f} mm (pyAT {ref[name][0] * 1e3:+.4f} {ref[name][1] * 1e3:+.4f})")
     for pc, current in steer.items():

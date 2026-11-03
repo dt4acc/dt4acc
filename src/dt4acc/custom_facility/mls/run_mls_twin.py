@@ -4,14 +4,14 @@ PVs (``<P>`` is ``DT4ACC_PREFIX``, default: the user name), named as on the
 machine where MML knows them (``ao_mls.json``):
 
 * supplies: ``<P>:<supply>:setCur`` (acts), ``<P>:<supply>:rdCur`` [A]
-* BPMs: ``<P>:<bpm>:rdX``, ``<P>:<bpm>:rdY`` [mm]
+* BPMs: ``<P>:<bpm>:signal:sa:X``, ``<P>:<bpm>:signal:sa:Y`` [mm]
 * RF: ``<P>:MCLKHGP:setFrq`` (acts), ``<P>:MCLKHGP:rdFrq`` [kHz]
 * beam current: ``<P>:CUM1ZK3RP:rdCur``
 * twin only: magnets ``<P>:<magnet>:Cm:setCur``, ``Cm:rdCur``, ``im:I``,
   ``x:setCur``, ``y:setCur``; the model (``beam:orbit:*``, ``beam:twiss:*``,
   ``survey:*``, ``TUNEZR:*``, ``ORBITCCP:rdBpm`` / ``rdModel`` over PVA);
-  turn by turn data at the BPMs (``<P>:<bpm>:tbt:x``, ``tbt:y`` [m];
-  ``<P>:TBT:*``, as the BESSY II ring twin)
+  turn by turn data at the BPMs (``<P>:<bpm>:signal:tbt:X``, ``signal:tbt:Y``
+  [mm]; ``<P>:TBT:*``, as the BESSY II ring twin)
 """
 import asyncio
 import getpass
@@ -106,7 +106,7 @@ async def initialise_pvs(builder, controller: ControllerInterface, bpms: Sequenc
 
 
 def initialise_turn_by_turn_pvs(builder, backend: SimulatorBackend, bpms: Sequence[str]) -> TurnByTurnPVs:
-    """Turn by turn PVs (``TBT:...``, ``<bpm>:tbt:x``, ``<bpm>:tbt:y``), as the BESSY II ring twin"""
+    """Turn by turn PVs (``TBT:...``, ``<bpm>:signal:tbt:X`` / ``Y``), as the BESSY II ring twin"""
     return TurnByTurnPVs(RingTurnByTurn(backend, bpms), builder=builder)
 
 

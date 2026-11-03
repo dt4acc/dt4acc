@@ -85,8 +85,8 @@ def compare(label, steerers, geometry, n_turns):
     check(np.allclose(x, x_ref, atol=1e-12) and np.allclose(y, y_ref, atol=1e-12),
           f"{label}: {n_turns} turns x {n} BPMs, max |dx| {np.max(np.abs(x - x_ref)):.1e} m, "
           f"first turn x rms {np.sqrt(np.mean(x[0] ** 2)) * 1e3:.4f} mm")
-    one = np.asarray(get(f"{BPMS[10]}:tbt:x"))[:n_turns]
-    check(np.allclose(one, x_ref[:, 10], atol=1e-12), f"{label}: {BPMS[10]}:tbt:x matches")
+    one = np.asarray(get(f"{BPMS[10]}:signal:tbt:X"))[:n_turns] * 1e-3   # mm
+    check(np.allclose(one, x_ref[:, 10], atol=1e-12), f"{label}: {BPMS[10]}:signal:tbt:X matches")
 
 
 def main():

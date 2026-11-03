@@ -3,7 +3,7 @@ import getpass
 import logging
 import os
 from importlib import resources
-from typing import Dict, Any
+from typing import Any, Dict, Sequence
 
 from softioc import builder, softioc
 
@@ -26,6 +26,7 @@ from dt4acc.custom_epics.ioc.pv_setup import (
     initialize_other_pvs,
     initialize_calculation_state_pvs,
 )
+from dt4acc.custom_epics.ioc.bpm_pvs import initialize_bpm_pvs
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
 from dt4acc_lib.model.utils.command import ReadCommand
@@ -34,7 +35,7 @@ from dt4acc.custom_epics.ioc.controller import dispatcher
 from dt4acc.custom_epics.ioc.view import View
 from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_managers
 from dt4acc.custom_epics.ioc.turn_by_turn import TurnByTurnPVs, hook_track_updates
-from dt4acc.custom_facility.bessyii.turn_by_turn import ring_turn_by_turn
+from dt4acc.custom_facility.bessyii.turn_by_turn import ring_bpms, ring_turn_by_turn
 from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend
 
 logging.basicConfig(level=logging.WARNING)
@@ -90,7 +91,7 @@ async def main():
     )
 
     orbit_server.start()
-    view = View(orbit_server=orbit_server)
+    view = View(orbit_server=orbit_server, bpms=ring_bpms(backend))
 
     controller = Controller(
         name="epics-delegate-ctrller",
@@ -106,7 +107,7 @@ async def main():
         builder.SetDeviceName(prefix)
 
     view.update_process_variables(
-        await initialise_pvs(builder=builder, controller=controller)
+        await initialise_pvs(builder=builder, controller=controller, bpms=ring_bpms(backend))
     )
     # turn by turn data at the BPMs, recomputed after each new closed orbit
     hook_track_updates(view, initialise_turn_by_turn_pvs(builder, backend))
@@ -122,13 +123,14 @@ async def main():
 
 
 async def initialise_pvs(
-    builder, controller: ControllerInterface
+    builder, controller: ControllerInterface, bpms: Sequence[str]
 ) -> Dict[ReadCommand, Any]:
     """PVs of the storage ring
 
     Supplies (``<supply>:set``, ``<supply>:rdbk``) and the magnets they drive
     (``<magnet>:Cm:set``, ``Cm:rdbk``, ``im:I``, ``x:set``, ``y:set``) from the
-    device database, master clock and cavities, then the model PVs. The PV
+    device database, master clock and cavities, the ``bpms``' slow
+    acquisition (``<bpm>:signal:sa:X`` / ``Y``), then the model PVs. The PV
     names are the twin's interface (``pv_list.md``,
     ``tests/bessyii/test_ring_pvs.py``).
     """
@@ -138,6 +140,7 @@ async def initialise_pvs(
         **await initialize_master_clock_pvs(builder, controller=controller),
         **await initialize_cavity_pvs(builder, controller=controller),
         **await initialize_power_converter_pvs(builder, controller=controller),
+        **initialize_bpm_pvs(bpms, builder=builder),
         **initialize_machine_info_pvs(builder, n_ref_buckets=400),
         **initialize_survey_info_pvs(builder),
         **initialize_orbit_object_pvs(builder),
@@ -150,7 +153,7 @@ async def initialise_pvs(
 
 
 def initialise_turn_by_turn_pvs(builder, backend: SimulatorBackend) -> TurnByTurnPVs:
-    """Turn by turn PVs of the ring alone (``TBT:...``, ``<bpm>:tbt:x``, ``<bpm>:tbt:y``)
+    """Turn by turn PVs of the ring alone (``TBT:...``, ``<bpm>:signal:tbt:X`` / ``Y``)
 
     Not part of :func:`initialise_pvs`: the injection twin uses those and
     serves the BPMs' turn by turn data of its own hand over.

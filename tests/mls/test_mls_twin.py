@@ -3,7 +3,7 @@
 Calibration: the conversion reproduces MML's ``amp2k.m`` (``K =
 polyval(amp2k, I) / Brho``), exactly; the design lattice needs
 supply currents inside MML's setpoint ranges. PVs: supplies
-``setCur`` / ``rdCur``, BPMs ``rdX`` / ``rdY``, RF ``MCLKHGP:setFrq`` /
+``setCur`` / ``rdCur``, BPMs ``signal:sa:X`` / ``Y``, RF ``MCLKHGP:setFrq`` /
 ``rdFrq``, beam current ``CUM1ZK3RP:rdCur`` (``ao_mls.json``); magnets
 twin only.
 """
@@ -86,10 +86,10 @@ def test_pv_names(setup, twin):
     pvs = set(builder.names(PREFIX))
     expected = {f"{m['pc']}:{f}" for m in setup for f in SUPPLY_FIELDS}
     expected |= {f"{m['name']}:{f}" for m in setup for f in MAGNET_FIELDS}
-    expected |= {f"{b}:{f}" for b in bpms for f in ("rdX", "rdY")}
+    expected |= {f"{b}:{f}" for b in bpms for f in ("signal:sa:X", "signal:sa:Y")}
     expected |= {"MCLKHGP:setFrq", "MCLKHGP:rdFrq", "CAV:freq", "CUM1ZK3RP:rdCur"}
     # turn by turn, as the BESSY II ring twin
-    expected |= {f"{b}:tbt:{p}" for b in bpms for p in ("x", "y")}
+    expected |= {f"{b}:{f}" for b in bpms for f in ("signal:tbt:X", "signal:tbt:Y")}
     expected |= {"TBT:n_turns", "TBT:tbt:x", "TBT:tbt:y", "TBT:tbt:names", "TBT:survived", "TBT:count"}
     expected |= {f"TBT:{w}:{p}" for w in ("offset", "start") for p in ("x", "xp", "y", "yp", "delta", "ct")}
     assert len(bpms) == 28

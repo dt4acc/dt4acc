@@ -35,7 +35,7 @@ Prefixed with `DT4ACC_PREFIX` (`<P>`). Named as on the machine where MML knows t
 | PVs | what |
 |---|---|
 | `<P>:<supply>:setCur`, `<P>:<supply>:rdCur` | supply current [A]; a write to `setCur` acts, `rdCur` follows (e.g. `Q1P2K1RP`, `S1P1RP`, `HS3P2K1RP`) |
-| `<P>:<bpm>:rdX`, `<P>:<bpm>:rdY` | closed orbit at the 28 BPMs [mm] (`BPMZ5K1RP`, ...) |
+| `<P>:<bpm>:signal:sa:X`, `<P>:<bpm>:signal:sa:Y` | closed orbit at the 28 BPMs [mm] (`BPMZ5K1RP`, ...), named as the BPM system |
 | `<P>:MCLKHGP:setFrq`, `<P>:MCLKHGP:rdFrq` | RF frequency [kHz]; `setFrq` acts, `rdFrq` follows |
 | `<P>:CUM1ZK3RP:rdCur` | beam current (not computed) |
 
@@ -48,7 +48,7 @@ Twin only:
 | `<P>:TUNEZR:flq:rdH`, `rdV`, `<P>:TUNEZR:rdH`, `rdV` | tunes, tune frequencies |
 | `<P>:ORBITCCP:rdBpm`, `<P>:ORBITCCP:rdModel` | BPM and model structures (PV Access only) |
 | `<P>:simulator_ring:reset`, `reinit` | simulation state |
-| `<P>:<bpm>:tbt:x`, `<P>:<bpm>:tbt:y` | turn by turn position at the BPM [m] (not mm as `rdX`), as the BESSY II ring twin |
+| `<P>:<bpm>:signal:tbt:X`, `<P>:<bpm>:signal:tbt:Y` | turn by turn position at the BPM [mm], as the BESSY II ring twin |
 | `<P>:TBT:offset:{x,xp,y,yp,delta,ct}`, `<P>:TBT:n_turns` | turn by turn: start offset from the closed orbit (default 1 mm in x and y), turns (default 128, up to 1024); a write recomputes |
 | `<P>:TBT:start:*`, `TBT:tbt:x`, `tbt:y`, `tbt:names`, `TBT:survived`, `TBT:count` | turn by turn: start state, all BPMs turn after turn, particles left, computations |
 

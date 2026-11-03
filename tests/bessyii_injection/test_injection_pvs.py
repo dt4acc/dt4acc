@@ -52,10 +52,12 @@ def line_device_pvs(monitors):
     out = set()
     for group, devices in pv_list_md.group_devices(path).items():
         section = group.split(" / ")[0]
-        placeholder = {"Power supplies": "supply", "Monitors": "monitor"}.get(section)
+        placeholder = {"Power supplies": "supply"}.get(section)
         if section.startswith("Magnets"):
             placeholder = "magnet"
-        if placeholder == "monitor":
+        if section == "Monitors":
+            # screens <screen>:x / y, BPMs and striplines <bpm>:signal:sa:X / Y
+            placeholder = "screen" if group.split(" / ")[1].startswith("FOM") else "bpm"
             devices = [d for d in devices if d in monitors]
         if placeholder:
             out |= {f"{d}:{f}" for d in devices for f in fields[placeholder]}
