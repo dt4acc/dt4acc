@@ -17,9 +17,8 @@ from softioc import builder as _softioc_builder  # noqa: F401
 from dt4acc_lib.bl.translator_service import create_translation_object_for_data_model
 from dt4acc_lib.pyat_simulator.accelerator_simulator import PyATAcceleratorSimulator
 from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend
-from dt4acc.custom_epics.ioc.turn_by_turn import RingTurnByTurn
+from dt4acc.core.bl.turn_by_turn import RingTurnByTurn
 from dt4acc.custom_facility.mls.run_mls_twin import initialise_pvs, initialise_turn_by_turn_pvs, make_controller
-from dt4acc_lib.model.output.track import ParticleState
 from dt4acc.custom_facility.mls.twin_setup import (
     BRHO, bpm_names, calibration, lattice_element, load_accelerator_setup, mls_lattice,
 )
@@ -91,7 +90,7 @@ def test_pv_names(setup, twin):
     # turn by turn, as the BESSY II ring twin
     expected |= {f"{b}:{f}" for b in bpms for f in ("signal:tbt:X", "signal:tbt:Y")}
     expected |= {"TBT:n_turns", "TBT:tbt:x", "TBT:tbt:y", "TBT:tbt:names", "TBT:survived", "TBT:count"}
-    expected |= {f"TBT:{w}:{p}" for w in ("offset", "start") for p in ("x", "xp", "y", "yp", "delta", "ct")}
+    expected |= {f"TBT:{w}:{p}" for w in ("offset", "start") for p in ("x", "px", "y", "py", "delta", "ct")}
     assert len(bpms) == 28
     missing = sorted(expected - pvs)
     assert not missing, f"{len(missing)} missing, e.g. {missing[:5]}"
@@ -111,10 +110,10 @@ def test_turn_by_turn_oscillates_with_the_tunes():
     ring = mls_lattice()
     backend = SimulatorBackend(name="MLS_on_PyAT", acc=PyATAcceleratorSimulator(at_lattice=ring))
     bpms = bpm_names(ring)
-    tbt = RingTurnByTurn(backend, bpms, offset=ParticleState.from_sequence([1e-4, 0, 1e-4, 0, 0, 0]), n_turns=128)
-    r = asyncio.run(tbt.compute())
-    assert r.x().shape == (128, 28) and np.all(r.survived() == 1)
-    for signal, q in ((r.x()[:, 0], 0.1785), (r.y()[:, 0], 0.2320)):
+    tbt = RingTurnByTurn(backend, bpms, offset=[1e-4, 0, 1e-4, 0, 0, 0], n_turns=128)
+    r = tbt.compute()
+    assert r.x.shape == (128, 28) and np.all(r.survived == 1)
+    for signal, q in ((r.x[:, 0], 0.1785), (r.y[:, 0], 0.2320)):
         s = signal - signal.mean()
         n = 16 * len(s)
         f = np.fft.rfftfreq(n)[np.argmax(np.abs(np.fft.rfft(s * np.hanning(len(s)), n)))]

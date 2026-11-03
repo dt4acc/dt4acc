@@ -1,113 +1,49 @@
-"""Turn by turn data of a storage ring twin: a beam started off the closed
-orbit, tracked for some turns, read at the ring's BPMs (BESSY II, MLS)
+"""EPICS PVs of a storage ring twin's turn by turn data (BESSY II, MLS)
 
-The same BPM PVs as the BESSY II injection twin (``<bpm>:signal:tbt:X``,
-``<bpm>:signal:tbt:Y``), where the beam comes from the transfer line instead
-(``custom_facility/bessyii_injection``). Here it starts at the beginning of
-the ring lattice, at the closed orbit plus an offset, e.g. a kicked beam:
+The computation is the control system independent
+:mod:`dt4acc.core.bl.turn_by_turn`: a beam started at the beginning of the
+ring lattice, at the closed orbit plus an offset (e.g. a kicked beam), read
+at the ring's BPMs. The same BPM PVs as the BESSY II injection twin, where
+the beam comes from the transfer line instead (``custom_facility/bessyii_injection``):
 
-* ``TBT:offset:{x,xp,y,yp,delta,ct}``: start offset from the closed orbit
+* ``TBT:offset:{x,px,y,py,delta,ct}``: start offset from the closed orbit
   (without a closed orbit: the start itself)
-* ``TBT:n_turns``: turns tracked
-* ``TBT:start:{x,xp,y,yp,delta,ct}``: the start state tracked
+* ``TBT:n_turns``: turns tracked (up to ``MAX_TURNS``, as the BPM electronics)
+* ``TBT:start:{x,px,y,py,delta,ct}``: the start state tracked
 * ``TBT:tbt:{x,y}``: position at the ring's BPMs, turn after turn (turn 1
-  at all BPMs, then turn 2, ...), ``TBT:tbt:names``: the BPMs
+  at all BPMs, then turn 2, ...; the first ``MAX_TURNS_ALL_BPMS`` turns),
+  ``TBT:tbt:names``: the BPMs
 * ``TBT:survived``: particles still there after each turn
 * ``TBT:count``: number of computations
 * ``<bpm>:signal:tbt:X``, ``<bpm>:signal:tbt:Y``: one BPM, turn after turn [mm]
   (:mod:`dt4acc.custom_epics.ioc.bpm_pvs`)
 
-Recomputed when one of the settings changes and after each new closed orbit
-(lattice change), as the injection twin's hand over.
+The coordinates are named as dt4acc-lib's ``ParticleState``
+(``COORDINATES``). Recomputed when one of the settings changes and after
+each new closed orbit (lattice change), as the injection twin's hand over.
 
 Todo: revisit the conversion of the turn by turn data (m -> mm by a fixed
-      factor, ``bpm_pvs.M2MM``), e.g. when implementing it for SOLEIL: use
-      translation objects there too, as for the supplies and magnets?
+      factor, ``bpm_pvs.M2MM``): use translation objects there too, as for
+      the supplies and magnets?
 """
 import asyncio
 import logging
 import math
-from dataclasses import dataclass
-from typing import List, Sequence
+from typing import Sequence
 
 import numpy as np
 from softioc import builder as softioc_builder
 
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
+from dt4acc.core.bl.turn_by_turn import COORDINATES, MAX_TURNS, UNITS, RingTurnByTurn, TurnByTurnResult
 from dt4acc.custom_epics.ioc.bpm_pvs import M2MM, TBT_FIELDS
-from dt4acc_lib.model.output.track import ParticleState
-from dt4acc_lib.model.output.track_as_np_wrapper import NPStatesForTurns
-from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend
 
 logger = logging.getLogger("dt4acc")
 
-MAX_TURNS = 1024
-#: PV field, ParticleState field
-PLANES = (("x", "x"), ("xp", "px"), ("y", "y"), ("yp", "py"), ("delta", "delta"), ("ct", "ct"))
-UNITS = {"x": "m", "xp": "rad", "y": "m", "yp": "rad", "delta": "", "ct": "m"}
-#: default start: 1 mm off the closed orbit in x and y (a kicked beam)
-DEFAULT_OFFSET = (1e-3, 0.0, 1e-3, 0.0, 0.0, 0.0)
-DEFAULT_TURNS = 128
-
-
-@dataclass
-class TurnByTurnResult:
-    """One computation: the state tracked, the turns at the BPMs"""
-
-    start: ParticleState
-    #: ring BPMs, in ring order
-    monitors: List[str]
-    #: dt4acc-lib's turn by turn data at the monitors
-    turns: NPStatesForTurns
-
-    def _per_monitor(self):
-        by_uid = {e.uid: e for e in self.turns.per_element}
-        return [by_uid[m] for m in self.monitors]
-
-    def x(self) -> np.ndarray:
-        """[turn, monitor] position [m]; NaN once the beam is lost"""
-        return np.array([e.get_x().nanmean_per_turn() for e in self._per_monitor()]).T
-
-    def y(self) -> np.ndarray:
-        return np.array([e.get_y().nanmean_per_turn() for e in self._per_monitor()]).T
-
-    def survived(self) -> np.ndarray:
-        """particles still there at each turn (at the last BPM)"""
-        last = self._per_monitor()[-1]
-        return np.atleast_1d(last.get_survived().get_n_particles_survived_per_turn())
-
-
-class RingTurnByTurn:
-    """Tracks the ring from its first element: closed orbit + ``offset``, ``n_turns``,
-    read at ``monitors`` (the BPMs, lattice element names)"""
-
-    def __init__(self, backend: SimulatorBackend, monitors: Sequence[str],
-                 offset: ParticleState = None, n_turns: int = DEFAULT_TURNS):
-        assert backend.acc.is_ring
-        self.backend = backend
-        self.monitors = list(monitors)
-        self.offset = offset or ParticleState.from_sequence(DEFAULT_OFFSET)
-        self.n_turns = n_turns
-
-    def closed_orbit(self) -> np.ndarray:
-        """at the start of the lattice; zero without a closed orbit"""
-        _, __, optics = self.backend.get_optics()
-        if optics is None:
-            return np.zeros(ParticleState.n_elements())
-        _, __, elem_data = optics
-        return np.asarray(elem_data.closed_orbit[0], dtype=float)
-
-    async def compute(self) -> TurnByTurnResult:
-        start = ParticleState.from_sequence(self.closed_orbit() + self.offset.as_array())
-        for prop, value in (
-            ("p0", [start]),
-            ("n_turns", self.n_turns),
-            ("data_needed_at", self.monitors),
-            ("start_at", None),
-        ):
-            await self.backend.set("turn_by_turn_start", prop, value)
-        turns = await self.backend.read("turn_by_turn", "pos")
-        return TurnByTurnResult(start=start, monitors=self.monitors, turns=turns)
+#: turns the aggregates ``TBT:tbt:{x,y}`` (all BPMs in one waveform) hold at
+#: most: their records are allocated for all BPMs; the BPMs' own PVs hold up
+#: to ``MAX_TURNS``
+MAX_TURNS_ALL_BPMS = 1024
 
 
 class TurnByTurnPVs:
@@ -120,10 +56,10 @@ class TurnByTurnPVs:
         self.count = 0
         n_mon = len(tbt.monitors)
         self.rec = {}
-        for name, field in PLANES:
+        for name in COORDINATES:
             self.rec[f"offset:{name}"] = builder.aOut(
-                f"TBT:offset:{name}", initial_value=getattr(tbt.offset, field), PREC=6, EGU=UNITS[name],
-                on_update=lambda val, field=field: self._set_offset(field, val),
+                f"TBT:offset:{name}", initial_value=getattr(tbt.offset, name), PREC=6, EGU=UNITS[name],
+                on_update=lambda val, name=name: self._set_offset(name, val),
             )
             self.rec[f"start:{name}"] = builder.aIn(f"TBT:start:{name}", initial_value=0.0, PREC=9, EGU=UNITS[name])
         self.rec["n_turns"] = builder.longOut(
@@ -131,7 +67,7 @@ class TurnByTurnPVs:
         )
         for plane, field in TBT_FIELDS:
             self.rec[f"tbt:{plane}"] = builder.WaveformIn(
-                f"TBT:tbt:{plane}", initial_value=np.zeros(1), length=MAX_TURNS * n_mon, EGU="m"
+                f"TBT:tbt:{plane}", initial_value=np.zeros(1), length=MAX_TURNS_ALL_BPMS * n_mon, EGU="m"
             )
             for bpm in tbt.monitors:
                 self.rec[f"{bpm}:{plane}"] = builder.WaveformIn(
@@ -142,12 +78,12 @@ class TurnByTurnPVs:
         self.rec["count"] = builder.longIn("TBT:count", initial_value=0)
 
     # --- settings
-    def _set_offset(self, field: str, value: float):
-        setattr(self.tbt.offset, field, float(value))
+    def _set_offset(self, coordinate: str, value: float):
+        self.tbt.set_offset(coordinate, value)
         self.trigger()
 
     def _set_n_turns(self, value: int):
-        self.tbt.n_turns = int(value)
+        self.tbt.n_turns = value
         self.trigger()
 
     # --- recompute, coalescing requests that arrive while it runs
@@ -162,26 +98,26 @@ class TurnByTurnPVs:
             while self._dirty:
                 self._dirty = False
                 try:
-                    self.publish(await self.tbt.compute())
+                    self.publish(self.tbt.compute())
                 except Exception as exc:
                     logger.error("turn by turn: tracking failed: %s", exc)
         finally:
             self._running = False
 
     def publish(self, r: TurnByTurnResult):
-        for name, field in PLANES:
-            self.rec[f"start:{name}"].set(getattr(r.start, field))
-        x, y = r.x(), r.y()
-        self.rec["tbt:x"].set(x.ravel())
-        self.rec["tbt:y"].set(y.ravel())
+        for name, value in zip(COORDINATES, r.start):
+            self.rec[f"start:{name}"].set(value)
+        n_all = min(r.n_turns, MAX_TURNS_ALL_BPMS)
+        self.rec["tbt:x"].set(r.x[:n_all].ravel())
+        self.rec["tbt:y"].set(r.y[:n_all].ravel())
         for k, bpm in enumerate(r.monitors):
-            self.rec[f"{bpm}:x"].set(x[:, k] * M2MM)
-            self.rec[f"{bpm}:y"].set(y[:, k] * M2MM)
-        survived = r.survived()
-        self.rec["survived"].set(np.asarray(survived, dtype=float))
+            self.rec[f"{bpm}:x"].set(r.x[:, k] * M2MM)
+            self.rec[f"{bpm}:y"].set(r.y[:, k] * M2MM)
+        self.rec["survived"].set(r.survived)
         self.count += 1
         self.rec["count"].set(self.count)
-        logger.info("turn by turn: %d turns, survived %s", len(survived), survived[-1] if len(survived) else math.nan)
+        survived = r.survived[-1] if len(r.survived) else math.nan
+        logger.info("turn by turn: %d turns, survived %s", r.n_turns, survived)
 
 
 def hook_track_updates(view, tbt: TurnByTurnPVs):
@@ -196,4 +132,4 @@ def hook_track_updates(view, tbt: TurnByTurnPVs):
     return view
 
 
-__all__: Sequence[str] = ["RingTurnByTurn", "TurnByTurnPVs", "TurnByTurnResult", "hook_track_updates"]
+__all__: Sequence[str] = ["MAX_TURNS_ALL_BPMS", "TurnByTurnPVs", "hook_track_updates"]

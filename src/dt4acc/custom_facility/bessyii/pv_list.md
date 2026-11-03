@@ -291,26 +291,27 @@ A beam started at the beginning of the ring lattice, at the closed orbit plus an
 kicked beam), tracked for some turns and read at the ring's BPMs. Recomputed when a setting
 changes and after each new closed orbit. Only the ring twin alone serves the `TBT:` PVs; the
 injection twin serves the BPMs' turn by turn PVs of its hand over instead (beam from the
-transfer line).
+transfer line). The computation is shared by the twins, EPICS and Tango:
+`dt4acc.core.bl.turn_by_turn`; the PVs: `dt4acc.custom_epics.ioc.turn_by_turn`.
 
 #### Settings and results
 
 | PV | | write | protocol | machine |
 |---|---|---|---|---|
 | `TBT:offset:x` | start offset from the closed orbit, horizontal (m) | acts | CA + PVA | no |
-| `TBT:offset:xp` | start offset from the closed orbit, horizontal angle (rad) | acts | CA + PVA | no |
+| `TBT:offset:px` | start offset from the closed orbit, horizontal angle (rad) | acts | CA + PVA | no |
 | `TBT:offset:y` | start offset from the closed orbit, vertical (m) | acts | CA + PVA | no |
-| `TBT:offset:yp` | start offset from the closed orbit, vertical angle (rad) | acts | CA + PVA | no |
+| `TBT:offset:py` | start offset from the closed orbit, vertical angle (rad) | acts | CA + PVA | no |
 | `TBT:offset:delta` | start offset from the closed orbit, momentum deviation | acts | CA + PVA | no |
 | `TBT:offset:ct` | start offset from the closed orbit, path length (m) | acts | CA + PVA | no |
-| `TBT:n_turns` | turns tracked (1 ... 1024) | acts | CA + PVA | no |
+| `TBT:n_turns` | turns tracked (1 ... 65536, as the BPM electronics) | acts | CA + PVA | no |
 | `TBT:start:x` | start state tracked: closed orbit + offset, horizontal (m) |  | CA + PVA | no |
-| `TBT:start:xp` | start state tracked, horizontal angle (rad) |  | CA + PVA | no |
+| `TBT:start:px` | start state tracked, horizontal angle (rad) |  | CA + PVA | no |
 | `TBT:start:y` | start state tracked, vertical (m) |  | CA + PVA | no |
-| `TBT:start:yp` | start state tracked, vertical angle (rad) |  | CA + PVA | no |
+| `TBT:start:py` | start state tracked, vertical angle (rad) |  | CA + PVA | no |
 | `TBT:start:delta` | start state tracked, momentum deviation |  | CA + PVA | no |
 | `TBT:start:ct` | start state tracked, path length (m) |  | CA + PVA | no |
-| `TBT:tbt:x` | horizontal position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... (m) |  | CA + PVA | no |
+| `TBT:tbt:x` | horizontal position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... (the first 1024 turns; m) |  | CA + PVA | no |
 | `TBT:tbt:y` | vertical position at the ring BPMs, as TBT:tbt:x (m) |  | CA + PVA | no |
 | `TBT:tbt:names` | the ring BPMs, in the order of TBT:tbt:x / y |  | CA + PVA | no |
 | `TBT:survived` | particles still there after each turn |  | CA + PVA | no |

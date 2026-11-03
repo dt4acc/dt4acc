@@ -49,7 +49,7 @@ Twin only:
 | `<P>:ORBITCCP:rdBpm`, `<P>:ORBITCCP:rdModel` | BPM and model structures (PV Access only) |
 | `<P>:simulator_ring:reset`, `reinit` | simulation state |
 | `<P>:<bpm>:signal:tbt:X`, `<P>:<bpm>:signal:tbt:Y` | turn by turn position at the BPM [mm], as the BESSY II ring twin |
-| `<P>:TBT:offset:{x,xp,y,yp,delta,ct}`, `<P>:TBT:n_turns` | turn by turn: start offset from the closed orbit (default 1 mm in x and y), turns (default 128, up to 1024); a write recomputes |
+| `<P>:TBT:offset:{x,px,y,py,delta,ct}`, `<P>:TBT:n_turns` | turn by turn: start offset from the closed orbit (default 1 mm in x and y), turns (default 128, up to 65536; `TBT:tbt:x` / `y` hold the first 1024); a write recomputes |
 | `<P>:TBT:start:*`, `TBT:tbt:x`, `tbt:y`, `tbt:names`, `TBT:survived`, `TBT:count` | turn by turn: start state, all BPMs turn after turn, particles left, computations |
 
 ## Not yet
