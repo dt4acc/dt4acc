@@ -153,6 +153,27 @@ class SyncMexecProxy:
             logger.error("SyncMexecProxy.sync_acknowledge failed: %s", exc)
             raise
 
+    # --- turn by turn data (custom_tango/ioc/turn_by_turn)
+    #     tracked in the calling thread, not the service loop: many turns take
+    #     long, and the magnets' writes are not to wait for them
+    def _turn_by_turn(self):
+        if getattr(self, "_tbt", None) is None:
+            from dt4acc.custom_tango.ioc.turn_by_turn import TurnByTurnService
+            self._tbt = TurnByTurnService(self.mexec.backend)
+        return self._tbt
+
+    def sync_tbt_configure(self, offset: Sequence[float], n_turns: int) -> None:
+        """start offset from the closed orbit (x, px, y, py, delta, ct) and turns"""
+        self._turn_by_turn().configure(list(offset), int(n_turns))
+
+    def sync_tbt_update(self) -> dict:
+        """summary of the latest turn by turn data; tracks again only after a lattice or settings change"""
+        return self._turn_by_turn().update()
+
+    def sync_tbt_at(self, bpm_id: str) -> list:
+        """the latest turn by turn data at one BPM: x then y, turn after turn [m]"""
+        return self._turn_by_turn().at(bpm_id)
+
     def sync_get_state(self) -> CalculationStates:
         logger.debug("SyncMexecProxy.get_state: see what state ")
         r =  self.mexec.backend.get_state()

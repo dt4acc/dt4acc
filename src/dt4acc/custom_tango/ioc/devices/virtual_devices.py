@@ -6,6 +6,9 @@ Single virtual Tango device for the digital twin:
 
     simulator/ringsimulator/ringsimulator  (RingSimulatorDevice)
 
+It holds the settings and the summary of the turn by turn data too
+(``tbt_*``, :mod:`dt4acc.custom_tango.ioc.turn_by_turn`); the BPM devices
+serve each BPM's share.
 """
 
 import asyncio
@@ -22,6 +25,7 @@ from dt4acc_lib.model.utils.command import Command, BehaviourOnError, ReadComman
 from dt4acc.core.utils.logger import get_logger
 from dt4acc.custom_tango.ioc.controller_registry import get_controller
 from dt4acc.custom_tango.ioc.devices.write_value_sync import sync_write_value
+from dt4acc.custom_tango.ioc.turn_by_turn import COORDINATES, MAX_TURNS, TurnByTurnFollower
 
 logger = get_logger()
 
@@ -47,6 +51,12 @@ def get_orbit_at_index(index: int) -> Tuple[float, float]:
     if index < len(_orbit_x_cache) and index < len(_orbit_y_cache):
         return float(_orbit_x_cache[index]), float(_orbit_y_cache[index])
     return 0.0, 0.0
+
+
+def _physics_engine_proxy():
+    """the physics engine's SyncMexecProxy of this server process; None while not connected"""
+    from dt4acc.custom_tango.ioc import single_server
+    return single_server._sync_proxy
 
 
 class AsyncMixin:
@@ -90,8 +100,10 @@ class RingSimulatorDevice(Device, AsyncMixin):
         self._rf_cavity_uuids = get_rf_cavity_uuids()
         for attr_name in ("orbit_x", "orbit_y",
                           "beta_x", "beta_y", "alpha_x", "alpha_y", "nu_x", "nu_y",
-                          "bpm_x_attr", "bpm_y_attr", "hor", "vert"):
+                          "bpm_x_attr", "bpm_y_attr", "hor", "vert", "tbt_count"):
             self.set_change_event(attr_name, True, False)
+        if getattr(self, "_tbt", None) is None:  # one follower (and its thread), also after Init
+            self._tbt = TurnByTurnFollower(proxy=_physics_engine_proxy, on_new=self._on_new_turn_by_turn)
         self.set_state(DevState.ON)
 
     def _initial_reference_frequency(self) -> float:
@@ -278,6 +290,56 @@ class RingSimulatorDevice(Device, AsyncMixin):
             self.push_change_event("xi_x", self._xi_x)
             self.push_change_event("xi_y", self._xi_y)
 
+    # Turn by turn data (custom_tango/ioc/turn_by_turn)
+    @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, access=AttrWriteType.READ_WRITE,
+               max_dim_x=len(COORDINATES), label="Turn by turn: start offset",
+               description="start offset from the closed orbit: " + ", ".join(COORDINATES) + " (m, rad, 1, m)")
+    def tbt_offset(self):
+        return np.asarray(self._tbt.offset, dtype=np.float64)
+
+    @tbt_offset.write
+    def tbt_offset(self, values):
+        self._tbt.set_offset(values)
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, min_value=1, max_value=MAX_TURNS,
+               label="Turn by turn: turns", description="turns tracked (all BPMs' DDBufferSize)")
+    def tbt_n_turns(self):
+        return self._tbt.n_turns
+
+    @tbt_n_turns.write
+    def tbt_n_turns(self, value):
+        self._tbt.set_n_turns(value)
+
+    @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, max_dim_x=len(COORDINATES),
+               label="Turn by turn: start", description="start state tracked: closed orbit + offset")
+    def tbt_start(self):
+        return np.asarray(self._tbt.summary.get("start", []), dtype=np.float64)
+
+    @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, max_dim_x=MAX_TURNS,
+               label="Turn by turn: survived", description="particles still there after each turn")
+    def tbt_survived(self):
+        return np.asarray(self._tbt.summary.get("survived", []), dtype=np.float64)
+
+    @attribute(dtype=DevString, dformat=AttrDataFormat.SPECTRUM, max_dim_x=MAX_BPMS,
+               label="Turn by turn: BPMs", description="the BPMs' lattice ids, in ring order")
+    def tbt_bpm_ids(self):
+        return list(self._tbt.summary.get("bpm_ids", []))
+
+    @attribute(dtype=int, label="Turn by turn: results", description="new results so far")
+    def tbt_count(self):
+        return self._tbt.count
+
+    @command(dtype_in=str, dtype_out=(float,),
+             doc_in="BPM lattice id", doc_out="x then y [m], turn after turn, of the latest result")
+    def TurnByTurnAt(self, bpm_id):
+        try:
+            return np.asarray(self._tbt.at(bpm_id), dtype=np.float64)
+        except Exception as exc:
+            raise DevFailed(f"turn by turn at {bpm_id}: {exc}")
+
+    def _on_new_turn_by_turn(self, summary):
+        self.push_change_event("tbt_count", self._tbt.count)
+
     def _sync_tango_state(self):
         """Map backend calculation state to Tango device state (color in Jive)."""
         backend_state = get_controller().get_backend_state()
@@ -310,6 +372,8 @@ class RingSimulatorDevice(Device, AsyncMixin):
             logger.debug("RingSimulatorDevice.Recalculate: %s", exc)
         finally:
             self._sync_tango_state()
+        # tracks again only if the lattice or the settings changed
+        self._tbt.request()
 
     @command
     def Reset(self):
