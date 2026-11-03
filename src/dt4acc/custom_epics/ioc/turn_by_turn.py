@@ -1,8 +1,8 @@
 """Turn by turn data of a storage ring twin: a beam started off the closed
 orbit, tracked for some turns, read at the ring's BPMs (BESSY II, MLS)
 
-The same BPM PVs as the BESSY II injection twin (``<bpm>:tbt:x``,
-``<bpm>:tbt:y``), where the beam comes from the transfer line instead
+The same BPM PVs as the BESSY II injection twin (``<bpm>:signal:tbt:X``,
+``<bpm>:signal:tbt:Y``), where the beam comes from the transfer line instead
 (``custom_facility/bessyii_injection``). Here it starts at the beginning of
 the ring lattice, at the closed orbit plus an offset, e.g. a kicked beam:
 
@@ -14,10 +14,15 @@ the ring lattice, at the closed orbit plus an offset, e.g. a kicked beam:
   at all BPMs, then turn 2, ...), ``TBT:tbt:names``: the BPMs
 * ``TBT:survived``: particles still there after each turn
 * ``TBT:count``: number of computations
-* ``<bpm>:tbt:x``, ``<bpm>:tbt:y``: one BPM, turn after turn
+* ``<bpm>:signal:tbt:X``, ``<bpm>:signal:tbt:Y``: one BPM, turn after turn [mm]
+  (:mod:`dt4acc.custom_epics.ioc.bpm_pvs`)
 
 Recomputed when one of the settings changes and after each new closed orbit
 (lattice change), as the injection twin's hand over.
+
+Todo: revisit the conversion of the turn by turn data (m -> mm by a fixed
+      factor, ``bpm_pvs.M2MM``), e.g. when implementing it for SOLEIL: use
+      translation objects there too, as for the supplies and magnets?
 """
 import asyncio
 import logging
@@ -29,6 +34,7 @@ import numpy as np
 from softioc import builder as softioc_builder
 
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
+from dt4acc.custom_epics.ioc.bpm_pvs import M2MM, TBT_FIELDS
 from dt4acc_lib.model.output.track import ParticleState
 from dt4acc_lib.model.output.track_as_np_wrapper import NPStatesForTurns
 from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend
@@ -123,13 +129,13 @@ class TurnByTurnPVs:
         self.rec["n_turns"] = builder.longOut(
             "TBT:n_turns", initial_value=tbt.n_turns, DRVL=1, DRVH=MAX_TURNS, on_update=self._set_n_turns
         )
-        for plane in ("x", "y"):
+        for plane, field in TBT_FIELDS:
             self.rec[f"tbt:{plane}"] = builder.WaveformIn(
                 f"TBT:tbt:{plane}", initial_value=np.zeros(1), length=MAX_TURNS * n_mon, EGU="m"
             )
             for bpm in tbt.monitors:
                 self.rec[f"{bpm}:{plane}"] = builder.WaveformIn(
-                    f"{bpm}:tbt:{plane}", initial_value=np.zeros(1), length=MAX_TURNS, EGU="m"
+                    f"{bpm}:{field}", initial_value=np.zeros(1), length=MAX_TURNS, EGU="mm"
                 )
         self.rec["tbt:names"] = builder.WaveformIn("TBT:tbt:names", initial_value=list(tbt.monitors), length=n_mon)
         self.rec["survived"] = builder.WaveformIn("TBT:survived", initial_value=np.zeros(1), length=MAX_TURNS)
@@ -169,8 +175,8 @@ class TurnByTurnPVs:
         self.rec["tbt:x"].set(x.ravel())
         self.rec["tbt:y"].set(y.ravel())
         for k, bpm in enumerate(r.monitors):
-            self.rec[f"{bpm}:x"].set(x[:, k])
-            self.rec[f"{bpm}:y"].set(y[:, k])
+            self.rec[f"{bpm}:x"].set(x[:, k] * M2MM)
+            self.rec[f"{bpm}:y"].set(y[:, k] * M2MM)
         survived = r.survived()
         self.rec["survived"].set(np.asarray(survived, dtype=float))
         self.count += 1

@@ -12,7 +12,7 @@ prepends `DT4ACC_PREFIX` (default: the user name), e.g. `<P>:Q1PDR:set`.
 | storage ring | 2358 | as the storage ring twin | [`../bessyii/pv_list.md`](../bessyii/pv_list.md) |
 | transfer line: supplies, magnets, monitors | 214 | machine names, as the transfer line twin | [`../bessytl/pv_list.md`](../bessytl/pv_list.md), except `FOMZ2D1R`: after the septum exit, part of the ring's lattice |
 | transfer line: model | 21 | `TL:` + the transfer line twin's name (the ring has the same names) | below |
-| hand over | 270 | `INJ:...`, `<bpm>:tbt:...` | below |
+| hand over | 270 | `INJ:...`, `<bpm>:signal:tbt:...` | below |
 
 Transfer line devices do not clash with the ring's: their names end in T, the ring's in R.
 See [`README.md`](README.md) for how the parts work together.
@@ -106,8 +106,8 @@ by turn; recomputed whenever line, ring or these settings change.
 
 | PV | | write | protocol | machine |
 |---|---|---|---|---|
-| `<bpm>:tbt:x` | horizontal position, turn after turn (m) |  | CA + PVA | no |
-| `<bpm>:tbt:y` | vertical position, turn after turn (m) |  | CA + PVA | no |
+| `<bpm>:signal:tbt:X` | horizontal position, turn after turn (mm) |  | CA + PVA | no |
+| `<bpm>:signal:tbt:Y` | vertical position, turn after turn (mm) |  | CA + PVA | no |
 
 ```text
 BPMZ1D1R BPMZ1D2R BPMZ1D3R BPMZ1D4R BPMZ1D5R BPMZ1D6R BPMZ1D7R BPMZ1D8R BPMZ1T1R BPMZ1T2R BPMZ1T3R BPMZ1T4R BPMZ1T5R BPMZ1T6R BPMZ1T7R BPMZ1T8R BPMZ2D1R BPMZ2D2R BPMZ2D3R BPMZ2D4R BPMZ2D5R BPMZ2D6R BPMZ2D7R BPMZ2D8R BPMZ2T1R BPMZ2T2R BPMZ2T3R BPMZ2T4R BPMZ2T5R BPMZ2T6R BPMZ2T7R BPMZ2T8R BPMZ3D1R BPMZ3D2R BPMZ3D3R BPMZ3D4R BPMZ3D5R BPMZ3D6R BPMZ3D7R BPMZ3D8R BPMZ3T1R BPMZ3T2R BPMZ3T3R BPMZ3T4R BPMZ3T5R BPMZ3T6R BPMZ3T7R BPMZ3T8R BPMZ41D1R BPMZ41D6R BPMZ41T1R BPMZ41T2R BPMZ41T6R BPMZ41T7R BPMZ42D1R BPMZ42D6R BPMZ42T2R BPMZ43D6R BPMZ43T2R BPMZ44D6R BPMZ4D1R BPMZ4D2R BPMZ4D3R BPMZ4D4R BPMZ4D5R BPMZ4D6R BPMZ4D7R BPMZ4D8R BPMZ4T1R BPMZ4T2R BPMZ4T3R BPMZ4T4R BPMZ4T5R BPMZ4T6R BPMZ4T7R BPMZ4T8R BPMZ5D1R BPMZ5D2R BPMZ5D3R BPMZ5D4R BPMZ5D5R BPMZ5D7R BPMZ5D8R BPMZ5T1R BPMZ5T2R BPMZ5T3R BPMZ5T4R BPMZ5T5R BPMZ5T6R BPMZ5T7R BPMZ5T8R BPMZ6D1R BPMZ6D2R BPMZ6D3R BPMZ6D4R BPMZ6D5R BPMZ6D6R BPMZ6D7R BPMZ6D8R BPMZ6T1R BPMZ6T2R BPMZ6T3R BPMZ6T4R BPMZ6T5R BPMZ6T6R BPMZ6T7R BPMZ6T8R BPMZ7D1R BPMZ7D2R BPMZ7D3R BPMZ7D4R BPMZ7D5R BPMZ7D6R BPMZ7D7R BPMZ7D8R BPMZ7T1R BPMZ7T2R BPMZ7T3R BPMZ7T4R BPMZ7T5R BPMZ7T6R BPMZ7T7R BPMZ7T8R

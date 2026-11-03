@@ -43,7 +43,7 @@ PVs, prefixed with `DT4ACC_PREFIX` (`<P>`, default: the user name):
 | `<P>:INJ:line_exit:{x,xp,y,yp,delta,ct}` | centroid leaving the line, line frame |
 | `<P>:INJ:injected:{x,xp,y,yp,delta,ct}` | the injected beam, ring frame, at `MSEPEXIT` |
 | `<P>:INJ:tbt:x`, `<P>:INJ:tbt:y`, `<P>:INJ:tbt:names` | position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... [m] |
-| `<P>:<bpm>:tbt:x`, `<P>:<bpm>:tbt:y` | one ring BPM, turn after turn [m] |
+| `<P>:<bpm>:signal:tbt:X`, `<P>:<bpm>:signal:tbt:Y` | one ring BPM, turn after turn [mm] |
 | `<P>:INJ:survived` | particles still there after each turn |
 | `<P>:INJ:count` | hand overs computed so far |
 
@@ -105,7 +105,7 @@ placeholders):
 ![steered: H5PT 0.4 A, geometry -2 mm, 3 turns](docs/steered.png)
 
 Any supply of the line or the ring can be set the same way (lists:
-`../bessytl/pv_list.md`, `../bessyii/pv_list.md`); `BI:<bpm>:tbt:x` gives one
+`../bessytl/pv_list.md`, `../bessyii/pv_list.md`); `BI:<bpm>:signal:tbt:X` gives one
 ring BPM turn after turn.
 
 All PVs of this twin, by part (ring, transfer line, its model under `TL:`, hand

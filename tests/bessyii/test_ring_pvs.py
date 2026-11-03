@@ -23,6 +23,7 @@ from dt4acc.custom_facility.bessyii.run_bessyii_twin import (
     initialise_pvs,
     initialise_turn_by_turn_pvs,
 )
+from dt4acc.custom_facility.bessyii.turn_by_turn import ring_bpms
 from dt4acc.core.bl.translating_command_execution_engine import TranslatingCommandExecutionEngine
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
 
@@ -33,6 +34,9 @@ PREFIX = "TEST"
 PV_LIST = Path(resources.files("dt4acc").joinpath("custom_facility", "bessyii", "pv_list.md"))
 MAGNET_FIELDS = {"Cm:set", "Cm:rdbk", "im:I", "x:set", "y:set"}
 SUPPLY_FIELDS = {"set", "rdbk"}
+#: every BPM, named as the BPM system (custom_epics/ioc/bpm_pvs)
+BPM_FIELDS = {"signal:sa:X", "signal:sa:Y"}
+TBT_FIELDS = {"signal:tbt:X", "signal:tbt:Y"}
 #: served by the ring twin alone, not by the injection twin
 TURN_BY_TURN_SECTION = "Turn by turn (ring twin alone)"
 
@@ -53,7 +57,7 @@ def ring_pvs():
     backend = provide_backend_encapsulating_lattice()
     builder = RecordingBuilder()
     builder.SetDeviceName(PREFIX)
-    asyncio.run(initialise_pvs(builder=builder, controller=ring_controller(backend)))
+    asyncio.run(initialise_pvs(builder=builder, controller=ring_controller(backend), bpms=ring_bpms(backend)))
     initialise_turn_by_turn_pvs(builder, backend)
     return builder.names(PREFIX)
 
@@ -69,7 +73,7 @@ def turn_by_turn_pvs(path: Path):
             if m and not m.group(1).startswith("<"):
                 rows.append(m.group(1))
     (bpms,) = [d for g, d in pv_list_md.group_devices(path).items() if g.startswith(TURN_BY_TURN_SECTION)]
-    return set(rows) | {f"{b}:tbt:{p}" for b in bpms for p in ("x", "y")}
+    return set(rows) | {f"{b}:{f}" for b in bpms for f in TBT_FIELDS}
 
 
 def expected_from_pv_list(path: Path, turn_by_turn: bool = True):
@@ -78,9 +82,12 @@ def expected_from_pv_list(path: Path, turn_by_turn: bool = True):
     fields, named, _ = pv_list_md.read(path)
     expected = set(named)
     for group, devices in pv_list_md.group_devices(path).items():
-        placeholder = {"Power supplies": "supply", "Magnets (twin only)": "magnet"}.get(group.split(" / ")[0])
+        section = group.split(" / ")[0]
+        placeholder = {"Power supplies": "supply", "Magnets (twin only)": "magnet"}.get(section)
         if placeholder:
             expected |= {f"{d}:{f}" for d in devices for f in fields[placeholder]}
+        elif section == "BPMs":
+            expected |= {f"{d}:{f}" for d in devices for f in BPM_FIELDS}
     tbt = turn_by_turn_pvs(path)
     return expected | tbt if turn_by_turn else expected - tbt
 
@@ -114,6 +121,13 @@ def test_pvs_are_those_of_the_pv_list(ring_pvs):
 def test_turn_by_turn_pvs(ring_pvs):
     pvs = set(ring_pvs)
     for pv in ["TBT:n_turns", "TBT:offset:x", "TBT:start:x", "TBT:tbt:x", "TBT:tbt:names", "TBT:survived",
-               "BPMZ1D1R:tbt:x", "BPMZ7T8R:tbt:y"]:
+               "BPMZ1D1R:signal:tbt:X", "BPMZ7T8R:signal:tbt:Y"]:
         assert pv in pvs, pv
-    assert len([pv for pv in pvs if pv.endswith(":tbt:x") and pv.startswith("BPMZ")]) == 123
+    assert len([pv for pv in pvs if pv.endswith(":signal:tbt:X")]) == 123
+
+
+def test_bpm_pvs(ring_pvs):
+    pvs = set(ring_pvs)
+    assert len([pv for pv in pvs if pv.endswith(":signal:sa:X")]) == 123
+    assert len([pv for pv in pvs if pv.endswith(":signal:sa:Y")]) == 123
+    assert "BPMZ1D1R:signal:sa:X" in pvs

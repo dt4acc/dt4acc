@@ -5,7 +5,7 @@ injection twin, the storage ring twin and the transfer line twin.
 The injection twin serves the storage ring's PVs (as the ring twin), the
 transfer line's supplies, magnets and monitors up to the septum exit (as the
 transfer line twin, machine names), the transfer line's model PVs one level
-down (``TL:``) and the hand over (``INJ:``, ``<bpm>:tbt:``). This script
+down (``TL:``) and the hand over (``INJ:``, ``<bpm>:signal:tbt:``). This script
 checks that the dumps add up to exactly that, then lists the parts: the
 ring's and the line's PVs by reference to their lists, the transfer line
 model and hand over PVs in full. PV names are given without the twin's
@@ -44,8 +44,8 @@ INJECTION = [
         ("INJ:count", "hand overs computed so far", RO, NO),
     ]),
 ]
-TBT_FIELDS = [("tbt:x", "horizontal position, turn after turn (m)", RO, NO),
-              ("tbt:y", "vertical position, turn after turn (m)", RO, NO)]
+TBT_FIELDS = [("signal:tbt:X", "horizontal position, turn after turn (mm)", RO, NO),
+              ("signal:tbt:Y", "vertical position, turn after turn (mm)", RO, NO)]
 
 HEADER = """\
 # BESSY II injection twin: PV list
@@ -62,7 +62,7 @@ prepends `DT4ACC_PREFIX` (default: the user name), e.g. `<P>:Q1PDR:set`.
 | storage ring | {n_ring} | as the storage ring twin | [`../bessyii/pv_list.md`](../bessyii/pv_list.md) |
 | transfer line: supplies, magnets, monitors | {n_tl_dev} | machine names, as the transfer line twin | [`../bessytl/pv_list.md`](../bessytl/pv_list.md){tl_missing_note} |
 | transfer line: model | {n_tl_model} | `TL:` + the transfer line twin's name (the ring has the same names) | below |
-| hand over | {n_inj} | `INJ:...`, `<bpm>:tbt:...` | below |
+| hand over | {n_inj} | `INJ:...`, `<bpm>:signal:tbt:...` | below |
 
 Transfer line devices do not clash with the ring's: their names end in T, the ring's in R.
 See [`README.md`](README.md) for how the parts work together.
@@ -129,7 +129,7 @@ def main(a):
     named = {pv for _, rows in INJECTION for pv, *_ in rows}
     missing = sorted(named - set(rest))
     assert not missing, f"hand over PVs not served: {missing[:5]}"
-    bpms = sorted({pv.rsplit(":", 2)[0] for pv in rest if re.search(r":tbt:[xy]$", pv) and not pv.startswith("INJ:")})
+    bpms = sorted({pv.rsplit(":", 3)[0] for pv in rest if re.search(r":signal:tbt:[XY]$", pv)})
     tbt = {f"{b}:{f}" for b in bpms for f, *_ in TBT_FIELDS}
     unknown = sorted(set(rest) - named - tbt)
     assert not unknown, f"PVs of no part: {unknown[:10]}"

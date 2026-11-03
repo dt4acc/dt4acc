@@ -15,6 +15,7 @@ import at
 import numpy as np
 from p4p.client.thread import Context
 
+from dt4acc.custom_epics.ioc.bpm_pvs import M2MM
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_lattice
 from dt4acc.custom_facility.bessyii_injection.handover import INJECTION_ELEMENT, no_offset, to_ring
 from dt4acc_lib.model.output.track import ParticleState
@@ -85,8 +86,8 @@ def compare(label, steerers, geometry, n_turns):
     check(np.allclose(x, x_ref, atol=1e-12) and np.allclose(y, y_ref, atol=1e-12),
           f"{label}: {n_turns} turns x {n} BPMs, max |dx| {np.max(np.abs(x - x_ref)):.1e} m, "
           f"first turn x rms {np.sqrt(np.mean(x[0] ** 2)) * 1e3:.4f} mm")
-    one = np.asarray(get(f"{BPMS[10]}:tbt:x"))[:n_turns]
-    check(np.allclose(one, x_ref[:, 10], atol=1e-12), f"{label}: {BPMS[10]}:tbt:x matches")
+    one = np.asarray(get(f"{BPMS[10]}:signal:tbt:X"))[:n_turns] / M2MM
+    check(np.allclose(one, x_ref[:, 10], atol=1e-12), f"{label}: {BPMS[10]}:signal:tbt:X matches")
 
 
 def main():

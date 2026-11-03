@@ -9,7 +9,8 @@
   (turn 1 at all BPMs, then turn 2, ...), ``INJ:tbt:names``: the BPMs
 * ``INJ:survived``: particles still there after each turn
 * ``INJ:count``: number of hand overs computed
-* ``<bpm>:tbt:x``, ``<bpm>:tbt:y``: one BPM, turn after turn
+* ``<bpm>:signal:tbt:X``, ``<bpm>:signal:tbt:Y``: one BPM, turn after turn [mm]
+  (:mod:`dt4acc.custom_epics.ioc.bpm_pvs`)
 """
 import asyncio
 import logging
@@ -20,6 +21,7 @@ import numpy as np
 from softioc import builder as softioc_builder
 
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
+from dt4acc.custom_epics.ioc.bpm_pvs import M2MM, TBT_FIELDS
 from .handover import InjectionHandover, InjectionResult
 
 logger = logging.getLogger("dt4acc-bessyii-injection")
@@ -50,13 +52,13 @@ class InjectionPVs:
         self.rec["n_turns"] = builder.longOut(
             "INJ:n_turns", initial_value=handover.n_turns, DRVL=1, DRVH=MAX_TURNS, on_update=self._set_n_turns
         )
-        for plane in ("x", "y"):
+        for plane, field in TBT_FIELDS:
             self.rec[f"tbt:{plane}"] = builder.WaveformIn(
                 f"INJ:tbt:{plane}", initial_value=np.zeros(1), length=MAX_TURNS * n_mon, EGU="m"
             )
             for bpm in handover.monitors:
                 self.rec[f"{bpm}:{plane}"] = builder.WaveformIn(
-                    f"{bpm}:tbt:{plane}", initial_value=np.zeros(1), length=MAX_TURNS, EGU="m"
+                    f"{bpm}:{field}", initial_value=np.zeros(1), length=MAX_TURNS, EGU="mm"
                 )
         self.rec["tbt:names"] = builder.WaveformIn("INJ:tbt:names", initial_value=list(handover.monitors), length=n_mon)
         self.rec["survived"] = builder.WaveformIn("INJ:survived", initial_value=np.zeros(1), length=MAX_TURNS)
@@ -97,8 +99,8 @@ class InjectionPVs:
         self.rec["tbt:x"].set(x.ravel())
         self.rec["tbt:y"].set(y.ravel())
         for k, bpm in enumerate(r.monitors):
-            self.rec[f"{bpm}:x"].set(x[:, k])
-            self.rec[f"{bpm}:y"].set(y[:, k])
+            self.rec[f"{bpm}:x"].set(x[:, k] * M2MM)
+            self.rec[f"{bpm}:y"].set(y[:, k] * M2MM)
         survived = r.survived()
         self.rec["survived"].set(np.asarray(survived, dtype=float))
         self.count += 1
