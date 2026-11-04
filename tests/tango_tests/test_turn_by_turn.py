@@ -110,6 +110,37 @@ def test_follower_publishes_new_results(soleil_service):
         follower.set_offset([0.0] * 5)
 
 
+def test_tracking_runs_on_the_service_loop(monkeypatch):
+    """pyAT's tracking is not thread safe: all use of the lattice on one thread (the service
+    loop), turn by turn too, else optics and tracking in two threads crash the physics engine"""
+    import asyncio
+
+    from dt4acc.custom_tango.ioc import sync_mexec_proxy, turn_by_turn
+
+    threads = []
+
+    class Service:
+        def __init__(self, backend):
+            pass
+
+        def update(self):
+            threads.append(threading.current_thread())
+            return {}
+
+    monkeypatch.setattr(turn_by_turn, "TurnByTurnService", Service)
+    loop = asyncio.new_event_loop()
+    loop_thread = threading.Thread(target=loop.run_forever, daemon=True)
+    loop_thread.start()
+    try:
+        proxy = sync_mexec_proxy.SyncMexecProxy(mexec=object(), service_loop=loop)
+        monkeypatch.setattr(proxy, "mexec", type("M", (), {"backend": None})())
+        proxy.sync_tbt_update()
+    finally:
+        loop.call_soon_threadsafe(loop.stop)
+        loop_thread.join()
+    assert threads == [loop_thread]
+
+
 # --- BPM device, in a Tango test context
 tango = pytest.importorskip("tango")
 from tango.server import Device, attribute, command  # noqa: E402
@@ -156,14 +187,17 @@ def bpm_device():
         {"class": module.BPMDevice,
          "devices": [{"name": "test/bpm/1", "properties": {"lattice_id": "TEST_BPM", "orbit_index": 3}}]},
     ]
-    with MultiDeviceTestContext(devices_info, process=False) as context:
-        ring_sim = context.get_device_access("test/ringsim/1")
-        # the BPM device finds the ring simulator under this name (no database)
-        module_ring_sim, module.RING_SIM_DEV = module.RING_SIM_DEV, ring_sim
-        try:
+    # from before the BPM device starts: with its real name it would reach a twin
+    # running on this machine (TANGO_HOST, /etc/tangorc)
+    module_ring_sim, module.RING_SIM_DEV = module.RING_SIM_DEV, "tango://localhost:1/no/ring/simulator#dbase=no"
+    try:
+        with MultiDeviceTestContext(devices_info, process=False) as context:
+            ring_sim = context.get_device_access("test/ringsim/1")
+            # the BPM device finds the ring simulator under this name (no database)
+            module.RING_SIM_DEV = ring_sim
             yield context.get_device("test/bpm/1"), ring_sim
-        finally:
-            module.RING_SIM_DEV = module_ring_sim
+    finally:
+        module.RING_SIM_DEV = module_ring_sim
 
 
 def test_bpm_turn_by_turn_in_mm(bpm_device):
