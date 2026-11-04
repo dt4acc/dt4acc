@@ -189,6 +189,18 @@ class SyncMexecProxy:
         tbt = self._turn_by_turn()
         return tbt.at(bpm_id) if tbt is not None else []
 
+    def sync_line_exit(self) -> list:
+        """A transfer line: the centroid leaving it (x, px, y, py, delta, ct), the last point
+        of its optics; empty without optics. On the service loop, as all use of the lattice."""
+        async def _exit():
+            _, __, optics = self.mexec.backend.get_optics()
+            if optics is None:
+                return []
+            _, ___, elem_data = optics
+            return [float(v) for v in elem_data.closed_orbit[-1]]
+
+        return asyncio.run_coroutine_threadsafe(_exit(), self.service_loop).result(timeout=30)
+
     def sync_get_state(self) -> CalculationStates:
         logger.debug("SyncMexecProxy.get_state: see what state ")
         r =  self.mexec.backend.get_state()
