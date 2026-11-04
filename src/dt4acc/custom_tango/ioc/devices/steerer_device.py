@@ -20,6 +20,21 @@ from dt4acc.core.utils.logger import get_logger
 logger = get_logger()
 
 
+def _peek_strength(device) -> float:
+    """in device view the supplies set the steerer: its value from the lattice
+    (as MultipoleDevice); in design view the value last written"""
+    try:
+        from dt4acc.custom_tango.ioc.single_server import peek_from_lattice, supply_readback_enabled
+        val = peek_from_lattice(device.lattice_id, device.lattice_property)
+        # 0.0: no readback (design view) or none available; where the supplies
+        # read back too, a true 0: set to zero through the supply
+        if val != 0.0 or supply_readback_enabled():
+            device._magnetic_strength = val
+    except Exception:
+        pass
+    return device._magnetic_strength
+
+
 class HorizontalSteererDevice(BaseMagnetDevice):
     """
     Tango device for horizontal dipole correctors (CDLH, CDRH).
@@ -39,7 +54,7 @@ class HorizontalSteererDevice(BaseMagnetDevice):
     @attribute(dtype=float, access=AttrWriteType.READ_WRITE,
                label="Magnetic strength", unit="1/m")
     def magnetic_strength(self) -> float:
-        return self._magnetic_strength
+        return _peek_strength(self)
 
     @magnetic_strength.write
     def magnetic_strength(self, value: float) -> None:
@@ -86,7 +101,7 @@ class VerticalSteererDevice(BaseMagnetDevice):
     @attribute(dtype=float, access=AttrWriteType.READ_WRITE,
                label="Magnetic strength", unit="1/m")
     def magnetic_strength(self) -> float:
-        return self._magnetic_strength
+        return _peek_strength(self)
 
     @magnetic_strength.write
     def magnetic_strength(self, value: float) -> None:

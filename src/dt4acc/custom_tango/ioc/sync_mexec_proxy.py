@@ -161,6 +161,9 @@ class SyncMexecProxy:
     #     tracking is not thread safe, optics and tracking in two threads crash
     #     the process. So the magnets' writes wait for it (many turns take long).
     def _turn_by_turn(self):
+        """the turn by turn service; None for a transfer line (no turns)"""
+        if not self.mexec.backend.acc.is_ring:
+            return None
         if getattr(self, "_tbt", None) is None:
             from dt4acc.custom_tango.ioc.turn_by_turn import TurnByTurnService
             self._tbt = TurnByTurnService(self.mexec.backend)
@@ -168,18 +171,23 @@ class SyncMexecProxy:
 
     def sync_tbt_configure(self, offset: Sequence[float], n_turns: int) -> None:
         """start offset from the closed orbit (x, px, y, py, delta, ct) and turns"""
-        self._turn_by_turn().configure(list(offset), int(n_turns))
+        tbt = self._turn_by_turn()
+        if tbt is not None:
+            tbt.configure(list(offset), int(n_turns))
 
     def sync_tbt_update(self) -> dict:
-        """summary of the latest turn by turn data; tracks again only after a lattice or settings change"""
+        """summary of the latest turn by turn data; tracks again only after a lattice
+        or settings change; empty for a transfer line"""
         async def _update():
-            return self._turn_by_turn().update()
+            tbt = self._turn_by_turn()
+            return tbt.update() if tbt is not None else {}
 
         return asyncio.run_coroutine_threadsafe(_update(), self.service_loop).result(timeout=TBT_TIMEOUT_S)
 
     def sync_tbt_at(self, bpm_id: str) -> list:
         """the latest turn by turn data at one BPM: x then y, turn after turn [m]"""
-        return self._turn_by_turn().at(bpm_id)
+        tbt = self._turn_by_turn()
+        return tbt.at(bpm_id) if tbt is not None else []
 
     def sync_get_state(self) -> CalculationStates:
         logger.debug("SyncMexecProxy.get_state: see what state ")

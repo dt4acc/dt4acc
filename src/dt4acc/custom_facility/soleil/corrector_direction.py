@@ -25,14 +25,14 @@ def corrector_direction(
     if any(
         marker in name
         for marker in (
-            "CDLH", "CDRH", "CRFCX", "CRCOX", "EM-COR/CH", "EI-COR/CH", "-CHE", "-CHS",
+            "CDLH", "CDRH", "CRFCX", "CRCOX", "EM-COR/CH", "EI-COR/CH", "-CHE", "-CHS", "EM-COR/COR.H",
         )
     ):
         return "horizontal"
     if any(
         marker in name
         for marker in (
-            "CDLV", "CDRV", "CRFCY", "CRCOY", "EM-COR/CV", "EI-COR/CV", "-CVE", "-CVS",
+            "CDLV", "CDRV", "CRFCY", "CRCOY", "EM-COR/CV", "EI-COR/CV", "-CVE", "-CVS", "EM-COR/COR.V",
         )
     ):
         return "vertical"

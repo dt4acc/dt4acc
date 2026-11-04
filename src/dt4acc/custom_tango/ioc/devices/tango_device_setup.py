@@ -305,9 +305,10 @@ def _lattice_property_for_magnet(name: str) -> str:
 def _steerer_class(name: str) -> str:
     """Horizontal vs vertical steerer class, from the magnet's actual
     lattice property (B1 = normal/horizontal kick, A1 = skew/vertical
-    kick) rather than a subtype field or device name patterns.
+    kick; on corrector elements x_kick / y_kick) rather than a subtype
+    field or device name patterns.
     """
-    if _lattice_property_for_magnet(name) == "A1":
+    if _lattice_property_for_magnet(name) in ("A1", "y_kick"):
         return "VerticalSteererDevice"
     return "HorizontalSteererDevice"
 

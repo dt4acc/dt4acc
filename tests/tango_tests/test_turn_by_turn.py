@@ -114,6 +114,7 @@ def test_tracking_runs_on_the_service_loop(monkeypatch):
     """pyAT's tracking is not thread safe: all use of the lattice on one thread (the service
     loop), turn by turn too, else optics and tracking in two threads crash the physics engine"""
     import asyncio
+    from types import SimpleNamespace
 
     from dt4acc.custom_tango.ioc import sync_mexec_proxy, turn_by_turn
 
@@ -133,7 +134,7 @@ def test_tracking_runs_on_the_service_loop(monkeypatch):
     loop_thread.start()
     try:
         proxy = sync_mexec_proxy.SyncMexecProxy(mexec=object(), service_loop=loop)
-        monkeypatch.setattr(proxy, "mexec", type("M", (), {"backend": None})())
+        monkeypatch.setattr(proxy, "mexec", SimpleNamespace(backend=SimpleNamespace(acc=SimpleNamespace(is_ring=True))))
         proxy.sync_tbt_update()
     finally:
         loop.call_soon_threadsafe(loop.stop)
