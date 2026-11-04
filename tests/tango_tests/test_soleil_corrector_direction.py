@@ -19,8 +19,6 @@ def test_soleil_corrector_name_conventions_map_to_expected_coefficients():
         "AN16-SD/EI-COR/CPMU18.1-CVS": "A1",
         "AN01-AR/EM-COR/CH.01": "B1",
         "AN01-AR/EM-COR/CV.01": "A1",
-        "XX/EM-COR/COR.H.01": "B1",
-        "XX/EM-COR/COR.V.01": "A1",
     }
 
     for name, property_name in cases.items():

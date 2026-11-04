@@ -4,7 +4,8 @@ liasion_translator_setup.py  —  SOLEIL TL2 liaison & translator
 
 As the SOLEIL ring's (``custom_facility/soleil/liasion_translator_setup``):
 the device properties map to the lattice element property of the same name,
-the conversions have slope 1.0, the yellow pages are ``soleil_yellow_pages``.
+the conversions have slope 1.0, with yellow pages of its own
+(``soleil_tl2_yellow_pages``).
 
 What differs, a transfer line:
 
@@ -42,7 +43,7 @@ from dt4acc_lib.model.utils.translator_manager_lookup_table import (
 
 from dt4acc.config.data.constants import ring_parameters
 from dt4acc.custom_facility.soleil.liasion_translator_setup import _build_name_to_uuid, magnet_infos_from_db
-from dt4acc.custom_facility.soleil.soleil_yellow_pages import soleil_yellow_pages
+from dt4acc.custom_facility.soleil_tl2.soleil_tl2_yellow_pages import soleil_tl2_yellow_pages
 
 #: magnet types with a control interface (as the ring: not the bends)
 _CONTROLLED_TYPES = {"Quadrupole", "Steerer"}
@@ -67,7 +68,7 @@ def _lattice_property(element_name: str, yp: YellowPages) -> str:
 
 def build_managers():
     """Build and return (yp, lm, tm) for the SOLEIL TL2 twin."""
-    yp = soleil_yellow_pages()
+    yp = soleil_tl2_yellow_pages()
     infos = magnet_infos_from_db()
     name_to_uuid = _build_name_to_uuid(infos)
 

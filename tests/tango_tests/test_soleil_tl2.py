@@ -79,6 +79,14 @@ def test_device_database(entries):
     assert all(e["pc"] for e in entries if e["type"] != "BPM")
 
 
+def test_yellow_pages_sort_all_correctors(entries, managers):
+    yp, _, _ = managers
+    steerers = {e["name"] for e in entries if e["type"] == "Steerer"}
+    horizontal, vertical = set(yp.horizontal_steerer_names()), set(yp.vertical_steerer_names())
+    assert horizontal and vertical and not horizontal & vertical
+    assert horizontal | vertical == steerers
+
+
 def test_liaison_as_the_ring(controlled, managers):
     """each magnet device's property is its element's property of the same name, slope 1"""
     _, lm, ts = managers
