@@ -34,8 +34,8 @@ from dt4acc.custom_epics.ioc.orbit_pva import OrbitTwinServer
 from dt4acc.custom_epics.ioc.controller import dispatcher
 from dt4acc.custom_epics.ioc.view import View
 from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_managers
+from dt4acc.core.bl.turn_by_turn import RingTurnByTurn, ring_monitors
 from dt4acc.custom_epics.ioc.turn_by_turn import TurnByTurnPVs, hook_track_updates
-from dt4acc.custom_facility.bessyii.turn_by_turn import ring_bpms, ring_turn_by_turn
 from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend
 
 logging.basicConfig(level=logging.WARNING)
@@ -47,6 +47,8 @@ logger = logging.getLogger("dt4acc-bessyii")
 
 #: device database of the storage ring: magnets, their supplies
 ACCELERATOR_SETUP = ("custom_epics", "data", "standard", "accelerator_setup.json")
+#: the ring's BPMs: its monitors named so (the lattice has other monitors too)
+BPM_PREFIX = "BPMZ"
 
 
 async def main():
@@ -91,7 +93,8 @@ async def main():
     )
 
     orbit_server.start()
-    view = View(orbit_server=orbit_server, bpms=ring_bpms(backend))
+    bpms = ring_monitors(backend, BPM_PREFIX)
+    view = View(orbit_server=orbit_server, bpms=bpms)
 
     controller = Controller(
         name="epics-delegate-ctrller",
@@ -107,10 +110,10 @@ async def main():
         builder.SetDeviceName(prefix)
 
     view.update_process_variables(
-        await initialise_pvs(builder=builder, controller=controller, bpms=ring_bpms(backend))
+        await initialise_pvs(builder=builder, controller=controller, bpms=bpms)
     )
     # turn by turn data at the BPMs, recomputed after each new closed orbit
-    hook_track_updates(view, initialise_turn_by_turn_pvs(builder, backend))
+    hook_track_updates(view, initialise_turn_by_turn_pvs(builder, backend, bpms))
     # Extra reads at startup
     await read_and_dispatch(
         controller=controller,
@@ -152,13 +155,14 @@ async def initialise_pvs(
     }
 
 
-def initialise_turn_by_turn_pvs(builder, backend: SimulatorBackend) -> TurnByTurnPVs:
-    """Turn by turn PVs of the ring alone (``TBT:...``, ``<bpm>:signal:tbt:X`` / ``Y``)
+def initialise_turn_by_turn_pvs(builder, backend: SimulatorBackend, bpms: Sequence[str]) -> TurnByTurnPVs:
+    """Turn by turn PVs of the ring alone (``TBT:...``, ``<bpm>:signal:tbt:X`` / ``Y``),
+    :mod:`dt4acc.core.bl.turn_by_turn`
 
     Not part of :func:`initialise_pvs`: the injection twin uses those and
     serves the BPMs' turn by turn data of its own hand over.
     """
-    return TurnByTurnPVs(ring_turn_by_turn(backend), builder=builder)
+    return TurnByTurnPVs(RingTurnByTurn(backend, bpms), builder=builder)
 
 
 def run():

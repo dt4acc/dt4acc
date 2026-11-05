@@ -21,9 +21,10 @@ from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encap
 from dt4acc.custom_facility.bessyii.run_bessyii_twin import (
     ACCELERATOR_SETUP,
     initialise_pvs,
+    BPM_PREFIX,
     initialise_turn_by_turn_pvs,
 )
-from dt4acc.custom_facility.bessyii.turn_by_turn import ring_bpms
+from dt4acc.core.bl.turn_by_turn import ring_monitors
 from dt4acc.core.bl.translating_command_execution_engine import TranslatingCommandExecutionEngine
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
 
@@ -36,7 +37,7 @@ MAGNET_FIELDS = {"Cm:set", "Cm:rdbk", "im:I", "x:set", "y:set"}
 SUPPLY_FIELDS = {"set", "rdbk"}
 #: every BPM, named as the BPM system (custom_epics/ioc/bpm_pvs)
 BPM_FIELDS = {"signal:sa:X", "signal:sa:Y"}
-TBT_FIELDS = {"signal:tbt:X", "signal:tbt:Y"}
+TBT_FIELDS = {"signal:tbt:X", "signal:tbt:Y", "signal:tbt:survived"}
 #: served by the ring twin alone, not by the injection twin
 TURN_BY_TURN_SECTION = "Turn by turn (ring twin alone)"
 
@@ -57,8 +58,9 @@ def ring_pvs():
     backend = provide_backend_encapsulating_lattice()
     builder = RecordingBuilder()
     builder.SetDeviceName(PREFIX)
-    asyncio.run(initialise_pvs(builder=builder, controller=ring_controller(backend), bpms=ring_bpms(backend)))
-    initialise_turn_by_turn_pvs(builder, backend)
+    bpms = ring_monitors(backend, BPM_PREFIX)
+    asyncio.run(initialise_pvs(builder=builder, controller=ring_controller(backend), bpms=bpms))
+    initialise_turn_by_turn_pvs(builder, backend, bpms)
     return builder.names(PREFIX)
 
 
@@ -120,10 +122,12 @@ def test_pvs_are_those_of_the_pv_list(ring_pvs):
 
 def test_turn_by_turn_pvs(ring_pvs):
     pvs = set(ring_pvs)
-    for pv in ["TBT:n_turns", "TBT:offset:x", "TBT:start:x", "TBT:tbt:x", "TBT:tbt:names", "TBT:survived",
-               "BPMZ1D1R:signal:tbt:X", "BPMZ7T8R:signal:tbt:Y"]:
+    for pv in ["TBT:n_turns", "TBT:offset:x", "TBT:start:x", "BPMZ1D1R:signal:tbt:X", "BPMZ7T8R:signal:tbt:Y",
+               "BPMZ1D1R:signal:tbt:survived"]:
         assert pv in pvs, pv
     assert len([pv for pv in pvs if pv.endswith(":signal:tbt:X")]) == 123
+    assert len([pv for pv in pvs if pv.endswith(":signal:tbt:survived")]) == 123
+    assert not [pv for pv in pvs if pv.startswith("TBT:tbt:") or pv == "TBT:survived"], "per BPM, not all in one"
 
 
 def test_bpm_pvs(ring_pvs):

@@ -27,7 +27,8 @@ from dt4acc.core.bl.translating_command_execution_engine import TranslatingComma
 from dt4acc.core.interfaces.controller_interface import ControllerInterface
 from dt4acc.custom_epics.ioc.controller import dispatcher
 from dt4acc.custom_epics.ioc.orbit_pva import OrbitTwinServer
-from dt4acc.custom_epics.ioc.turn_by_turn import RingTurnByTurn, TurnByTurnPVs, hook_track_updates
+from dt4acc.core.bl.turn_by_turn import RingTurnByTurn
+from dt4acc.custom_epics.ioc.turn_by_turn import TurnByTurnPVs, hook_track_updates
 from dt4acc.custom_epics.ioc.pv_setup import (
     PVFields,
     initialize_calculation_state_pvs,
@@ -106,7 +107,8 @@ async def initialise_pvs(builder, controller: ControllerInterface, bpms: Sequenc
 
 
 def initialise_turn_by_turn_pvs(builder, backend: SimulatorBackend, bpms: Sequence[str]) -> TurnByTurnPVs:
-    """Turn by turn PVs (``TBT:...``, ``<bpm>:signal:tbt:X`` / ``Y``), as the BESSY II ring twin"""
+    """Turn by turn PVs (``TBT:...``, ``<bpm>:signal:tbt:X`` / ``Y``), as the BESSY II ring twin,
+    :mod:`dt4acc.core.bl.turn_by_turn`"""
     return TurnByTurnPVs(RingTurnByTurn(backend, bpms), builder=builder)
 
 

@@ -291,29 +291,26 @@ A beam started at the beginning of the ring lattice, at the closed orbit plus an
 kicked beam), tracked for some turns and read at the ring's BPMs. Recomputed when a setting
 changes and after each new closed orbit. Only the ring twin alone serves the `TBT:` PVs; the
 injection twin serves the BPMs' turn by turn PVs of its hand over instead (beam from the
-transfer line).
+transfer line). The computation is shared by the twins, EPICS and Tango:
+`dt4acc.core.bl.turn_by_turn`; the PVs: `dt4acc.custom_epics.ioc.turn_by_turn`.
 
 #### Settings and results
 
 | PV | | write | protocol | machine |
 |---|---|---|---|---|
 | `TBT:offset:x` | start offset from the closed orbit, horizontal (m) | acts | CA + PVA | no |
-| `TBT:offset:xp` | start offset from the closed orbit, horizontal angle (rad) | acts | CA + PVA | no |
+| `TBT:offset:px` | start offset from the closed orbit, horizontal angle (rad) | acts | CA + PVA | no |
 | `TBT:offset:y` | start offset from the closed orbit, vertical (m) | acts | CA + PVA | no |
-| `TBT:offset:yp` | start offset from the closed orbit, vertical angle (rad) | acts | CA + PVA | no |
+| `TBT:offset:py` | start offset from the closed orbit, vertical angle (rad) | acts | CA + PVA | no |
 | `TBT:offset:delta` | start offset from the closed orbit, momentum deviation | acts | CA + PVA | no |
 | `TBT:offset:ct` | start offset from the closed orbit, path length (m) | acts | CA + PVA | no |
-| `TBT:n_turns` | turns tracked (1 ... 1024) | acts | CA + PVA | no |
+| `TBT:n_turns` | turns tracked (1 ... 65536, as the BPM electronics) | acts | CA + PVA | no |
 | `TBT:start:x` | start state tracked: closed orbit + offset, horizontal (m) |  | CA + PVA | no |
-| `TBT:start:xp` | start state tracked, horizontal angle (rad) |  | CA + PVA | no |
+| `TBT:start:px` | start state tracked, horizontal angle (rad) |  | CA + PVA | no |
 | `TBT:start:y` | start state tracked, vertical (m) |  | CA + PVA | no |
-| `TBT:start:yp` | start state tracked, vertical angle (rad) |  | CA + PVA | no |
+| `TBT:start:py` | start state tracked, vertical angle (rad) |  | CA + PVA | no |
 | `TBT:start:delta` | start state tracked, momentum deviation |  | CA + PVA | no |
 | `TBT:start:ct` | start state tracked, path length (m) |  | CA + PVA | no |
-| `TBT:tbt:x` | horizontal position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... (m) |  | CA + PVA | no |
-| `TBT:tbt:y` | vertical position at the ring BPMs, as TBT:tbt:x (m) |  | CA + PVA | no |
-| `TBT:tbt:names` | the ring BPMs, in the order of TBT:tbt:x / y |  | CA + PVA | no |
-| `TBT:survived` | particles still there after each turn |  | CA + PVA | no |
 | `TBT:count` | computations so far |  | CA + PVA | no |
 
 #### Ring BPMs, turn by turn (123)
@@ -322,6 +319,7 @@ transfer line).
 |---|---|---|---|---|
 | `<bpm>:signal:tbt:X` | horizontal position, turn after turn (mm) |  | CA + PVA | no |
 | `<bpm>:signal:tbt:Y` | vertical position, turn after turn (mm) |  | CA + PVA | no |
+| `<bpm>:signal:tbt:survived` | particles still there, turn after turn |  | CA + PVA | no |
 
 ```text
 BPMZ1D1R BPMZ1D2R BPMZ1D3R BPMZ1D4R BPMZ1D5R BPMZ1D6R BPMZ1D7R BPMZ1D8R BPMZ1T1R BPMZ1T2R BPMZ1T3R BPMZ1T4R BPMZ1T5R BPMZ1T6R BPMZ1T7R BPMZ1T8R BPMZ2D1R BPMZ2D2R BPMZ2D3R BPMZ2D4R BPMZ2D5R BPMZ2D6R BPMZ2D7R BPMZ2D8R BPMZ2T1R BPMZ2T2R BPMZ2T3R BPMZ2T4R BPMZ2T5R BPMZ2T6R BPMZ2T7R BPMZ2T8R BPMZ3D1R BPMZ3D2R BPMZ3D3R BPMZ3D4R BPMZ3D5R BPMZ3D6R BPMZ3D7R BPMZ3D8R BPMZ3T1R BPMZ3T2R BPMZ3T3R BPMZ3T4R BPMZ3T5R BPMZ3T6R BPMZ3T7R BPMZ3T8R BPMZ41D1R BPMZ41D6R BPMZ41T1R BPMZ41T2R BPMZ41T6R BPMZ41T7R BPMZ42D1R BPMZ42D6R BPMZ42T2R BPMZ43D6R BPMZ43T2R BPMZ44D6R BPMZ4D1R BPMZ4D2R BPMZ4D3R BPMZ4D4R BPMZ4D5R BPMZ4D6R BPMZ4D7R BPMZ4D8R BPMZ4T1R BPMZ4T2R BPMZ4T3R BPMZ4T4R BPMZ4T5R BPMZ4T6R BPMZ4T7R BPMZ4T8R BPMZ5D1R BPMZ5D2R BPMZ5D3R BPMZ5D4R BPMZ5D5R BPMZ5D7R BPMZ5D8R BPMZ5T1R BPMZ5T2R BPMZ5T3R BPMZ5T4R BPMZ5T5R BPMZ5T6R BPMZ5T7R BPMZ5T8R BPMZ6D1R BPMZ6D2R BPMZ6D3R BPMZ6D4R BPMZ6D5R BPMZ6D6R BPMZ6D7R BPMZ6D8R BPMZ6T1R BPMZ6T2R BPMZ6T3R BPMZ6T4R BPMZ6T5R BPMZ6T6R BPMZ6T7R BPMZ6T8R BPMZ7D1R BPMZ7D2R BPMZ7D3R BPMZ7D4R BPMZ7D5R BPMZ7D6R BPMZ7D7R BPMZ7D8R BPMZ7T1R BPMZ7T2R BPMZ7T3R BPMZ7T4R BPMZ7T5R BPMZ7T6R BPMZ7T7R BPMZ7T8R

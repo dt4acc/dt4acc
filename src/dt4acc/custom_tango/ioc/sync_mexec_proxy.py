@@ -12,6 +12,9 @@ from dt4acc_lib.model.utils.command import Command, BehaviourOnError, ReadComman
 
 logger = get_logger()
 
+#: the most turns of the largest lattice take about a minute
+TBT_TIMEOUT_S = 600
+
 
 class SyncMexecProxy:
     """Synchronous wrapper around mexec for crossing the process boundary.
@@ -152,6 +155,31 @@ class SyncMexecProxy:
         except Exception as exc:
             logger.error("SyncMexecProxy.sync_acknowledge failed: %s", exc)
             raise
+
+    # --- turn by turn data (custom_tango/ioc/turn_by_turn)
+    #     tracked on the service loop, as all other uses of the lattice: pyAT's
+    #     tracking is not thread safe, optics and tracking in two threads crash
+    #     the process. So the magnets' writes wait for it (many turns take long).
+    def _turn_by_turn(self):
+        if getattr(self, "_tbt", None) is None:
+            from dt4acc.custom_tango.ioc.turn_by_turn import TurnByTurnService
+            self._tbt = TurnByTurnService(self.mexec.backend)
+        return self._tbt
+
+    def sync_tbt_configure(self, offset: Sequence[float], n_turns: int) -> None:
+        """start offset from the closed orbit (x, px, y, py, delta, ct) and turns"""
+        self._turn_by_turn().configure(list(offset), int(n_turns))
+
+    def sync_tbt_update(self) -> dict:
+        """summary of the latest turn by turn data; tracks again only after a lattice or settings change"""
+        async def _update():
+            return self._turn_by_turn().update()
+
+        return asyncio.run_coroutine_threadsafe(_update(), self.service_loop).result(timeout=TBT_TIMEOUT_S)
+
+    def sync_tbt_at(self, bpm_id: str) -> list:
+        """the latest turn by turn data at one BPM: x then y, turn after turn [m]"""
+        return self._turn_by_turn().at(bpm_id)
 
     def sync_get_state(self) -> CalculationStates:
         logger.debug("SyncMexecProxy.get_state: see what state ")

@@ -11,16 +11,49 @@ subscription per BPM, values updated on every heartbeat calculation.
 Attributes (read-only, polled every 1s from local cache):
     x   — horizontal closed-orbit position at this BPM [m]
     y   — vertical closed-orbit position at this BPM [m]
-"""
 
-from tango import DevState, DevDouble, EventType
+As the Libera Brilliance Plus electronics' Tango devices at SOLEIL (the
+names SOLEIL's MML reads), in mm:
+    XPosSA, ZPosSA — slow acquisition: the closed orbit
+    XPosDD, ZPosDD — turn by turn (custom_tango/ioc/turn_by_turn): the
+                     ring simulator's latest result at this BPM
+    DDBufferSize   — turns; the twin tracks one beam for all BPMs, so a
+                     write sets it for all of them (ring simulator's tbt_n_turns)
+"""
+import numpy as np
+from tango import AttrWriteType, AttrDataFormat, DevState, DevDouble, EventType
 from tango.server import Device, attribute, device_property
 from tango import DeviceProxy
 
 from dt4acc.core.utils.logger import get_logger
 from dt4acc.custom_tango.ioc.devices.virtual_devices import RING_SIM_DEV
+from dt4acc.custom_tango.ioc.turn_by_turn import M2MM, MAX_TURNS
 
 logger = get_logger()
+
+#: what the position attributes of the device serve
+BPM_UNIT = "mm"
+
+
+def unit_mismatches(properties, expected: str = BPM_UNIT) -> list:
+    """the unit settings of an attribute that are not ``expected``. Tango's standard and display
+    units are conversion factors or, in the Libera devices' configuration, names: names are compared"""
+    def is_other_name(value: str) -> bool:
+        value = value.strip()
+        if not value or value.lower().startswith("no ") or value == expected:
+            return False
+        try:
+            float(value)
+        except ValueError:
+            return True
+        return False
+
+    out = [] if properties.unit.strip() == expected else [f"unit {properties.unit!r}"]
+    for field in ("standard_unit", "display_unit"):
+        value = getattr(properties, field)
+        if is_other_name(value):
+            out.append(f"{field} {value!r}")
+    return out
 
 
 class BPMDevice(Device):
@@ -36,6 +69,11 @@ class BPMDevice(Device):
         super().init_device()
         self._x = 0.0
         self._y = 0.0
+        #: turn by turn data of the ring simulator's result tbt_count [mm]
+        self._tbt_count = None
+        self._tbt_x = np.zeros(0)
+        self._tbt_y = np.zeros(0)
+        self._units_checked = set()
         self._event_ids = []
         self._ringsim = None
         self._subscribed = False
@@ -126,3 +164,75 @@ class BPMDevice(Device):
                polling_period=1000)
     def y(self) -> float:
         return self._y
+
+    # --- as the Libera Brilliance Plus devices at SOLEIL [mm]
+    @attribute(dtype=DevDouble, label="X.Pos.SA", unit="mm", format="%8.4f",
+               description="Slow Acquisition: X (closed orbit)")
+    def XPosSA(self) -> float:
+        self._check_units("XPosSA")
+        return self._x * M2MM
+
+    @attribute(dtype=DevDouble, label="Z.Pos.SA", unit="mm", format="%8.4f",
+               description="Slow Acquisition: Z (closed orbit)")
+    def ZPosSA(self) -> float:
+        self._check_units("ZPosSA")
+        return self._y * M2MM
+
+    @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, max_dim_x=MAX_TURNS,
+               label="DD X Pos.", unit="mm", format="%8.4f", description="Turn by turn data: X Pos.")
+    def XPosDD(self):
+        self._check_units("XPosDD")
+        self._update_turn_by_turn()
+        return self._tbt_x
+
+    @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, max_dim_x=MAX_TURNS,
+               label="DD Z Pos.", unit="mm", format="%8.4f", description="Turn by turn data: Z Pos.")
+    def ZPosDD(self):
+        self._check_units("ZPosDD")
+        self._update_turn_by_turn()
+        return self._tbt_y
+
+    @attribute(dtype=int, access=AttrWriteType.READ_WRITE, min_value=1, max_value=MAX_TURNS,
+               label="DD Buffer Size", unit="turns",
+               description="The number of samples to be read on DD data source (the twin: for all BPMs)")
+    def DDBufferSize(self) -> int:
+        return int(self._ring_simulator().read_attribute("tbt_n_turns").value)
+
+    @DDBufferSize.write
+    def DDBufferSize(self, value: int):
+        self._ring_simulator().write_attribute("tbt_n_turns", int(value))
+
+    def _check_units(self, attribute_name: str) -> None:
+        """once per attribute: its configured units (e.g. changed in the database) are
+        not what it serves"""
+        if attribute_name in self._units_checked:
+            return
+        self._units_checked.add(attribute_name)
+        try:
+            properties = self.get_device_attr().get_attr_by_name(attribute_name).get_properties()
+            mismatches = unit_mismatches(properties)
+        except Exception as exc:
+            logger.info("BPMDevice %s: units of %s not checked: %s", self.get_name(), attribute_name, exc)
+            return
+        if mismatches:
+            logger.warning("BPMDevice %s: %s serves %s, but is configured with %s",
+                           self.get_name(), attribute_name, BPM_UNIT, ", ".join(mismatches))
+
+    def _ring_simulator(self) -> DeviceProxy:
+        if self._ringsim is None:
+            self._ringsim = DeviceProxy(RING_SIM_DEV)
+            self._ringsim.set_timeout_millis(3000)
+        return self._ringsim
+
+    def _update_turn_by_turn(self):
+        """fetch this BPM's share once per new result of the ring simulator"""
+        if not self.lattice_id:
+            return
+        ringsim = self._ring_simulator()
+        count = ringsim.read_attribute("tbt_count").value
+        if count == self._tbt_count:
+            return
+        xy = np.asarray(ringsim.command_inout("TurnByTurnAt", self.lattice_id), dtype=np.float64)
+        n = len(xy) // 2
+        self._tbt_x, self._tbt_y = xy[:n] * M2MM, xy[n:] * M2MM
+        self._tbt_count = count
