@@ -25,11 +25,12 @@ from dt4acc_lib.model.utils.command import Command, BehaviourOnError, ReadComman
 from dt4acc.core.utils.logger import get_logger
 from dt4acc.custom_tango.ioc.controller_registry import get_controller
 from dt4acc.custom_tango.ioc.devices.write_value_sync import sync_write_value
+from dt4acc.custom_tango.ioc.mexec_config import SIMULATOR_DEVICE
 from dt4acc.custom_tango.ioc.turn_by_turn import COORDINATES, MAX_TURNS, TurnByTurnFollower
 
 logger = get_logger()
 
-RING_SIM_DEV = "simulator/ringsimulator/ringsimulator"
+RING_SIM_DEV = SIMULATOR_DEVICE
 MAX_ELEMS = 6000
 MAX_BPMS  = 4096
 
@@ -336,6 +337,14 @@ class RingSimulatorDevice(Device, AsyncMixin):
             return np.asarray(self._tbt.at(bpm_id), dtype=np.float64)
         except Exception as exc:
             raise DevFailed(f"turn by turn at {bpm_id}: {exc}")
+
+    @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, max_dim_x=len(COORDINATES),
+               label="Turn by turn: closed orbit", description="closed orbit at the start of the lattice: start - offset")
+    def tbt_closed_orbit(self):
+        summary = self._tbt.summary
+        if not summary.get("start"):
+            return np.zeros(0)
+        return np.asarray(summary["start"], dtype=np.float64) - np.asarray(summary["offset"], dtype=np.float64)
 
     def _on_new_turn_by_turn(self, summary):
         self.push_change_event("tbt_count", self._tbt.count)

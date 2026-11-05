@@ -46,6 +46,8 @@ from dt4acc.custom_tango.ioc.tango_controller import TangoController, DEFAULT_DE
 # backend.set() call and flood the output (4 lines per state transition)
 logging.getLogger("transitions").setLevel(logging.WARNING)
 logging.getLogger("transitions.core").setLevel(logging.WARNING)
+# one line per unit conversion, on each device's readback
+logging.getLogger("dt4acc_lib").setLevel(logging.WARNING)
 
 logger = get_logger()
 logging.getLogger("dt4acc").setLevel(level=logging.WARNING)
@@ -136,6 +138,7 @@ _my_magnet_uuids: list = []         # UUIDs of elements in this server process
 _uuid_to_prop: dict = {}            # uuid -> lattice properties
 _sync_proxy = None                  # MexecService proxy for live reads
 _device_view = False                # True only in device view
+_supply_readback = False            # True: supplies read their value from the lattice
 
 
 def _default_lattice_values() -> dict:
@@ -159,6 +162,20 @@ def enable_device_view_readback() -> None:
     """
     global _device_view
     _device_view = True
+
+
+def enable_supply_readback() -> None:
+    """Call from a facility's startup script: its supplies read their value from
+    the lattice (read_device_value), so they follow writes to their magnets.
+    A read costs one call to the physics engine per lattice property the
+    supply drives: meant for supplies with few of them. Must be called
+    before tango.server.run()."""
+    global _supply_readback
+    _supply_readback = True
+
+
+def supply_readback_enabled() -> bool:
+    return _supply_readback
 
 
 def peek_from_lattice(element_id: str, prop: str) -> float:
@@ -458,6 +475,7 @@ def main_loop(server_name: str, instance_name: str, event=None):
     import logging
     logging.getLogger("transitions").setLevel(logging.WARNING)
     logging.getLogger("transitions.core").setLevel(logging.WARNING)
+    logging.getLogger("dt4acc_lib").setLevel(logging.WARNING)
 
     logger.warning("single server start: name %s instance %s pid %d", server_name, instance_name, os.getpid())
 
