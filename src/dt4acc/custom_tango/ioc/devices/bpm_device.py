@@ -31,6 +31,30 @@ from dt4acc.custom_tango.ioc.turn_by_turn import M2MM, MAX_TURNS
 
 logger = get_logger()
 
+#: what the position attributes of the device serve
+BPM_UNIT = "mm"
+
+
+def unit_mismatches(properties, expected: str = BPM_UNIT) -> list:
+    """the unit settings of an attribute that are not ``expected``. Tango's standard and display
+    units are conversion factors or, in the Libera devices' configuration, names: names are compared"""
+    def is_other_name(value: str) -> bool:
+        value = value.strip()
+        if not value or value.lower().startswith("no ") or value == expected:
+            return False
+        try:
+            float(value)
+        except ValueError:
+            return True
+        return False
+
+    out = [] if properties.unit.strip() == expected else [f"unit {properties.unit!r}"]
+    for field in ("standard_unit", "display_unit"):
+        value = getattr(properties, field)
+        if is_other_name(value):
+            out.append(f"{field} {value!r}")
+    return out
+
 
 class BPMDevice(Device):
     """Read-only Tango device for a single BPM.
@@ -49,6 +73,7 @@ class BPMDevice(Device):
         self._tbt_count = None
         self._tbt_x = np.zeros(0)
         self._tbt_y = np.zeros(0)
+        self._units_checked = set()
         self._event_ids = []
         self._ringsim = None
         self._subscribed = False
@@ -144,22 +169,26 @@ class BPMDevice(Device):
     @attribute(dtype=DevDouble, label="X.Pos.SA", unit="mm", format="%8.4f",
                description="Slow Acquisition: X (closed orbit)")
     def XPosSA(self) -> float:
+        self._check_units("XPosSA")
         return self._x * M2MM
 
     @attribute(dtype=DevDouble, label="Z.Pos.SA", unit="mm", format="%8.4f",
                description="Slow Acquisition: Z (closed orbit)")
     def ZPosSA(self) -> float:
+        self._check_units("ZPosSA")
         return self._y * M2MM
 
     @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, max_dim_x=MAX_TURNS,
                label="DD X Pos.", unit="mm", format="%8.4f", description="Turn by turn data: X Pos.")
     def XPosDD(self):
+        self._check_units("XPosDD")
         self._update_turn_by_turn()
         return self._tbt_x
 
     @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, max_dim_x=MAX_TURNS,
                label="DD Z Pos.", unit="mm", format="%8.4f", description="Turn by turn data: Z Pos.")
     def ZPosDD(self):
+        self._check_units("ZPosDD")
         self._update_turn_by_turn()
         return self._tbt_y
 
@@ -172,6 +201,22 @@ class BPMDevice(Device):
     @DDBufferSize.write
     def DDBufferSize(self, value: int):
         self._ring_simulator().write_attribute("tbt_n_turns", int(value))
+
+    def _check_units(self, attribute_name: str) -> None:
+        """once per attribute: its configured units (e.g. changed in the database) are
+        not what it serves"""
+        if attribute_name in self._units_checked:
+            return
+        self._units_checked.add(attribute_name)
+        try:
+            properties = self.get_device_attr().get_attr_by_name(attribute_name).get_properties()
+            mismatches = unit_mismatches(properties)
+        except Exception as exc:
+            logger.info("BPMDevice %s: units of %s not checked: %s", self.get_name(), attribute_name, exc)
+            return
+        if mismatches:
+            logger.warning("BPMDevice %s: %s serves %s, but is configured with %s",
+                           self.get_name(), attribute_name, BPM_UNIT, ", ".join(mismatches))
 
     def _ring_simulator(self) -> DeviceProxy:
         if self._ringsim is None:

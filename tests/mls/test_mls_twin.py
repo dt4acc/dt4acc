@@ -88,8 +88,8 @@ def test_pv_names(setup, twin):
     expected |= {f"{b}:{f}" for b in bpms for f in ("signal:sa:X", "signal:sa:Y")}
     expected |= {"MCLKHGP:setFrq", "MCLKHGP:rdFrq", "CAV:freq", "CUM1ZK3RP:rdCur"}
     # turn by turn, as the BESSY II ring twin
-    expected |= {f"{b}:{f}" for b in bpms for f in ("signal:tbt:X", "signal:tbt:Y")}
-    expected |= {"TBT:n_turns", "TBT:tbt:x", "TBT:tbt:y", "TBT:tbt:names", "TBT:survived", "TBT:count"}
+    expected |= {f"{b}:{f}" for b in bpms for f in ("signal:tbt:X", "signal:tbt:Y", "signal:tbt:survived")}
+    expected |= {"TBT:n_turns", "TBT:count"}
     expected |= {f"TBT:{w}:{p}" for w in ("offset", "start") for p in ("x", "px", "y", "py", "delta", "ct")}
     assert len(bpms) == 28
     missing = sorted(expected - pvs)

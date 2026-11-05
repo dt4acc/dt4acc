@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
-from dt4acc.core.bl.turn_by_turn import MAX_TURNS, RingTurnByTurn, ring_monitors
+from dt4acc.core.bl.turn_by_turn import MAX_TURNS, LatestTurnByTurn, RingTurnByTurn, ring_monitors
 from dt4acc.custom_facility.bessyii.run_bessyii_twin import BPM_PREFIX
 
 #: design tunes of the BESSY II twin (TUNEZR:flq:rdH / rdV)
@@ -71,13 +71,26 @@ def test_at_one_bpm(backend):
 
 def test_latest_tracks_again_only_after_a_change(backend):
     tbt = ring_tbt(backend, n_turns=4)
-    first = tbt.latest()
-    assert tbt.latest() is first, "nothing changed: the same result"
+    latest = LatestTurnByTurn(tbt)
+    first = latest.get()
+    assert latest.get() is first, "nothing changed: the same result"
     tbt.set_offset("px", 1e-5)
-    second = tbt.latest()
+    second = latest.get()
     assert second is not first and second.start[1] == pytest.approx(first.start[1] + 1e-5)
     tbt.n_turns = 6
-    assert tbt.latest().n_turns == 6
+    assert latest.get().n_turns == 6
+
+
+def test_compute_always_tracks(backend):
+    tbt = ring_tbt(backend, n_turns=4)
+    assert tbt.compute() is not tbt.compute()
+
+
+def test_survived_per_bpm(backend):
+    r = run(backend, [1e-3, 0, 1e-3, 0, 0, 0], n_turns=8)
+    assert r.survived.shape == (8, 123) and np.all(r.survived == 1)
+    lost = run(backend, [1.0, 0, 0, 0, 0, 0], n_turns=8)
+    assert lost.survived.shape == (8, 123) and lost.survived[-1, -1] == 0
 
 
 def test_n_turns_up_to_the_hardware():

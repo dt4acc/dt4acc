@@ -215,6 +215,37 @@ def test_bpm_buffer_size_is_the_ring_simulators_turns(bpm_device):
     assert tango.DeviceProxy(ring_sim).tbt_n_turns == 64 and bpm.DDBufferSize == 64
 
 
+def test_unit_mismatches():
+    from types import SimpleNamespace
+
+    from dt4acc.custom_tango.ioc.devices.bpm_device import unit_mismatches
+
+    def props(unit="mm", standard_unit="No standard unit", display_unit="No display unit"):
+        return SimpleNamespace(unit=unit, standard_unit=standard_unit, display_unit=display_unit)
+
+    assert unit_mismatches(props()) == []
+    assert unit_mismatches(props(standard_unit="1e-3", display_unit="mm")) == [], "a conversion factor, or the same"
+    assert unit_mismatches(props(unit="m")) == ["unit 'm'"]
+    assert unit_mismatches(props(display_unit="um")) == ["display_unit 'um'"]
+
+
+def test_bpm_warns_once_about_changed_units(bpm_device, monkeypatch):
+    from dt4acc.custom_tango.ioc.devices import bpm_device as module
+
+    bpm, _ = bpm_device
+    warnings = []
+    monkeypatch.setattr(module.logger, "warning", lambda *args: warnings.append(args))
+    config = bpm.get_attribute_config("XPosSA")
+    config.unit = "m"
+    bpm.set_attribute_config(config)
+    try:
+        bpm.XPosSA, bpm.XPosSA
+    finally:
+        config.unit = "mm"
+        bpm.set_attribute_config(config)
+    assert len([w for w in warnings if "XPosSA" in w]) == 1
+
+
 def test_bpm_slow_acquisition_in_mm(bpm_device):
     bpm, _ = bpm_device
     # no ring simulator orbit events here: the closed orbit is still 0

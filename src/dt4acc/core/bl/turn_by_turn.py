@@ -52,7 +52,7 @@ class TurnByTurnResult(BaseModel):
     x: np.ndarray
     #: [turn, monitor] vertical position [m]; NaN once the beam is lost
     y: np.ndarray
-    #: particles still there after each turn (at the last BPM)
+    #: [turn, monitor] particles still there
     survived: np.ndarray
 
     def at(self, monitor: str) -> (np.ndarray, np.ndarray):
@@ -65,14 +65,15 @@ class TurnByTurnResult(BaseModel):
                    turns: NPStatesForTurns) -> "TurnByTurnResult":
         by_uid = {e.uid: e for e in turns.per_element}
         per_monitor = [by_uid[m] for m in monitors]
-        survived = per_monitor[-1].get_survived().get_n_particles_survived_per_turn()
         return cls(
             start=list(start.as_array()),
             n_turns=n_turns,
             monitors=list(monitors),
             x=np.array([e.get_x().nanmean_per_turn() for e in per_monitor]).T,
             y=np.array([e.get_y().nanmean_per_turn() for e in per_monitor]).T,
-            survived=np.atleast_1d(np.asarray(survived, dtype=float)),
+            survived=np.array(
+                [e.get_survived().get_n_particles_survived_per_turn() for e in per_monitor], dtype=float
+            ).T,
         )
 
 
@@ -98,8 +99,6 @@ class RingTurnByTurn:
         self.monitors = list(monitors)
         self.offset = ParticleState.from_sequence(offset)
         self.n_turns = n_turns
-        self._latest: Optional[TurnByTurnResult] = None
-        self._computed_for = None
 
     @property
     def n_turns(self) -> int:
@@ -118,13 +117,9 @@ class RingTurnByTurn:
             raise ValueError(f"coordinate {coordinate!r}: expected one of {COORDINATES}")
         setattr(self.offset, coordinate, float(value))
 
-    def _optics(self):
-        _, __, optics = self.backend.get_optics()
-        return optics
-
-    def closed_orbit(self, optics=None) -> np.ndarray:
+    def closed_orbit(self) -> np.ndarray:
         """at the start of the lattice; zero without a closed orbit"""
-        optics = optics if optics is not None else self._optics()
+        _, __, optics = self.backend.get_optics()
         if optics is None:
             return np.zeros(ParticleState.n_elements())
         _, __, elem_data = optics
@@ -132,38 +127,41 @@ class RingTurnByTurn:
 
     def compute(self) -> TurnByTurnResult:
         """tracks now"""
-        optics = self._optics()
-        result = self._compute(optics)
-        self._remember(optics, result)
-        return result
-
-    def latest(self) -> TurnByTurnResult:
-        """the last result, tracked again only if the lattice (its optics) or the
-        settings changed since: cheap to call periodically (e.g. by a heartbeat)"""
-        optics = self._optics()
-        if self._latest is None or not self._is_for(optics):
-            self._remember(optics, self._compute(optics))
-        return self._latest
-
-    def _settings(self):
-        return tuple(self.offset.as_array()), self.n_turns, tuple(self.monitors)
-
-    def _is_for(self, optics) -> bool:
-        # the backend computes new optics after each lattice change: compare the object
-        last_optics, settings = self._computed_for
-        return last_optics is optics and settings == self._settings()
-
-    def _remember(self, optics, result: TurnByTurnResult):
-        self._latest = result
-        self._computed_for = (optics, self._settings())
-
-    def _compute(self, optics) -> TurnByTurnResult:
-        start = ParticleState.from_sequence(self.closed_orbit(optics) + self.offset.as_array())
+        start = ParticleState.from_sequence(self.closed_orbit() + self.offset.as_array())
         turns = self.backend.compute_track([start], self.n_turns, self.monitors)
         return TurnByTurnResult.from_turns(start, self.n_turns, self.monitors, turns)
 
 
+class LatestTurnByTurn:
+    """The last result of a :class:`RingTurnByTurn`, tracked again only if the lattice (its
+    optics) or the settings changed since: cheap to ask periodically (e.g. by a heartbeat)"""
+
+    def __init__(self, tbt: RingTurnByTurn):
+        self.tbt = tbt
+        self._result: Optional[TurnByTurnResult] = None
+        self._computed_for = None
+
+    def _state(self):
+        # the backend computes new optics after each lattice change: compared as the object
+        _, __, optics = self.tbt.backend.get_optics()
+        return optics, tuple(self.tbt.offset.as_array()), self.tbt.n_turns, tuple(self.tbt.monitors)
+
+    def _is_current(self, state) -> bool:
+        if self._computed_for is None:
+            return False
+        last_optics, *last_settings = self._computed_for
+        optics, *settings = state
+        return last_optics is optics and last_settings == settings
+
+    def get(self) -> TurnByTurnResult:
+        state = self._state()
+        if not self._is_current(state):
+            self._result = self.tbt.compute()
+            self._computed_for = state
+        return self._result
+
+
 __all__: Sequence[str] = [
     "COORDINATES", "DEFAULT_OFFSET", "DEFAULT_TURNS", "MAX_TURNS", "UNITS",
-    "RingTurnByTurn", "TurnByTurnResult", "ring_monitors",
+    "LatestTurnByTurn", "RingTurnByTurn", "TurnByTurnResult", "ring_monitors",
 ]
