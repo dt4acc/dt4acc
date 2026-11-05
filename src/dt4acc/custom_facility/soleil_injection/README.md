@@ -58,10 +58,17 @@ The same in a container, one image per row (`pyat-tango-digital-twin`,
 
 ## Devices
 
-Names are not listed here, SOLEIL's nomenclature stays with its files. All of a kind:
-`tango.Database().get_device_exported_for_class("BPMDevice")`, or Jive; TL2's in
-`soleilii-tl/accelerator_setup.json` (`name`: the magnet, `pc`: its supply, `FamName`:
-`HCOR`, `VCOR`, ...).
+All of a kind: `tango.Database().get_device_exported_for_class("BPMDevice")`, or Jive; the full
+lists are in the `accelerator_setup.json` of each twin (`name`: the magnet, `pc`: its supply).
+
+| | TL2 | ring (examples) |
+|---|---|---|
+| BPMs | `LT2/DG-EPOS/BPM.01` ... `BPM.06` | `AN01-AR/DG-EPOS/BPM.02` |
+| horizontal steerers | `LT2/EM-COR/COR.H.01` ... `COR.H.05` | `AN01-AR/EM-COR/SHF.01-CDLH.01` |
+| vertical steerers | `LT2/EM-COR/COR.V.01` ... `COR.V.04` | `AN01-AR/EM-COR/SHF.01-CDLV.01` |
+| quadrupoles | `LT2/EM-QP/QP.01` ... `QP.12` | `AN01-AR/EM-QP/QF01.01` |
+| their supplies, `--view device` of TL2 alone | `LT2/AE-COR/COR.H.05`, `LT2/AE-QP/QP.12`, ... | |
+| not controlled | bends `LT2/EM-DIP/DIP.01` ... `DIP.04`, kickers `BO-SDE/EM-EP/KEXT.01` ... `KEXT.04`, septa `LT2/EM-EP/SEP-EP.01`, `SEP-MI.01` | bends `AN01-AR/EM-DIP/DNC.01`, ... |
 
 | device | attributes |
 |---|---|
@@ -89,16 +96,17 @@ Allow 1 to 2 s after a write (heartbeat 1 s). Jive: refresh, the arrays are not 
 
 | write | what moves | what stays |
 |---|---|---|
-| TL2 steerer, `magnetic_strength` | TL2's `orbit_*` and BPMs after it, `line_exit`, `injected`, the ring's `tbt_start`, `XPosDD` / `ZPosDD` | TL2's optics; BPMs before it; the ring's closed orbit (`orbit_*`, `XPosSA`) |
-| TL2 quadrupole, `magnetic_strength` | TL2's `beta_*`, `alpha_*`, `nu_*`; `line_exit` and what follows only if the beam is off centre in it | the ring |
+| TL2 steerer, e.g. `LT2/EM-COR/COR.H.05`, `magnetic_strength` | TL2's `orbit_*` and BPMs after it, `line_exit`, `injected`, the ring's `tbt_start`, `XPosDD` / `ZPosDD` | TL2's optics; BPMs before it; the ring's closed orbit (`orbit_*`, `XPosSA`) |
+| TL2 quadrupole, e.g. `LT2/EM-QP/QP.12`, `magnetic_strength` | TL2's `beta_*`, `alpha_*`, `nu_*`; `line_exit` and what follows only if the beam is off centre in it | the ring |
 | `geometry` | `injected`, `tbt_start`, `XPosDD` / `ZPosDD` | TL2 |
 | `n_turns` | length of `XPosDD` / `ZPosDD`, `survived` | |
-| ring steerer | ring's `orbit_*`, `XPosSA`; turn by turn data around the new closed orbit | TL2, `line_exit`, `injected` |
-| ring quadrupole | ring's optics, tunes; the betatron oscillation of `XPosDD` / `ZPosDD` | TL2, `line_exit`, `injected` |
+| ring steerer, e.g. `AN01-AR/EM-COR/SHF.01-CDLH.01` | ring's `orbit_*`, `XPosSA`; turn by turn data around the new closed orbit | TL2, `line_exit`, `injected` |
+| ring quadrupole, e.g. `AN01-AR/EM-QP/QF01.01` | ring's optics, tunes; the betatron oscillation of `XPosDD` / `ZPosDD` | TL2, `line_exit`, `injected` |
 | TL2 or ring bends, kickers, septa | nothing: not controlled, writes are refused (as the ring on its own) | |
 
-A first look: a TL2 horizontal steerer near its end, `magnetic_strength` = `1e-4`, then
-`injected` and `XPosDD` of a ring BPM; `n_turns` = `128` to see the oscillation. Back: `0`.
+A first look: `LT2/EM-COR/COR.H.05`, `magnetic_strength` = `1e-4`, then `injected` of
+`simulator/injection/injection` and `XPosDD` of `AN01-AR/DG-EPOS/BPM.02`; `n_turns` = `128`
+to see the oscillation. Vertical: `LT2/EM-COR/COR.V.04`, `ZPosDD`. Back: `0`.
 
 ## What to take care of
 
@@ -128,7 +136,8 @@ injection = tango.DeviceProxy("simulator/injection/injection")
 injection.n_turns = 128
 injection.geometry = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 print(injection.injected, injection.survived[-1])
-bpm = tango.DeviceProxy(tango.Database().get_device_exported_for_class("BPMDevice")[0])
+tango.DeviceProxy("LT2/EM-COR/COR.H.05").magnetic_strength = 1e-4
+bpm = tango.DeviceProxy("AN01-AR/DG-EPOS/BPM.02")
 print(bpm.XPosDD)
 ```
 

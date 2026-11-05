@@ -14,12 +14,12 @@ Different, because it is a line:
 
 | write | what moves |
 |---|---|
-| steerer, `magnetic_strength` [rad] | `orbit_*` and BPMs (`XPosSA`, `ZPosSA`) after it |
-| quadrupole, `magnetic_strength` | `beta_*`, `alpha_*`, `nu_*`; trajectory if the beam is off centre in it |
+| steerer, `LT2/EM-COR/COR.H.01` ... `COR.H.05`, `COR.V.01` ... `COR.V.04`, `magnetic_strength` [rad] | `orbit_*` and BPMs (`LT2/DG-EPOS/BPM.01` ... `BPM.06`: `XPosSA`, `ZPosSA`) after it |
+| quadrupole, `LT2/EM-QP/QP.01` ... `QP.12`, `magnetic_strength` | `beta_*`, `alpha_*`, `nu_*`; trajectory if the beam is off centre in it |
 | bends, kickers, septa | nothing: not controlled, as in the ring; writes are refused |
 
-**Supplies**, `--view device` on `register_devices` and the twin: `current_set`
-drives its magnets with factor 1, no current to strength data yet: the value is the
+**Supplies** (`LT2/AE-QP/QP.12`, `LT2/AE-COR/COR.H.05`, ...), `--view device` on `register_devices`
+and the twin: `current_set` drives its magnets with factor 1, no current to strength data yet: the value is the
 magnet's strength, not amperes. Magnets and supplies follow each other's writes (magnets
 polled: up to about 1.5 s). The default view, `design`, serves the magnets only.
 
