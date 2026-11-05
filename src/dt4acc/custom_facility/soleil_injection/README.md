@@ -22,39 +22,115 @@ twin (`../bessyii_injection`).
 
 ## Run
 
-SOLEIL's files are not in the repository: the defaults are the two twins' folders in
-`~/Documents/dt4acc_config_data`.
+Three ways to run them, all need a Tango database, one per set of twins (SOLEIL's
+`tango_db` image: `apptainer run oras://registry.synchrotron-soleil.fr/software_control_system_public/tango_db`;
+it keeps `tango_database.db` in the folder it starts from, a file of an older image gives
+`Incompatible SQLite schema`: start it from another folder).
+
+SOLEIL's files are not in the repository, nor in the containers. Defaults:
+`~/Documents/dt4acc_config_data` (ring: lattice `.m`, `accelerator_setup.json`) and its
+`soleilii-tl` (TL2: `tl2_lattice_uuid.json`, `tl2_database.yaml`, `twiss_in.yaml`).
+Elsewhere: the options of each script (`--help`).
+
+TL2's device database is generated once, in the folder of its files:
 
 ```bash
 cd ~/Documents/dt4acc_config_data/soleilii-tl
 python -m dt4acc.custom_facility.soleil_tl2.yml2json_soleil_tl2
-python -m dt4acc.custom_facility.soleil_injection.register_devices --tango-host HOST:PORT
-python -m dt4acc.custom_facility.soleil_injection.run_soleil_injection_twin --tango-host HOST:PORT
 ```
 
-Three processes: the ring twin, the TL2 twin, the hand over's device. If one ends, all end.
+Registering is once per Tango database, then the twin starts in about a minute (ring:
+over 130 servers); it is ready when the log says `All Tango processes ready`, once per
+twin.
+
+| twin | register | run |
+|---|---|---|
+| ring | `python -m dt4acc.custom_facility.soleil.register_devices --register-devices --tango-host H:P` | `python -m dt4acc.custom_facility.soleil.run_soleil_twin --tango-host H:P` |
+| TL2 | `python -m dt4acc.custom_facility.soleil_tl2.register_devices --register-devices --tango-host H:P` | `python -m dt4acc.custom_facility.soleil_tl2.run_soleil_tl2_twin --tango-host H:P` |
+| both, with the hand over | `python -m dt4acc.custom_facility.soleil_injection.register_devices --tango-host H:P` | `python -m dt4acc.custom_facility.soleil_injection.run_soleil_injection_twin --tango-host H:P` |
+
+`export TANGO_HOST=H:P` first (the ring's registration reads it). In PyCharm: the same
+files as scripts, the same parameters. If one process of the injection twin ends, all end.
+
+The same in a container, one image per row (`pyat-tango-digital-twin`,
+`recipies/soleil-*.sdef`): `apptainer exec IMAGE python -m ...` for the steps above,
+`apptainer run IMAGE --tango-host H:P` for the twin.
 
 ## Devices
 
-| device | what |
+Names are not listed here, SOLEIL's nomenclature stays with its files. All of a kind:
+`tango.Database().get_device_exported_for_class("BPMDevice")`, or Jive; TL2's in
+`soleilii-tl/accelerator_setup.json` (`name`: the magnet, `pc`: its supply, `FamName`:
+`HCOR`, `VCOR`, ...).
+
+| device | attributes |
 |---|---|
-| the ring's | as the ring twin, in its default view |
-| TL2's | as the TL2 twin, in its default view |
-| `simulator/ringsimulator/ringsimulator` | the ring's optics and turn by turn data; `tbt_offset` is set by the hand over |
-| `simulator/tlsimulator/tlsimulator` | TL2's trajectory and optics |
-| `simulator/injection/injection` | the hand over |
-| a ring BPM device: `XPosDD`, `ZPosDD` | one ring BPM, turn after turn [mm] |
+| `simulator/injection/injection`: the hand over | see below |
+| `simulator/ringsimulator/ringsimulator`: ring | `orbit_x`, `orbit_y` [m], `beta_*`, `alpha_*`, `nu_*`, tunes `hor`, `vert`, chromaticity `xi_x`, `xi_y`, turn by turn `tbt_*` |
+| `simulator/tlsimulator/tlsimulator`: TL2 | the same along the line: `orbit_*` is its trajectory; tunes and chromaticity NaN, no turn by turn: a line has none |
+| magnets | `magnetic_strength`: quadrupoles K [1/m^2], steerers [rad in TL2] |
+| BPMs | `XPosSA`, `ZPosSA`: position [mm]; ring also `XPosDD`, `ZPosDD`: turn after turn [mm], `DDBufferSize`: turns |
+| supplies, `--view device` of the TL2 twin alone | `current_set`, `current_readback` |
 
 `simulator/injection/injection`:
 
 | attribute | what |
 |---|---|
-| `geometry` | (x, px, y, py, delta, ct) line against ring at the injection point, writable |
-| `n_turns` | turns tracked in the ring, writable |
+| `geometry` | (x, px, y, py, delta, ct) line against ring at the injection point [m, rad, 1, m], writable |
+| `n_turns` | turns tracked in the ring, writable (default 2) |
 | `line_exit` | centroid leaving TL2, line frame |
-| `injected` | the same in the ring's frame |
+| `injected` | the same in the ring's frame: `line_exit` + `geometry` |
 | `survived` | particles still there after each turn |
 | `count` | hand overs computed so far |
+
+## What moves what
+
+Allow 1 to 2 s after a write (heartbeat 1 s). Jive: refresh, the arrays are not polled.
+
+| write | what moves | what stays |
+|---|---|---|
+| TL2 steerer, `magnetic_strength` | TL2's `orbit_*` and BPMs after it, `line_exit`, `injected`, the ring's `tbt_start`, `XPosDD` / `ZPosDD` | TL2's optics; BPMs before it; the ring's closed orbit (`orbit_*`, `XPosSA`) |
+| TL2 quadrupole, `magnetic_strength` | TL2's `beta_*`, `alpha_*`, `nu_*`; `line_exit` and what follows only if the beam is off centre in it | the ring |
+| `geometry` | `injected`, `tbt_start`, `XPosDD` / `ZPosDD` | TL2 |
+| `n_turns` | length of `XPosDD` / `ZPosDD`, `survived` | |
+| ring steerer | ring's `orbit_*`, `XPosSA`; turn by turn data around the new closed orbit | TL2, `line_exit`, `injected` |
+| ring quadrupole | ring's optics, tunes; the betatron oscillation of `XPosDD` / `ZPosDD` | TL2, `line_exit`, `injected` |
+| TL2 or ring bends, kickers, septa | nothing: not controlled, writes are refused (as the ring on its own) | |
+
+A first look: a TL2 horizontal steerer near its end, `magnetic_strength` = `1e-4`, then
+`injected` and `XPosDD` of a ring BPM; `n_turns` = `128` to see the oscillation. Back: `0`.
+
+## What to take care of
+
+* **Placeholders.** Injection point and `geometry` (0) are not SOLEIL's yet: absolute
+  numbers of the injected beam are not machine values.
+* **`tbt_offset` of the ring simulator** belongs to the hand over here: it is overwritten
+  within a second. To change the beam use `geometry`.
+* **`n_turns`** up to 64 * 1024, but tracking runs on the ring's physics engine: writes to
+  ring magnets wait for it, and may hit their 30 s timeout during very long runs. Keep it
+  small while steering. `DDBufferSize` on a BPM is the same setting, for all BPMs.
+* **Beam loss.** `survived` drops to 0 and `XPosDD` / `ZPosDD` read NaN; put the steerer
+  back. If the ring's own optics fail (no closed orbit): `Reset` or `Reinit` on its
+  simulator.
+* **Units.** BPM attributes `XPos*` / `ZPos*` are mm, `orbit_*`, `line_exit`, `injected` m
+  and rad, `x`, `y` of a BPM device m. Z is vertical (SOLEIL's names).
+* **Ports.** One database per set of twins, `--tango-host`; the physics engines' ports
+  (`--ring-port`, `--tl-port`) differ per run on one machine.
+* **Twins alone on one database.** Ring and TL2 alone register the same simulator
+  device: use two databases; this twin uses one and renames TL2's.
+* **Stale devices.** Delete a twin's servers from the database (or use a new one) when
+  changing between layouts.
+* **Reading from a client.** `TANGO_HOST` selects the database. A client in plain Python:
+
+```python
+import tango
+injection = tango.DeviceProxy("simulator/injection/injection")
+injection.n_turns = 128
+injection.geometry = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+print(injection.injected, injection.survived[-1])
+bpm = tango.DeviceProxy(tango.Database().get_device_exported_for_class("BPMDevice")[0])
+print(bpm.XPosDD)
+```
 
 ## Check
 
