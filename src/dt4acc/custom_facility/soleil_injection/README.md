@@ -52,9 +52,10 @@ twin.
 `export TANGO_HOST=H:P` first (the ring's registration reads it). In PyCharm: the same
 files as scripts, the same parameters. If one process of the injection twin ends, all end.
 
-The same in a container, one image per row (`pyat-tango-digital-twin`,
-`recipies/soleil-*.sdef`): `apptainer exec IMAGE python -m ...` for the steps above,
-`apptainer run IMAGE --tango-host H:P` for the twin.
+In a container, one image per row (`pyat-tango-digital-twin`, `recipies/soleil-*.sdef`), one
+step: `apptainer run IMAGE` generates TL2's device database if missing, registers the twin's
+devices if they are not in the database yet, then starts the twin (database: `--tango-host H:P`,
+else `TANGO_HOST`, else `localhost:10000`). See that repository's README.
 
 ## Devices
 
@@ -92,7 +93,9 @@ lists are in the `accelerator_setup.json` of each twin (`name`: the magnet, `pc`
 
 ## What moves what
 
-Allow 1 to 2 s after a write (heartbeat 1 s). Jive: refresh, the arrays are not polled.
+After a write allow 1 to 2 s for TL2. For the ring and what is computed from it allow about
+20 s: its optics take seconds per cycle, and 5 s were not enough in the tests. Jive: refresh, the
+arrays are not polled.
 
 | write | what moves | what stays |
 |---|---|---|
@@ -101,7 +104,7 @@ Allow 1 to 2 s after a write (heartbeat 1 s). Jive: refresh, the arrays are not 
 | `geometry` | `injected`, `tbt_start`, `XPosDD` / `ZPosDD` | TL2 |
 | `n_turns` | length of `XPosDD` / `ZPosDD`, `survived` | |
 | ring steerer, e.g. `AN01-AR/EM-COR/SHF.01-CDLH.01` | ring's `orbit_*`, `XPosSA`; turn by turn data around the new closed orbit | TL2, `line_exit`, `injected` |
-| ring quadrupole, e.g. `AN01-AR/EM-QP/QF01.01` | ring's optics, tunes; the betatron oscillation of `XPosDD` / `ZPosDD` | TL2, `line_exit`, `injected` |
+| ring quadrupole, e.g. `AN01-AR/EM-QP/QF01.01` | ring's optics, tunes; `XPosDD` / `ZPosDD` only if the injected beam is off the closed orbit (steer it, or set `geometry`, to see its oscillation change) | TL2, `line_exit`, `injected` |
 | TL2 or ring bends, kickers, septa | nothing: not controlled, writes are refused (as the ring on its own) | |
 
 A first look: `LT2/EM-COR/COR.H.05`, `magnetic_strength` = `1e-4`, then `injected` of
@@ -117,8 +120,8 @@ to see the oscillation. Vertical: `LT2/EM-COR/COR.V.04`, `ZPosDD`. Back: `0`.
 * **`n_turns`** up to 64 * 1024, but tracking runs on the ring's physics engine: writes to
   ring magnets wait for it, and may hit their 30 s timeout during very long runs. Keep it
   small while steering. `DDBufferSize` on a BPM is the same setting, for all BPMs.
-* **Beam loss.** `survived` drops to 0 and `XPosDD` / `ZPosDD` read NaN; put the steerer
-  back. If the ring's own optics fail (no closed orbit): `Reset` or `Reinit` on its
+* **Beam loss.** `survived` drops to 0 and `XPosDD` / `ZPosDD` read NaN; put the steerer or
+  `geometry` back, it recovers within the settling time above. If the ring's own optics fail (no closed orbit): `Reset` or `Reinit` on its
   simulator.
 * **Units.** BPM attributes `XPos*` / `ZPos*` are mm, `orbit_*`, `line_exit`, `injected` m
   and rad, `x`, `y` of a BPM device m. Z is vertical (SOLEIL's names).
