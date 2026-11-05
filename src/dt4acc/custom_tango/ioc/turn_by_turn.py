@@ -34,6 +34,7 @@ from dt4acc.core.bl.turn_by_turn import (
     COORDINATES,
     DEFAULT_OFFSET,
     DEFAULT_TURNS,
+    LatestTurnByTurn,
     MAX_TURNS,
     RingTurnByTurn,
     TurnByTurnResult,
@@ -68,6 +69,7 @@ class TurnByTurnService:
 
     def __init__(self, backend: SimulatorBackend):
         self.tbt = RingTurnByTurn(backend, ring_bpm_ids(backend), offset=DEFAULT_OFFSET, n_turns=DEFAULT_TURNS)
+        self._latest = LatestTurnByTurn(self.tbt)
         self.generation = 0
         self._result: TurnByTurnResult = None
         self._lock = threading.Lock()
@@ -83,7 +85,7 @@ class TurnByTurnService:
     def update(self) -> Dict:
         """the latest result's summary, tracked again if needed"""
         with self._lock:
-            result = self.tbt.latest()
+            result = self._latest.get()
             if result is not self._result:
                 self._result = result
                 self.generation += 1
@@ -98,7 +100,8 @@ class TurnByTurnService:
             n_turns=self.tbt.n_turns,
             bpm_ids=list(self.tbt.monitors),
             start=list(r.start) if r else [],
-            survived=list(r.survived) if r else [],
+            # at the last BPM: the particles left after each turn
+            survived=list(r.survived[:, -1]) if r else [],
         )
 
     def at(self, bpm_id: str) -> List[float]:
