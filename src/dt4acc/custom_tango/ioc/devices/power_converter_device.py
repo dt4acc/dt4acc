@@ -1,4 +1,5 @@
 import asyncio
+import math
 
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
 from dt4acc_lib.model.utils import tango_resource_locator
@@ -88,6 +89,7 @@ class PowerConverterDevice(Device):
     @attribute(dtype=float, access=AttrWriteType.READ_WRITE,
                label="Current setpoint", unit="A")
     def current_set(self) -> float:
+        self._follow_lattice()
         return self._current
 
     @current_set.write
@@ -110,11 +112,27 @@ class PowerConverterDevice(Device):
 
     @attribute(dtype=float, label="Current readback", unit="A")
     def current_readback(self) -> float:
+        self._follow_lattice()
         return self._current_rb
 
     @attribute(dtype=float, label="Voltage readback", unit="V")
     def voltage(self) -> float:
         return self._voltage
+
+    def _follow_lattice(self) -> None:
+        """Where enabled (single_server.enable_supply_readback): take the value
+        from the lattice, so that the supply follows writes to its magnets. The
+        value last written stays as it was when the lattice agrees with it."""
+        from dt4acc.custom_tango.ioc.single_server import read_device_value, supply_readback_enabled
+
+        if not supply_readback_enabled():
+            return
+        value = read_device_value(self.pc_name, "set_current")
+        if value is None or math.isclose(value, self._current, rel_tol=1e-9, abs_tol=1e-12):
+            return
+        self._current = value
+        self._current_rb = value
+        sync_write_value(self, "current_set", value)
 
 
 class CavityPowerConverterDevice(Device):

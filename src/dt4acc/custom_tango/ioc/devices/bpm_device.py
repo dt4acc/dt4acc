@@ -19,6 +19,11 @@ names SOLEIL's MML reads), in mm:
                      ring simulator's latest result at this BPM
     DDBufferSize   — turns; the twin tracks one beam for all BPMs, so a
                      write sets it for all of them (ring simulator's tbt_n_turns)
+
+Single pass (``mexec_config.SINGLE_PASS``, a transfer line of an injection
+twin): x / y follow the simulator's ``shot_x`` / ``shot_y``, the trajectory at
+the last shot, instead of ``orbit_x`` / ``orbit_y``: a line carries beam only
+during a shot, its BPMs keep the shot's reading until the next.
 """
 import numpy as np
 from tango import AttrWriteType, AttrDataFormat, DevState, DevDouble, EventType
@@ -27,12 +32,15 @@ from tango import DeviceProxy
 
 from dt4acc.core.utils.logger import get_logger
 from dt4acc.custom_tango.ioc.devices.virtual_devices import RING_SIM_DEV
+from dt4acc.custom_tango.ioc.mexec_config import SINGLE_PASS
 from dt4acc.custom_tango.ioc.turn_by_turn import M2MM, MAX_TURNS
 
 logger = get_logger()
 
 #: what the position attributes of the device serve
 BPM_UNIT = "mm"
+#: the simulator's attributes x / y follow: the model, or in single pass the last shot
+POSITION_ATTRIBUTES = ("shot_x", "shot_y") if SINGLE_PASS else ("orbit_x", "orbit_y")
 
 
 def unit_mismatches(properties, expected: str = BPM_UNIT) -> list:
@@ -89,18 +97,19 @@ class BPMDevice(Device):
             self._subscribe_orbit_events()
 
     def _subscribe_orbit_events(self):
-        """Subscribe to orbit_x / orbit_y change events on RingSimulatorDevice.
+        """Subscribe to orbit_x / orbit_y (single pass: shot_x / shot_y) change events on RingSimulatorDevice.
         Called at init and retried via always_executed_hook until successful."""
         try:
             logger.info("BPMDevice %s: subscribing to %s orbit events (index=%d s_pos=%.3f)",
                         self.get_name(), RING_SIM_DEV, self.orbit_index, self.s_pos)
             ringsim = DeviceProxy(RING_SIM_DEV)
             ringsim.set_timeout_millis(3000)
+            attr_x, attr_y = POSITION_ATTRIBUTES
             eid_x = ringsim.subscribe_event(
-                "orbit_x", EventType.CHANGE_EVENT, self._on_orbit_x
+                attr_x, EventType.CHANGE_EVENT, self._on_orbit_x
             )
             eid_y = ringsim.subscribe_event(
-                "orbit_y", EventType.CHANGE_EVENT, self._on_orbit_y
+                attr_y, EventType.CHANGE_EVENT, self._on_orbit_y
             )
             self._event_ids = [eid_x, eid_y]
             self._ringsim = ringsim  # keep reference alive
