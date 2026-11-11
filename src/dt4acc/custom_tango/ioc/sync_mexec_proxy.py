@@ -189,6 +189,16 @@ class SyncMexecProxy:
         tbt = self._turn_by_turn()
         return tbt.at(bpm_id) if tbt is not None else []
 
+    def sync_tbt_inject(self, start: Sequence[float], n_turns: int) -> dict:
+        """a shot: tracks ``start`` (x, px, y, py, delta, ct, absolute) for ``n_turns``
+        against the closed orbit as it is now; summary as :meth:`sync_tbt_update`, a new
+        result every shot; empty for a transfer line"""
+        async def _inject():
+            tbt = self._turn_by_turn()
+            return tbt.inject(list(start), int(n_turns)) if tbt is not None else {}
+
+        return asyncio.run_coroutine_threadsafe(_inject(), self.service_loop).result(timeout=TBT_TIMEOUT_S)
+
     def sync_line_exit(self) -> list:
         """A transfer line: the centroid leaving it (x, px, y, py, delta, ct), the last point
         of its optics; empty without optics. On the service loop, as all use of the lattice."""
@@ -200,6 +210,18 @@ class SyncMexecProxy:
             return [float(v) for v in elem_data.closed_orbit[-1]]
 
         return asyncio.run_coroutine_threadsafe(_exit(), self.service_loop).result(timeout=30)
+
+    def sync_trajectory(self) -> list:
+        """[x, y] at every element, as the simulator device's ``orbit_x`` / ``orbit_y``
+        (a line: its trajectory), computed now if the lattice changed; [[], []] without
+        optics. On the service loop, as all use of the lattice."""
+        async def _trajectory():
+            track = await self.mexec.backend.read("track", "pos")
+            if track is None:
+                return [[], []]
+            return [[float(p.x) for p in track.track], [float(p.y) for p in track.track]]
+
+        return asyncio.run_coroutine_threadsafe(_trajectory(), self.service_loop).result(timeout=30)
 
     def sync_get_state(self) -> CalculationStates:
         logger.debug("SyncMexecProxy.get_state: see what state ")

@@ -12,7 +12,8 @@ TL_SIM_DEV = "simulator/tlsimulator/tlsimulator"
 DEFAULT_RING_SETUP_FILE = Path.home() / "Documents" / "dt4acc_config_data" / "accelerator_setup.json"
 #: what one twin's environment must not pass on to the other
 TWIN_VARIABLES = ("DT4ACC_SIM_DEVICE", "DT4ACC_TWISS_IN_FILE", "DT4ACC_LATTICE_FILE", "DT4ACC_VIEW",
-                  "DT4ACC_ACCELERATOR_SETUP_FILE", "DT4ACC_LOAD_MANAGERS", "DT4ACC_MEXEC_PORT")
+                  "DT4ACC_ACCELERATOR_SETUP_FILE", "DT4ACC_LOAD_MANAGERS", "DT4ACC_MEXEC_PORT",
+                  "DT4ACC_TBT_ON_DEMAND", "DT4ACC_SINGLE_PASS")
 
 
 def build_args_parser() -> argparse.ArgumentParser:
@@ -35,8 +36,11 @@ def _base_env(args) -> Dict[str, str]:
 
 
 def ring_env(args) -> Dict[str, str]:
-    return {**_base_env(args), "DT4ACC_ACCELERATOR_SETUP_FILE": str(args.ring_setup)}
+    """the ring: its turn by turn data only for a shot (the injection's ``Inject``)"""
+    return {**_base_env(args), "DT4ACC_ACCELERATOR_SETUP_FILE": str(args.ring_setup), "DT4ACC_TBT_ON_DEMAND": "1"}
 
 
 def tl_env(args) -> Dict[str, str]:
-    return {**_base_env(args), "DT4ACC_ACCELERATOR_SETUP_FILE": str(args.tl_setup), "DT4ACC_SIM_DEVICE": TL_SIM_DEV}
+    """TL2: its BPMs single pass, they show the beam only at a shot (``Fire``)"""
+    return {**_base_env(args), "DT4ACC_ACCELERATOR_SETUP_FILE": str(args.tl_setup), "DT4ACC_SIM_DEVICE": TL_SIM_DEV,
+            "DT4ACC_SINGLE_PASS": "1"}

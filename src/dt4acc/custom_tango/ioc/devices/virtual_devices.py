@@ -9,7 +9,15 @@ Single virtual Tango device for the digital twin:
 It holds the settings and the summary of the turn by turn data too
 (``tbt_*``, :mod:`dt4acc.custom_tango.ioc.turn_by_turn`); the BPM devices
 serve each BPM's share.
+
+Injection on demand (set by an injection twin, :mod:`.mexec_config`):
+
+* ``Inject(<start state>)``: a shot into a ring: its turn by turn data
+  track the injected beam (``TBT_ON_DEMAND``: only then)
+* ``Fire``: a shot through a transfer line: ``shot_x`` / ``shot_y`` take
+  its trajectory as it is now; its BPM devices follow them (``SINGLE_PASS``)
 """
+import math
 
 import asyncio
 from typing import Tuple
@@ -25,7 +33,7 @@ from dt4acc_lib.model.utils.command import Command, BehaviourOnError, ReadComman
 from dt4acc.core.utils.logger import get_logger
 from dt4acc.custom_tango.ioc.controller_registry import get_controller
 from dt4acc.custom_tango.ioc.devices.write_value_sync import sync_write_value
-from dt4acc.custom_tango.ioc.mexec_config import SIMULATOR_DEVICE
+from dt4acc.custom_tango.ioc.mexec_config import SIMULATOR_DEVICE, TBT_ON_DEMAND
 from dt4acc.custom_tango.ioc.turn_by_turn import COORDINATES, MAX_TURNS, TurnByTurnFollower
 
 logger = get_logger()
@@ -96,15 +104,19 @@ class RingSimulatorDevice(Device, AsyncMixin):
         self._tune_vert = 0.0
         self._xi_x      = 0.0
         self._xi_y      = 0.0
+        #: the trajectory at the last shot (Fire), as orbit_x / orbit_y; empty before
+        self._shot_x    = np.array([], dtype=np.float64)
+        self._shot_y    = np.array([], dtype=np.float64)
         self._reference_frequency = self._initial_reference_frequency()
         self._sync_write_value("reference_frequency", self._reference_frequency)
         self._rf_cavity_uuids = get_rf_cavity_uuids()
         for attr_name in ("orbit_x", "orbit_y",
                           "beta_x", "beta_y", "alpha_x", "alpha_y", "nu_x", "nu_y",
-                          "bpm_x_attr", "bpm_y_attr", "hor", "vert", "tbt_count"):
+                          "bpm_x_attr", "bpm_y_attr", "hor", "vert", "tbt_count", "shot_x", "shot_y"):
             self.set_change_event(attr_name, True, False)
         if getattr(self, "_tbt", None) is None:  # one follower (and its thread), also after Init
-            self._tbt = TurnByTurnFollower(proxy=_physics_engine_proxy, on_new=self._on_new_turn_by_turn)
+            self._tbt = TurnByTurnFollower(proxy=_physics_engine_proxy, on_new=self._on_new_turn_by_turn,
+                                           on_demand=TBT_ON_DEMAND)
         self.set_state(DevState.ON)
 
     def _initial_reference_frequency(self) -> float:
@@ -135,6 +147,32 @@ class RingSimulatorDevice(Device, AsyncMixin):
 
     @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, max_dim_x=MAX_ELEMS)
     def orbit_y(self): return self._orbit_y
+
+    # Single pass: what the beam position monitors saw at the last shot
+    @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, max_dim_x=MAX_ELEMS, unit="m",
+               label="Shot: x", description="trajectory at the last shot (Fire), as orbit_x")
+    def shot_x(self): return self._shot_x
+
+    @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, max_dim_x=MAX_ELEMS, unit="m",
+               label="Shot: y", description="trajectory at the last shot (Fire), as orbit_y")
+    def shot_y(self): return self._shot_y
+
+    @command
+    def Fire(self):
+        """A shot passes: shot_x / shot_y take the trajectory as it is now (a transfer line:
+        its BPMs show it, single pass). NaN without a trajectory (optics failed): no beam seen"""
+        proxy = _physics_engine_proxy()
+        try:
+            x, y = proxy.sync_trajectory() if proxy is not None else ([], [])
+        except Exception as exc:
+            logger.warning("%s.Fire: no trajectory: %s", self.get_name(), exc)
+            x, y = [], []
+        if not len(x):
+            x = y = np.full(len(self._orbit_x), math.nan)
+        self._shot_x = np.asarray(x, dtype=np.float64)
+        self._shot_y = np.asarray(y, dtype=np.float64)
+        self.push_change_event("shot_x", self._shot_x)
+        self.push_change_event("shot_y", self._shot_y)
 
     # Twiss
     @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, max_dim_x=MAX_ELEMS)
@@ -337,6 +375,16 @@ class RingSimulatorDevice(Device, AsyncMixin):
             return np.asarray(self._tbt.at(bpm_id), dtype=np.float64)
         except Exception as exc:
             raise DevFailed(f"turn by turn at {bpm_id}: {exc}")
+
+    @command(dtype_in=(float,),
+             doc_in="the injected beam at the start of the lattice: " + ", ".join(COORDINATES) + " (m, rad, 1, m)")
+    def Inject(self, values):
+        """A shot: the turn by turn data track the injected beam for tbt_n_turns, against the
+        closed orbit as it is now; tbt_count counts up when done"""
+        try:
+            self._tbt.inject(values)
+        except ValueError as exc:
+            raise DevFailed(str(exc))
 
     @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, max_dim_x=len(COORDINATES),
                label="Turn by turn: closed orbit", description="closed orbit at the start of the lattice: start - offset")
