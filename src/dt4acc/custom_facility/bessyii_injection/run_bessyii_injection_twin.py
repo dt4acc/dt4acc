@@ -13,8 +13,11 @@ simulation engine, and the hand over of the beam between them:
   ``<P>:TL:beam:orbit:*``, ``<P>:TL:beam:twiss:*``, ``<P>:TL:survey:*``,
   ``<P>:TL:ORBITCC:*``
 * hand over: ``<P>:INJ:...`` (see ``pvs.py``): the beam leaving the line,
-  put into the ring at ``MSEPEXIT`` and tracked turn by turn; recomputed
-  whenever line, ring or its settings change
+  put into the ring at ``MSEPEXIT`` and tracked turn by turn, when a shot is
+  fired (``<P>:INJ:trigger``). The line's monitors (BPMs, screens,
+  ``TL:ORBITCC:rdBpm``) show the beam passing only then; its model
+  (``TL:beam:orbit:*``, ``TL:beam:twiss:*``) and the ring's closed orbit follow
+  every change
 
 ``<P>`` is ``DT4ACC_PREFIX`` (default: the user name).
 """
@@ -39,7 +42,7 @@ from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_manager
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
 from dt4acc.custom_facility.bessyii.run_bessyii_twin import initialise_pvs as ring_pvs
 from dt4acc.custom_facility.bessyii_injection.handover import InjectionHandover
-from dt4acc.custom_facility.bessyii_injection.pvs import InjectionPVs, hook_track_updates
+from dt4acc.custom_facility.bessyii_injection.pvs import InjectionPVs
 from dt4acc.custom_epics.ioc.pv_setup import (
     initialize_orbit_pvs,
     initialize_power_converter_pvs,
@@ -66,7 +69,8 @@ logger = logging.getLogger("dt4acc-bessyii-injection")
 
 #: the transfer line ends at the septum exit, where the ring takes over
 SEPTUM = "SEK2D1R"
-DELAYED = [ReadCommand("track", "pos"), ReadCommand("twiss", "parameters")]
+TRACK = ReadCommand("track", "pos")
+DELAYED = [TRACK, ReadCommand("twiss", "parameters")]
 
 
 def engine(backend, lm, ts):
@@ -114,7 +118,8 @@ def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
     )
     line_lm, line_ts = line_managers()
     line_monitors = monitor_names(line)
-    line_view = TransferLineView(monitors=line_monitors, orbit_server=orbit_server(f"{prefix}:TL"))
+    # the line carries beam only during a shot (InjectionPVs, INJ:trigger)
+    line_view = TransferLineView(monitors=line_monitors, single_pass=True, orbit_server=orbit_server(f"{prefix}:TL"))
     tl = Controller(name="transfer-line", mexec=engine(line_backend, line_lm, line_ts), view=line_view,
                     default_delayed_reads=DELAYED)
 
@@ -123,6 +128,25 @@ def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
     return InjectionTwin(ring_backend=ring_backend, ring=ring, ring_view=ring_view, line=line,
                          line_backend=line_backend, line_monitors=line_monitors, tl=tl, line_view=line_view,
                          handover=handover)
+
+
+def line_shot(twin: InjectionTwin):
+    """The transfer line's part of a shot: its monitors show the trajectory
+
+    The trajectory is read when the shot is fired, not taken from the last
+    delayed read: a shot right after a change sees the line as it is now.
+    No trajectory (the line's optics failed): the monitors show NaN.
+    """
+    async def shot():
+        try:
+            (translated,) = (await twin.tl.trigger_read([TRACK])).data
+            await twin.line_view.dispatch(TRACK, translated)
+        except Exception as exc:
+            logger.error("injection: no transfer line trajectory for the shot: %s", exc)
+            await twin.line_view.push_invalid()
+        twin.line_view.fire()
+
+    return shot
 
 
 async def initialise_pvs(builder, prefix: str, twin: InjectionTwin) -> InjectionPVs:
@@ -134,7 +158,7 @@ async def initialise_pvs(builder, prefix: str, twin: InjectionTwin) -> Injection
     # machine names: ring, hand over, transfer line devices
     builder.SetDeviceName(prefix)
     twin.ring_view.update_process_variables(await ring_pvs(builder=builder, controller=twin.ring, bpms=twin.handover.monitors))
-    injection = InjectionPVs(twin.handover, builder=builder)
+    injection = InjectionPVs(twin.handover, builder=builder, before_shot=line_shot(twin))
     # the line's supplies and magnets come from its own device database
     configure_data_file(resources.files("dt4acc").joinpath(*ACCELERATOR_SETUP))
     twin.line_view.update_process_variables({
@@ -157,9 +181,7 @@ async def main():
     twin = assemble(prefix)
     for view in (twin.ring_view, twin.line_view):
         view.orbit_server.start()
-    injection = await initialise_pvs(builder, prefix, twin)
-    hook_track_updates(twin.ring_view, injection)
-    hook_track_updates(twin.line_view, injection)
+    await initialise_pvs(builder, prefix, twin)
 
     twin.ring.start()
     twin.tl.start()
@@ -170,8 +192,9 @@ async def main():
     builder.LoadDatabase()
     softioc.iocInit(dispatcher)
     logger.warning(
-        "BESSY II injection twin: ring %d elements, transfer line %d elements up to %s, %d ring BPMs",
-        len(twin.ring_backend.acc.acc), len(twin.line), SEPTUM, len(twin.handover.monitors),
+        "BESSY II injection twin: ring %d elements, transfer line %d elements up to %s, %d ring BPMs;"
+        " caput %s:INJ:trigger 1 to inject",
+        len(twin.ring_backend.acc.acc), len(twin.line), SEPTUM, len(twin.handover.monitors), prefix,
     )
     softioc.interactive_ioc(globals())
 

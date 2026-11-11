@@ -160,7 +160,6 @@ class View(ViewInterface):
             assert rw_y is not None
             rw_x.set(x_vals)
             rw_y.set(y_vals)
-            self.update_bpms(value.track)
 
             rw_names = self.process_variables.get(
                 ReadCommand(id="beam", property="names")
@@ -181,19 +180,29 @@ class View(ViewInterface):
             if rw_found is not None:
                 rw_found.set(True)
 
-            # PVA NTTable
-            if self.orbit_server is not None:
-                try:
-                    # BPM readings are in nanometer
-                    self.orbit_server.push(
-                        x=[v * 1e9 for v in x_vals],
-                        y=[v * 1e9 for v in y_vals],
-                    names=names
-                    )
-                except Exception as exc:
-                    logger.error("OrbitTwinServer.push failed: %s", exc)
+            self.update_monitors(value.track)
         else:
             raise AssertionError(f"Don't know track property {var.property}")
+
+    def update_monitors(self, track) -> None:
+        """What the beam position monitors measure of the track: their records
+        (``update_bpms``) and the BPM structure (``ORBITCC:rdBpm``)
+
+        A view whose monitors see the beam only when it passes (single pass,
+        e.g. a transfer line fired on demand) overrides this.
+        """
+        self.update_bpms(track)
+        # PVA NTTable
+        if self.orbit_server is not None:
+            try:
+                # BPM readings are in nanometer
+                self.orbit_server.push(
+                    x=[pos.x * 1e9 for pos in track],
+                    y=[pos.y * 1e9 for pos in track],
+                    names=[pos.fam_name for pos in track],
+                )
+            except Exception as exc:
+                logger.error("OrbitTwinServer.push failed: %s", exc)
 
     def update_bpms(self, track) -> None:
         """``<bpm>:signal:sa:X`` / ``Y`` [mm] of the BPMs in the track"""

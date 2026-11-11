@@ -22,8 +22,19 @@ in one IOC, with the beam handed from the line to the ring.
   ring's). The injected beam is tracked from `MSEPEXIT` for `n_turns`
   (dt4acc-lib's turn by turn tracking starts at that element: turn 1 begins
   there) and read at the ring's BPMs.
-* The hand over is recomputed whenever the line or the ring is recalculated
-  (any supply change) or its settings change.
+* **Injection on demand**: a shot is fired by writing 1 to `INJ:trigger`,
+  as at the machine, where the injection timing fires the booster extraction
+  and triggers the single pass and turn by turn acquisition of the BPMs:
+
+  | | follows every change | shows the beam only at a shot, keeps it until the next |
+  |---|---|---|
+  | transfer line | model: `TL:beam:orbit:*`, `TL:beam:twiss:*`, `TL:ORBITCC:rdModel` | monitors: `<bpm>:signal:sa:X` / `Y`, screens `<screen>:x` / `y`, `TL:ORBITCC:rdBpm` (the line carries beam only during a shot) |
+  | storage ring | stored beam: closed orbit, its BPMs' `<bpm>:signal:sa:*`, `ORBITCC:rdBpm`, optics | injected beam: `INJ:*`, `<bpm>:signal:tbt:X` / `Y` (turn by turn, triggered by the injection) |
+
+  A shot reads the line as it is when fired, so a change followed at once by
+  a trigger is seen. Changes of `INJ:geometry:*` and `INJ:n_turns` act at the
+  next shot. Nothing is injected at start up: `INJ:count` is 0 until the
+  first trigger.
 
 ## Run
 
@@ -38,6 +49,7 @@ PVs, prefixed with `DT4ACC_PREFIX` (`<P>`, default: the user name):
 | `<P>:Q1PDR:set`, `<P>:beam:orbit:x`, `<P>:ORBITCC:rdBpm`, ... | the storage ring, as the ring twin |
 | `<P>:Q1PT:set`, `<P>:Q1MT:Cm:rdbk`, `<P>:FOMZ1T:x`, ... | the transfer line's supplies, magnets and monitors (up to the septum exit), machine names as in the transfer line twin; they do not clash with the ring's (line names end in T, ring names in R) |
 | `<P>:TL:beam:orbit:*`, `<P>:TL:beam:twiss:*`, `<P>:TL:survey:*`, `<P>:TL:ORBITCC:*` | the transfer line's model PVs: the ring has PVs of the same names, so these are one level down |
+| `<P>:INJ:trigger` | write 1 to fire a shot (back at 0 once accepted) |
 | `<P>:INJ:geometry:{x,xp,y,yp,delta,ct}` | the line's reference against the ring's at the septum exit, a difference state [m, rad, 1, m] (writable) |
 | `<P>:INJ:n_turns` | turns tracked in the ring (1 ... 256, writable) |
 | `<P>:INJ:line_exit:{x,xp,y,yp,delta,ct}` | centroid leaving the line, line frame |
@@ -45,7 +57,7 @@ PVs, prefixed with `DT4ACC_PREFIX` (`<P>`, default: the user name):
 | `<P>:INJ:tbt:x`, `<P>:INJ:tbt:y`, `<P>:INJ:tbt:names` | position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... [m] |
 | `<P>:<bpm>:signal:tbt:X`, `<P>:<bpm>:signal:tbt:Y` | one ring BPM, turn after turn [mm] |
 | `<P>:INJ:survived` | particles still there after each turn |
-| `<P>:INJ:count` | hand overs computed so far |
+| `<P>:INJ:count` | shots computed so far |
 
 ## Try it
 
@@ -63,10 +75,10 @@ export DT4ACC_PREFIX=BI
 python src/dt4acc/custom_facility/bessyii_injection/run_bessyii_injection_twin.py
 ```
 
-It is up in a few seconds (`BI:INJ:count` answers). Use the same EPICS
+It is up in a few seconds (`BI:INJ:count` answers, 0: no shot yet). Use the same EPICS
 variables in every terminal that talks to it.
 
-**2. Watch it** (second terminal): redraws on every change.
+**2. Watch it** (second terminal): redraws on every shot.
 
 ```bash
 python scripts/bessyii_injection/live_plot.py
@@ -78,21 +90,25 @@ python scripts/bessyii_injection/live_plot.py
 3. ring, y: the same
 4. the beam leaving the line, the geometry, the injected beam, particles left
 
-**3. Change something** (third terminal), e.g.:
+**3. Inject, change something, inject again** (third terminal), e.g.:
 
 ```bash
-caput BI:H5PT:set 0.4          # transfer line steerer supply [A]
+caput BI:INJ:trigger 1            # a shot: the line's BPMs and the ring's turn by turn data show it
+caput BI:H5PT:set 0.4             # transfer line steerer supply [A]: the line's model follows,
+caget BI:BPMZ1T:signal:sa:X       #   its BPMs still show the last shot
+caput BI:INJ:trigger 1            # the next shot shows the change
 caput BI:INJ:geometry:x -0.002    # line axis against ring axis [m]
 caput BI:INJ:n_turns 5            # turns tracked in the ring
 caput BI:Q1PDR:set 207.85         # ring quadrupole supply [A] (was 205.79)
+caput BI:INJ:trigger 1
 pvget BI:INJ:injected:x BI:INJ:survived
 ```
 
 or let `scripts/bessyii_injection/demo.py` do these one by one (it says what to
 expect, prints what came out, and puts everything back).
 
-What to expect (as the twin is now: entering beam and geometry are
-placeholders):
+What to expect after the trigger that follows each change (as the twin is
+now: entering beam and geometry are placeholders):
 
 | change | transfer line | injected beam | ring BPMs (x rms per turn) |
 |---|---|---|---|

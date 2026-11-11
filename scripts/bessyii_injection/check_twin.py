@@ -1,9 +1,11 @@
 """Check a running BESSY II injection twin over EPICS (PVA)
 
 Steers the transfer line, changes the injection geometry and the number of
-turns, changes a ring supply, and compares the hand over (``INJ:...``) with
-plain pyAT: the line up to the septum exit, then the ring from ``MSEPEXIT``.
-Exit code 0 when everything agrees.
+turns, changes a ring supply, fires a shot (``INJ:trigger``) after each, and
+compares the hand over (``INJ:...``) with plain pyAT: the line up to the
+septum exit, then the ring from ``MSEPEXIT``. Checks that a change alone
+injects nothing: the line's BPMs keep the last shot's reading. Exit code 0
+when everything agrees.
 
     DT4ACC_PREFIX=<prefix> python scripts/bessyii_injection/check_twin.py
 """
@@ -19,7 +21,7 @@ from dt4acc.custom_epics.ioc.bpm_pvs import M2MM
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_lattice
 from dt4acc.custom_facility.bessyii_injection.handover import INJECTION_ELEMENT, no_offset, to_ring
 from dt4acc_lib.model.output.track import ParticleState
-from dt4acc.custom_facility.bessytl.twin_setup import bessytl_lattice, load_accelerator_setup, load_twiss_in
+from dt4acc.custom_facility.bessytl.twin_setup import bessytl_lattice, load_accelerator_setup, load_twiss_in, monitor_names
 
 P = os.environ.get("DT4ACC_PREFIX", "")
 SEPTUM = "SEK2D1R"
@@ -28,6 +30,8 @@ failures = []
 RING = provide_lattice()
 BPMS = [e.FamName for e in RING if isinstance(e, at.Monitor) and e.FamName.startswith("BPMZ")]
 SETUP = {m["name"]: m for m in load_accelerator_setup()}
+#: the transfer line's BPMs, up to the septum exit
+LINE_BPMS = [m for m in monitor_names(bessytl_lattice(end_after=SEPTUM)) if not m.startswith("FOMZ")]
 
 
 def pv(name):
@@ -44,15 +48,21 @@ def check(ok, what):
         failures.append(what)
 
 
-def wait_count(previous, timeout=30.0):
+def shot(previous, timeout=30.0):
+    """fire a shot (INJ:trigger), wait until it is computed: the new INJ:count"""
+    ctx.put(pv("INJ:trigger"), 1)
     t0 = time.time()
     while time.time() - t0 < timeout:
         n = int(get("INJ:count"))
         if n > previous:
-            time.sleep(1.0)   # a request that arrived while computing: let it finish
-            return int(get("INJ:count"))
+            return n
         time.sleep(0.2)
+    check(False, f"shot after INJ:count {previous} computed within {timeout} s")
     return int(get("INJ:count"))
+
+
+def line_bpms_x():
+    return np.array([get(f"{b}:signal:sa:X") for b in LINE_BPMS])
 
 
 def reference(steerer_currents, geometry, n_turns):
@@ -105,35 +115,44 @@ def main():
             check(True, f"{name} not served (machine name without TL:)")
     check(list(get("INJ:tbt:names")) == BPMS, f"INJ:tbt:names: the {len(BPMS)} ring BPMs in ring order")
 
-    count = wait_count(0)
+    count = shot(int(get("INJ:count")))
+    check(get("INJ:trigger").index == 0, "INJ:trigger back at 0 (Idle) after the shot")
     n_turns = int(get("INJ:n_turns"))
     compare("start", {}, no_offset(), n_turns)
 
+    line_before = line_bpms_x()
+    model_before = np.asarray(get("TL:beam:orbit:x")).copy()
     ctx.put(pv("H5PT:set"), 0.4)
-    count = wait_count(count)
+    time.sleep(3.0)
+    check(not np.allclose(np.asarray(get("TL:beam:orbit:x")), model_before),
+          "line steered, no shot: the line's model (TL:beam:orbit:x) follows")
+    check(int(get("INJ:count")) == count and np.allclose(line_bpms_x(), line_before, equal_nan=True),
+          f"line steered, no shot: nothing injected, the line's {len(LINE_BPMS)} BPMs keep the last shot")
+    count = shot(count)
+    check(not np.allclose(line_bpms_x(), line_before), "the shot: the line's BPMs show the steered trajectory")
     compare("line steered (H5PT 0.4 A)", {"H5PT": 0.4}, no_offset(), n_turns)
 
     geometry = ParticleState.from_sequence([-2e-3, 1e-4, 0.0, 0.0, 0.0, 0.0])
     ctx.put(pv("INJ:geometry:x"), geometry.x)
     ctx.put(pv("INJ:geometry:xp"), geometry.px)
     ctx.put(pv("INJ:n_turns"), 5)
-    count = wait_count(count)
+    count = shot(count)
     compare("geometry -2 mm / 0.1 mrad, 5 turns", {"H5PT": 0.4}, geometry, 5)
 
     # an energy offset of the injected beam: delta in the geometry
     geometry = ParticleState.from_sequence([-2e-3, 1e-4, 0.0, 0.0, 2e-3, 0.0])
     ctx.put(pv("INJ:geometry:delta"), geometry.delta)
-    count = wait_count(count)
+    count = shot(count)
     compare("geometry + delta 2e-3, 5 turns", {"H5PT": 0.4}, geometry, 5)
     ctx.put(pv("INJ:geometry:delta"), 0.0)
-    count = wait_count(count)
+    count = shot(count)
 
     before = np.asarray(get("INJ:tbt:x"))[: 5 * len(BPMS)].copy()
     ctx.put(pv("Q1PDR:set"), float(get("Q1PDR:set")) * 1.01)
-    count2 = wait_count(count)
+    count2 = shot(count)
     after = np.asarray(get("INJ:tbt:x"))[: 5 * len(BPMS)]
     check(count2 > count and not np.allclose(before, after),
-          f"ring change (Q1PDR +1 %) recomputes the hand over (count {count} -> {count2})")
+          f"ring change (Q1PDR +1 %), shot: the injected beam moves differently (count {count} -> {count2})")
 
     print(f"\n{len(failures)} failure(s)")
     return 1 if failures else 0
