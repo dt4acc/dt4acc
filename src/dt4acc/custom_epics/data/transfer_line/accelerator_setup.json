@@ -232,4 +232,25 @@
   "magnetic_strength": 0.000661307,
   "pc": "V8PT",
   "k": 0
+},{
+  "type": "Bend",
+  "name": "B1M1T",
+  "magnetic_strength": 0.0016497204530129001,
+  "bending_angle": 0.3839724354387525,
+  "pc": "B1PT",
+  "k": null
+},{
+  "type": "Bend",
+  "name": "B1M2T",
+  "magnetic_strength": 0.0016497204530129001,
+  "bending_angle": 0.3839724354387525,
+  "pc": "B1PT",
+  "k": null
+},{
+  "type": "Bend",
+  "name": "B2MT",
+  "magnetic_strength": 0.09098250336473754,
+  "bending_angle": 0.1352,
+  "pc": "B2PT",
+  "k": null
 }]
