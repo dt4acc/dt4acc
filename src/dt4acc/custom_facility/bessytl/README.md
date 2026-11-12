@@ -21,8 +21,8 @@ this: give `PyATAcceleratorSimulator` the entering beam as `twiss_in` and
 
 | file | what |
 |---|---|
-| lat2db `lat2db.tools.pyat.bessy2_TL_reflat` | lattice: 97 elements, 25.3 m; 9 dipoles, 11 quadrupoles, 15 steerers, 17 monitors |
-| `custom_epics/data/transfer_line/accelerator_setup.json` | magnets, their supply (`pc`) and calibration (`magnetic_strength`): quadrupoles T/m per A, steerers rad per A |
+| lat2db `lat2db.tools.pyat.bessy2_TL_reflat` | lattice: 97 elements, 25.3 m; 9 dipoles (bends B1M1T, B1M2T, B2MT; booster extraction and ring injection septa; 2 ring kickers), 11 quadrupoles, 15 steerers, 17 monitors |
+| `custom_epics/data/transfer_line/accelerator_setup.json` | magnets, their supply (`pc`) and calibration (`magnetic_strength`): quadrupoles T/m per A, steerers rad per A, bends rad per A and their design angle (`bending_angle`) |
 | `resources/input/operating_currents.yaml` | supply currents the twin starts with |
 | `resources/input/twiss_in.yaml` | beam entering the line (or `DT4ACC_BESSYTL_TWISS_IN=<file>`) |
 
@@ -31,18 +31,37 @@ the steerer field integral per current of the magnet table (0.00375 T m/A)
 over the kick per current of the setup (0.000662 rad/A) gives B rho = 5.67 T m.
 lat2db's script sets 0.629 GeV; the twin overrides it.
 
-Conversions, one supply per magnet:
+Conversions, one supply per magnet (B1PT: both B1M1T and B1M2T):
 
 * quadrupole: `K = g * I / (B rho)`, `g` = `magnetic_strength` [T/m/A]
 * steerer: `kick = k * I`, `k` = `magnetic_strength` [rad/A] at 1.7185 GeV
   (stored as field integral `k * B rho` [T m/A], so the kick scales with energy)
+* bend: `angle = s * I`, `s` = `magnetic_strength` [rad/A]. The lattice keeps
+  the design angle; the difference is a field error, applied as a horizontal
+  kick `design angle - s * I` on the bend (pyAT's sign: a field error +e in a
+  bend acts as a momentum error -e). Linear: no saturation; the small change
+  of edge and body focusing is left out. `<magnet>:Cm` is the bending angle.
+
+| supply | magnets | design angle | operating current | `s` [rad/A] | limits (control system) |
+|---|---|---|---|---|---|
+| B1PT | B1M1T, B1M2T | 22 deg (0.384 rad) each | 232.75 A | 1.6497e-3 | 0 ... 365 A |
+| B2PT | B2MT | 0.1352 rad | 1.486 A | 0.0910 | 0.1 ... 2.0 A |
+
+Wiring, operating currents and limits from BESSY II operations (2026-11-11);
+`s` is estimated as design angle / operating current, until a measured
+calibration is known. The twin does not enforce the limits. With the
+twin's optics the line is sensitive to the bends: B1PT +0.1 % (0.23 A) moves
+the beam by -7.2 mm at BPMZ5T and -21.5 mm at FOMZ7T.
 
 ### Not yet known (placeholders)
 
 * **Entering beam**: `twiss_in.yaml` holds the entrance optics that keep the
   largest beta along the line smallest (61 m) with the operating currents. It
   is a fit, not booster data. Replace it with the booster extraction optics.
-* **Operating currents**: from the magnet table of 2020. With the setup's
+* **Bend calibration**: estimated from the design angles at the operating
+  currents (above); a measured angle per current (and saturation) replaces it.
+* **Operating currents**: quadrupoles from the magnet table (`bact2_bessyii`,
+  committed 2020, origin of its numbers not documented). With the setup's
   polarities and the opposite ones the line reaches a similar largest beta
   (61 m vs 64 m), so these currents alone do not confirm the polarity
   convention.
@@ -81,7 +100,7 @@ monitor and the optics with plain pyAT on the same lattice, currents and
 entering beam.
 
 `<magnet>:Cm:set` / `:Cm:rdbk` read back in lattice units: K [1/m^2] for
-quadrupoles, kick [rad] for steerers.
+quadrupoles, kick [rad] for steerers, bending angle [rad] for bends.
 
 Known: steerer magnets also get `:x:set` / `:y:set` PVs (shared PV setup),
 which pyAT correctors cannot act on.
