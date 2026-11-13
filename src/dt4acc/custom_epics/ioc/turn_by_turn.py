@@ -17,7 +17,8 @@ the beam comes from the transfer line instead (``custom_facility/bessyii_injecti
 
 The coordinates are named as dt4acc-lib's ``ParticleState``
 (``COORDINATES``). Recomputed when one of the settings changes and after
-each new closed orbit (lattice change), as the injection twin's hand over.
+each new closed orbit (lattice change). (The injection twin's hand over is
+fired on demand instead, ``INJ:trigger``.)
 
 Todo: revisit the conversion of the turn by turn data (m -> mm by a fixed
       factor, ``bpm_pvs.M2MM``): use translation objects there too, as for
