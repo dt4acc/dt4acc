@@ -58,7 +58,7 @@ MONITORS = [("FOMZ", "FOMs (screens)"), ("BPMZ", "Beam position monitors"), ("SL
 # virtual devices: (section, [(pv, description, write, machine)]); a PV the dump lacks is left out
 VIRTUAL = [
     ("BPMs (structures)", [
-        ("ORBITCC:rdBpm", "BPMZ* positions (nm), structure (BPM, X, Y, ...)", RO, NO),
+        ("ORBITCC:rdBpm", "BPMZ* and striplines SLZ* positions, in lattice order (nm), structure (BPM, X, Y, ...)", RO, NO),
         ("ORBITCC:rdModel", "model optics at the BPMs, structure (SPos, beta, ...)", RO, NO),
     ]),
     ("Trajectory (every lattice element and the exit of the line)", [

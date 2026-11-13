@@ -67,7 +67,7 @@ In short, prefixed with `DT4ACC_PREFIX` (default: the user name):
 | `beam:orbit:{x,y,names,uids}` | trajectory along the line, at every element and the exit |
 | `beam:twiss:{x,y}:{beta,alpha,nu}`, `beam:twiss:{names,uids}` | optics along the line |
 | `survey:s` | position along the line [m] |
-| PVA `ORBITCC:rdBpm`, `ORBITCC:rdModel` | BPMZ* only (nm), as the ring twin |
+| PVA `ORBITCC:rdBpm`, `ORBITCC:rdModel` | `rdBpm`: BPMZ* and striplines SLZ*, in lattice order (BPMZ1T, SLZ1T, SLZ2T, BPMZ2T ... BPMZ5T, SLZ3T), nm; as the ring twin |
 
 ### Check
 

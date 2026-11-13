@@ -51,6 +51,7 @@ from dt4acc.custom_epics.ioc.pv_setup import (
 )
 from dt4acc.custom_facility.bessytl.twin_setup import (
     ACCELERATOR_SETUP,
+    ORBIT_MONITOR_PREFIXES,
     bessytl_lattice,
     build_managers as line_managers,
     load_twiss_in,
@@ -100,8 +101,8 @@ def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
     """Models, controllers and views; ``orbit_servers``: the PVA servers of the
     BPM structures (``ORBITCC``), left out in tests"""
 
-    def orbit_server(p):
-        return OrbitTwinServer(f"{p}:ORBITCC:rdBpm", f"{p}:ORBITCC:rdModel") if orbit_servers else None
+    def orbit_server(p, **kwargs):
+        return OrbitTwinServer(f"{p}:ORBITCC:rdBpm", f"{p}:ORBITCC:rdModel", **kwargs) if orbit_servers else None
 
     # storage ring
     ring_backend = provide_backend_encapsulating_lattice()
@@ -119,7 +120,7 @@ def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
     line_lm, line_ts = line_managers()
     line_monitors = monitor_names(line)
     # the line carries beam only during a shot (InjectionPVs, INJ:trigger)
-    line_view = TransferLineView(monitors=line_monitors, single_pass=True, orbit_server=orbit_server(f"{prefix}:TL"))
+    line_view = TransferLineView(monitors=line_monitors, single_pass=True, orbit_server=orbit_server(f"{prefix}:TL", monitor_prefixes=ORBIT_MONITOR_PREFIXES))
     tl = Controller(name="transfer-line", mexec=engine(line_backend, line_lm, line_ts), view=line_view,
                     default_delayed_reads=DELAYED)
 

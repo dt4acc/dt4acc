@@ -7,7 +7,7 @@ PVs (prefixed with ``DT4ACC_PREFIX``, default: the user name):
 * magnets: ``<magnet>:Cm:set``, ``<magnet>:Cm:rdbk`` (K [1/m^2] or kick [rad])
 * monitors: ``<monitor>:x``, ``<monitor>:y`` [m]: trajectory
 * along the line: ``beam:orbit:{x,y,names,uids}``, ``beam:twiss:{x,y}:{beta,alpha,nu}``,
-  ``survey:s``; PVA ``ORBITCC:rdBpm`` (BPMZ* only, nm)
+  ``survey:s``; PVA ``ORBITCC:rdBpm`` (BPMZ* and striplines SLZ*, in lattice order, nm)
 
 ``DT4ACC_BESSYTL_TWISS_IN``: yaml file with the beam entering the line
 (default: the placeholder in resources/input/twiss_in.yaml).
@@ -35,6 +35,7 @@ from dt4acc.custom_epics.ioc.pv_setup import (
 )
 from dt4acc.custom_facility.bessytl.twin_setup import (
     ACCELERATOR_SETUP,
+    ORBIT_MONITOR_PREFIXES,
     bessytl_lattice,
     build_managers,
     load_twiss_in,
@@ -72,7 +73,8 @@ async def main():
 
     prefix = os.environ.get("DT4ACC_PREFIX", getpass.getuser())
     pva_prefix = prefix + ":" if prefix else ""
-    orbit_server = OrbitTwinServer(pva_prefix + "ORBITCC:rdBpm", pva_prefix + "ORBITCC:rdModel")
+    orbit_server = OrbitTwinServer(pva_prefix + "ORBITCC:rdBpm", pva_prefix + "ORBITCC:rdModel",
+                                   monitor_prefixes=ORBIT_MONITOR_PREFIXES)
     orbit_server.start()
     monitors = monitor_names(line)
     view = TransferLineView(monitors=monitors, orbit_server=orbit_server)
