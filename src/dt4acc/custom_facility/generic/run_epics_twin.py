@@ -193,7 +193,7 @@ async def main(argv=None):
         await initialise_pvs(
             builder=builder,
             controller=controller,
-            cavity_names=yp.cavity_names(),
+            cavity_names=yp.get("cavities"),
             n_elements=n_elements,
         )
     )
