@@ -28,8 +28,10 @@ dependencies = [
     # actually required by custom bessyii
     # currently bessyii load managers used by
     # soleil too...
-    # these depend on yaml
-    "pyaml",
+    # these depend on yaml (PyYAML). Not "pyaml": on PyPI that is a
+    # YAML pretty-printer whose "pyaml" module shadows the accelerator
+    # middle layer (accelerator-middle-layer)
+    "pyyaml",
     "pydantic",
 ]
 
