@@ -1,0 +1,150 @@
+"""A lattice with small differences loaded at run time (#81): the ring twin's
+``simulator_ring:lattice``, first case the wavelength shifters inserted"""
+import asyncio
+
+import at
+import numpy as np
+import pytest
+# loads the EPICS record types, before any module that imports softioc's records
+from softioc import builder as _softioc_builder  # noqa: F401
+
+from dt4acc.custom_epics.ioc.lattice_pvs import LatticeSwitch, after_load_refresh, required_elements
+from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_managers
+from dt4acc.custom_facility.bessyii.provide_lattice import bessyii_pyat_lattice, provide_backend, provide_lattice
+from dt4acc.custom_facility.bessyii.run_bessyii_twin import BPM_PREFIX, initialise_pvs
+from dt4acc.core.bl.turn_by_turn import ring_monitors
+from dt4acc_lib.model.utils.command import ReadCommand
+
+from tests.bessyii.test_ring_pvs import PREFIX, ring_controller
+from tests.recording_builder import RecordingBuilder
+
+#: a quadrupole whose strength the "re-matched" lattice changes, and its supply
+QUAD, SUPPLY = "Q3M1D1R", "Q3PD1R"
+
+
+def with_insertion(lattice: at.Lattice, dk: float = 0.0) -> at.Lattice:
+    """``lattice`` with a drift of the T1R wavelength shifter's straight split
+    around thin pieces (as an insertion device adds elements), ``QUAD``'s K + ``dk``"""
+    new = lattice.deepcopy()
+    start = int(new.get_uint32_index("W7IT1R_START")[0])
+    i = next(k for k in range(start + 1, len(new)) if isinstance(new[k], at.Drift) and new[k].Length > 0.1)
+    half = new[i].Length / 2
+    new[i:i + 1] = [
+        at.Drift("WLS_TEST_D1", half),
+        at.Marker("WLS_TEST_M"),
+        at.Corrector("WLS_TEST_K", 0.0, [0.0, 0.0]),
+        at.Drift("WLS_TEST_D2", half),
+    ]
+    for elem in new:
+        if elem.FamName == QUAD:
+            elem.PolynomB[1] += dk
+            elem.K = elem.PolynomB[1]
+    return new
+
+
+@pytest.fixture
+def twin(tmp_path):
+    lattice = provide_lattice()
+    backend = provide_backend(lattice)
+    controller = ring_controller(backend)
+    builder = RecordingBuilder()
+    builder.SetDeviceName(PREFIX)
+    bpms = ring_monitors(backend, BPM_PREFIX)
+    controller.view.update_process_variables(
+        asyncio.run(initialise_pvs(builder=builder, controller=controller, bpms=bpms))
+    )
+    switch = LatticeSwitch(
+        backend=backend,
+        lattice_dir=tmp_path,
+        load_file=bessyii_pyat_lattice,
+        start_lattice=lattice,
+        required_elements=required_elements(load_managers()[1], lattice, bpms),
+        after_load=after_load_refresh(controller, controller.view, []),
+    )
+    return switch, backend, builder, lattice, tmp_path
+
+
+def pv(builder, name):
+    return builder.records[f"{PREFIX}:{name}"].value
+
+
+def test_a_lattice_with_an_insertion_is_loaded(twin):
+    switch, backend, builder, lattice, lattice_dir = twin
+    new = with_insertion(lattice, dk=0.01)
+    new.save(lattice_dir / "with_insertion.json")
+    k_before, current_before = pv(builder, f"{QUAD}:Cm:set"), pv(builder, f"{SUPPLY}:set")
+
+    message = asyncio.run(switch.load("with_insertion.json"))
+
+    assert message == f"loaded with_insertion.json: {len(lattice) + 3} elements"
+    names = backend.get_element_names()
+    assert len(names) == len(lattice) + 3 + 1 and "WLS_TEST_K" in names
+    # the settings' PVs show the new lattice's values
+    assert pv(builder, f"{QUAD}:Cm:set") == pytest.approx(k_before + 0.01)
+    assert pv(builder, f"{QUAD}:Cm:rdbk") == pytest.approx(k_before + 0.01)
+    assert pv(builder, f"{SUPPLY}:set") != pytest.approx(current_before)
+    assert pv(builder, f"{SUPPLY}:rdbk") == pytest.approx(pv(builder, f"{SUPPLY}:set"))
+    # the model follows: the tunes are the new lattice's
+    tune = asyncio.run(backend.read("tune", "transversal"))
+    np.testing.assert_allclose([tune.x, tune.y], new.get_tune()[:2], atol=1e-6)
+
+    # an empty name: back to the start lattice
+    assert asyncio.run(switch.load("")) == f"loaded the start lattice: {len(lattice)} elements"
+    assert len(backend.get_element_names()) == len(lattice) + 1
+    assert pv(builder, f"{QUAD}:Cm:set") == pytest.approx(k_before)
+
+
+def test_a_lattice_without_a_magnet_is_refused(twin):
+    switch, backend, builder, lattice, lattice_dir = twin
+    new = with_insertion(lattice)
+    del new[[e.FamName for e in new].index(QUAD)]
+    new.save(lattice_dir / "missing.json")
+    message = asyncio.run(switch.load("missing.json"))
+    assert message.startswith("refused: missing.json:") and QUAD in message
+    assert len(backend.get_element_names()) == len(lattice) + 1
+
+
+@pytest.mark.parametrize("name, reason", [
+    ("../bessy2_storage_ring.json", "not a file name"),
+    ("/etc/passwd", "not a file name"),
+    ("absent.json", "not in"),
+])
+def test_only_files_of_the_lattice_directory(twin, name, reason):
+    switch, backend, *_ = twin
+    message = asyncio.run(switch.load(name))
+    assert message.startswith("refused") and reason in message
+
+
+def test_an_unreadable_file_is_refused(twin):
+    switch, backend, builder, lattice, lattice_dir = twin
+    (lattice_dir / "broken.json").write_text("{not json")
+    assert asyncio.run(switch.load("broken.json")).startswith("refused: broken.json could not be read")
+    assert len(backend.get_element_names()) == len(lattice) + 1
+
+
+def test_required_elements_are_the_devices(twin):
+    switch, *_ = twin
+    required = set(switch.required_elements)
+    assert {QUAD, "BPMZ1D1R", "CAVH1T8R"} <= required
+    assert "WLS_TEST_K" not in required and "DU_MSEPEXIT" not in required
+
+
+def test_the_bundled_lattice_with_the_wavelength_shifters(twin):
+    """bessy2_storage_ring_wls.json (scripts/bessyii/export_lattice.py
+    --wavelength-shifters) from the twin's default lattice directory"""
+    from dt4acc.custom_facility.bessyii.run_bessyii_twin import lattice_directory
+
+    switch, backend, builder, lattice, _ = twin
+    switch.lattice_dir = lattice_directory()
+    k_before = pv(builder, f"{QUAD}:Cm:set")
+
+    message = asyncio.run(switch.load("bessy2_storage_ring_wls.json"))
+
+    assert message == "loaded bessy2_storage_ring_wls.json: 1255 elements", message
+    assert len(lattice) == 1137
+    names = backend.get_element_names()
+    assert "W7IT1R_0_0" in names and "W7IT7R_2_19" in names
+    # bessy2reflat re-matches the tunes with the Q3 quadrupoles
+    assert pv(builder, f"{QUAD}:Cm:set") != pytest.approx(k_before, rel=1e-9)
+    tune = asyncio.run(backend.read("tune", "transversal"))
+    np.testing.assert_allclose([tune.x, tune.y], [0.848074, 0.726783], atol=1e-5)

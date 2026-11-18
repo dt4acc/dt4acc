@@ -31,6 +31,22 @@ unchanged. The differences come from bessy2reflat:
   diagnostic kicker, the wavelength shifters' start/end markers
 * removed: the markers `MBAMWLS1`, `MBAMWLS2`
 
+## Lattice with the wavelength shifters: `bessy2_storage_ring_wls.json`
+
+Not loaded at start: the ring twin loads it at run time (#81),
+`caput <prefix>:simulator_ring:lattice bessy2_storage_ring_wls.json`, and
+goes back with an empty string (`pv_list.md`, *Lattice at run time*).
+Exported by `scripts/bessyii/export_lattice.py --wavelength-shifters` from
+the same bessy2reflat commit: `add_wavelength_shifters()` with its defaults,
+both wavelength shifters, 20 slices per pole, tunes and RF re-matched.
+
+| | start lattice | with the wavelength shifters |
+| --- | --- | --- |
+| elements | 1137 | 1255 (+124 pole slices and edges; 6 drifts and markers replaced) |
+| tunes | 0.84807, 0.72678 | 0.84807, 0.72678 (re-matched) |
+| RF (Hz) | 499 636 630.203 | 499 636 629.871 |
+| changed | | K of the 64 Q3 quadrupoles, the 4 main cavities' frequency |
+
 ## Other files
 
 `magnets.yaml`, `power_converters.yaml`: magnets and their power supplies.

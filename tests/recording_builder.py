@@ -11,6 +11,9 @@ class Record:
         self.name, self.kind, self.value = name, kind, initial_value
 
     def set(self, value, *args, **kwargs):
+        # as softioc: only output records take ``process``
+        if "process" in kwargs and self.kind.endswith("In"):
+            raise TypeError(f"{self.kind}.set() got an unexpected keyword argument 'process'")
         self.value = value
 
     def get(self):
