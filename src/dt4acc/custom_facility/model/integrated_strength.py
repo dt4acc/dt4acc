@@ -1,16 +1,31 @@
 """Integrated magnet strengths, as the twins publish them
 
-The lattice stores multipole coefficients the AT way: a thick element's
-``PolynomA``/``PolynomB`` hold K (per metre), a thin one (``Length == 0``)
-holds the integrated strength itself. The twins publish integrated
-strengths instead, the convention of pyaml (accelerator middle layer):
+**Not a general convention**: AT's normalisation, integrated over the
+element. Kept out of ``dt4acc.core`` until it is checked against the
+boundary conditions of the 2D (magneto quasi static) multipole expansion
+and the usual conventions of single particle beam dynamics.
 
-* quadrupole, sextupole, ...: K * L
-* steerer: its kick angle in rad, -PolynomB[0] * L horizontally,
-  +PolynomA[0] * L vertically
+Convention:
 
-so a client reads the same value from the twin as from its own model of
-the lattice.
+* the lattice stores AT's coefficients: By + i Bx = Brho * sum_n
+  (PolynomB[n] + i PolynomA[n]) (x + i y)^n. A thick element's coefficient
+  is per metre, a thin one (``Length == 0``) stores it integrated already.
+* published value = coefficient * L, L the element's length, 1 for a thin
+  element. AT's coefficients include no n!: unlike MAD-X's ``knl`` this is
+  K1 L for a quadrupole, but K2 L / 2 for a sextupole (PolynomB[2] = H =
+  K2 / 2) and K3 L / 6 for an octupole.
+* dipole terms (B1 = PolynomB[0], A1 = PolynomA[0]): the kick angle in rad,
+  -PolynomB[0] * L horizontally (AT kicks px by -PolynomB[0] * L),
+  +PolynomA[0] * L vertically.
+
+Main dipoles (``at.Dipole``):
+
+* ``main_strength``: published unchanged. dt4acc_lib reads it as the
+  bending field (``MainStrengthForDipole``), no coefficient.
+* B1 / A1: published as above, as a first order equivalent kick only: in a
+  bend PolynomB[0] adds to the curvature, it also changes the weak
+  focusing, the dispersion and the path length. The convention for main
+  dipoles is still to be settled.
 
 device value = :func:`strength_factor` * lattice value
 
@@ -23,16 +38,18 @@ enables it (DT4ACC_INTEGRATED_STRENGTH=1, see :func:`enabled`).
 import logging
 import os
 
+import at
+
 logger = logging.getLogger("dt4acc")
 
 #: sign of a horizontal kick angle relative to PolynomB[0]: AT's integrators
 #: kick px by -PolynomB[0] * L and py by +PolynomA[0] * L, so a positive
-#: PolynomB[0] deflects the beam towards -x. pyaml's HORIZONTAL_KICK_SIGN.
+#: PolynomB[0] deflects the beam towards -x.
 HORIZONTAL_KICK_SIGN = -1.0
 
-#: lattice properties of the horizontal kick (dt4acc_lib's European
+#: lattice property of the horizontal dipole term (dt4acc_lib's European
 #: multipole naming: B1 is PolynomB[0])
-_HORIZONTAL_KICK_PROPERTIES = frozenset({"B1"})
+_HORIZONTAL_KICK_PROPERTY = "B1"
 
 #: lattice properties holding a multipole coefficient of the element: the
 #: magnet's main strength or a European-named multipole (B1 = PolynomB[0],
@@ -41,7 +58,8 @@ _MULTIPOLE_PREFIXES = ("A", "B")
 
 
 def is_strength_property(lattice_property: str) -> bool:
-    """Is ``lattice_property`` a multipole coefficient (published integrated)"""
+    """Is ``lattice_property`` a multipole coefficient (by its name only:
+    see :func:`element_factor` for a main dipole's ``main_strength``)"""
     if lattice_property == "main_strength":
         return True
     return (
@@ -65,26 +83,37 @@ def lattice_element(acc, name: str):
 
 
 def effective_length(element) -> float:
-    """Length turning the element's coefficient into an integrated strength
+    """Length turning the element's coefficient into the published value
 
-    A thin element (zero length) already stores the integrated strength:
-    it counts as of unit length (as pyaml does).
+    A thin element (zero length) already stores the integrated value: it
+    counts as of unit length.
     """
     length = float(getattr(element, "Length", 0.0))
     return length if length > 0.0 else 1.0
 
 
-def strength_factor(acc, name: str, lattice_property: str) -> float:
-    """device value / lattice value for ``lattice_property`` of ``name``
+def element_factor(element, lattice_property: str) -> float:
+    """device value / lattice value for ``lattice_property`` of ``element``
 
-    1 for anything that is no multipole coefficient (frequency, voltage, ...)
+    1 for anything that is no multipole coefficient (frequency, voltage, a
+    main dipole's main_strength, ...)
     """
     if not is_strength_property(lattice_property):
         return 1.0
-    factor = effective_length(lattice_element(acc, name))
-    if lattice_property in _HORIZONTAL_KICK_PROPERTIES:
+    if lattice_property == "main_strength" and isinstance(element, at.Dipole):
+        # the bending field (dt4acc_lib's MainStrengthForDipole), no coefficient
+        return 1.0
+    factor = effective_length(element)
+    if lattice_property == _HORIZONTAL_KICK_PROPERTY:
         factor *= HORIZONTAL_KICK_SIGN
     return factor
+
+
+def strength_factor(acc, name: str, lattice_property: str) -> float:
+    """device value / lattice value for ``lattice_property`` of the element ``name``"""
+    if not is_strength_property(lattice_property):
+        return 1.0
+    return element_factor(lattice_element(acc, name), lattice_property)
 
 
 #: environment variable a facility sets to "1" for its Tango devices to

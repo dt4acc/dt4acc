@@ -41,7 +41,7 @@ from dt4acc_lib.model.utils.translator_manager_lookup_table import (
 )
 
 from dt4acc.config.data.querries import get_controlled_elements
-from dt4acc.core.utils.integrated_strength import strength_factor
+from dt4acc.custom_facility.model.integrated_strength import strength_factor
 
 
 def _yellow_pages_lut(magnets, acc) -> dict:
@@ -279,7 +279,7 @@ def _build_translator_manager_lut(magnets, yp: YellowPages, lm_inv: LiaisonManag
     for dev_p in all_keys:
         if dev_p.property in ("main_strength", "main_strength_rdbk") and dev_p.device_name in quad_sext_names:
             (lat_p,) = lm_inv.get(dev_p)
-            # integrated strength (K * L): see integrated_strength
+            # integrated strength (coefficient * L): see integrated_strength
             lut.append(
                 TranslatorLookupTableElement(
                     ConversionID(lat_p, dev_p),
@@ -321,10 +321,10 @@ def _build_translator_manager_lut(magnets, yp: YellowPages, lm_inv: LiaisonManag
 
 
 def _integrated_strength(acc, lat_p: LatticeElementPropertyID) -> PolynomCoefficients:
-    """The magnet's device strength: its integrated strength (pyaml's convention)
+    """The magnet's device strength: its integrated strength
 
     device = factor * lattice, factor = sign * effective length of the
-    element (see dt4acc.core.utils.integrated_strength)
+    element (see dt4acc.custom_facility.model.integrated_strength)
     """
     factor = strength_factor(acc, lat_p.element_name, lat_p.property)
     return PolynomCoefficients([0.0, factor], energy_dependent=False)

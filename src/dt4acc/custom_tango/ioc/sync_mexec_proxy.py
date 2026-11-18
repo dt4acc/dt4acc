@@ -78,11 +78,11 @@ class SyncMexecProxy:
         """{(element id, lattice property): device value / lattice value}
 
         The Tango devices publish integrated strengths (see
-        dt4acc.core.utils.integrated_strength) when the facility enables it,
+        dt4acc.custom_facility.model.integrated_strength) when the facility enables it,
         else there is nothing to convert: {}. Computed once, from the loaded
         lattice and the facility's liaison manager.
         """
-        from dt4acc.core.utils import integrated_strength
+        from dt4acc.custom_facility.model import integrated_strength
 
         if not integrated_strength.enabled():
             return {}

@@ -3,7 +3,7 @@
 import at
 import pytest
 
-from dt4acc.core.utils.integrated_strength import (
+from dt4acc.custom_facility.model.integrated_strength import (
     effective_length,
     is_strength_property,
     lattice_element,
@@ -22,6 +22,7 @@ def acc():
             at.Sextupole("S", 0.1, 2.0),
             at.ThinMultipole("COR", [0.0], [0.0]),
             at.Quadrupole("Q", 0.2, 1.0),  # same FamName, not the one acted on
+            at.Dipole("BEND", 1.5, 0.1, 0.2),  # combined function main dipole
         ],
         energy=1e9,
     )
@@ -49,6 +50,10 @@ def test_effective_length_thick_and_thin(acc):
         ("COR", "B1", -1.0),  # horizontal kick angle = -PolynomB[0] * L
         ("COR", "A1", 1.0),
         ("S", "frequency", 1.0),  # no strength: untouched
+        ("BEND", "main_strength", 1.0),  # bending field, no coefficient
+        ("BEND", "B1", -1.5),  # first order equivalent kick
+        ("BEND", "A1", 1.5),
+        ("BEND", "B2", 1.5),  # its gradient: coefficient * L
     ],
 )
 def test_strength_factor(acc, name, prop, factor):

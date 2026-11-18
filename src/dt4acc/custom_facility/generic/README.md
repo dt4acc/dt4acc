@@ -80,23 +80,27 @@ lattice-driven `build_managers()` above.
 ## Units: integrated strengths
 
 The magnets' strengths (`<magnet>:Cm:set`/`Cm:rdbk`, device property
-`main_strength`/`main_strength_rdbk`) are **integrated**, the convention
-of pyaml (accelerator middle layer), while the lattice stores the AT
-coefficients:
+`main_strength`/`main_strength_rdbk`) are integrated in AT's
+normalisation: the AT coefficient times the element's length. **Not a
+general convention**: AT's coefficients carry no n!, so unlike MAD-X's
+`knl` a sextupole publishes K2·L/2.
 
 | magnet | published | lattice |
 | --- | --- | --- |
-| quadrupole | K·L [1/m] | `PolynomB[1]` = K |
-| sextupole | integrated [1/m²] | `PolynomB[2]` |
+| quadrupole | K1·L [1/m] | `PolynomB[1]` = K1 |
+| sextupole | `PolynomB[2]`·L = K2·L/2 [1/m²] | `PolynomB[2]` = K2/2 |
 | horizontal steerer | kick angle [rad] = −`PolynomB[0]`·L | `PolynomB[0]` |
 | vertical steerer | kick angle [rad] = +`PolynomA[0]`·L | `PolynomA[0]` |
 
 L is the length of the element the backend acts on (first one with that
 UUID, else that FamName); a thin element (L = 0) already stores the
-integrated strength, it counts as L = 1. The horizontal sign is AT's:
-its integrators kick px by −`PolynomB[0]`·L. See
-`dt4acc.core.utils.integrated_strength`. The power converters' currents
-(`set_current`/`rdbk_current`) are unchanged.
+integrated value, it counts as L = 1. The horizontal sign is AT's: its
+integrators kick px by −`PolynomB[0]`·L. A main dipole's `main_strength`
+(its bending field) is published unchanged; its `PolynomB[0]` only as a
+first order equivalent kick. See
+`dt4acc.custom_facility.model.integrated_strength` (kept out of `dt4acc.core`
+until checked against the general conventions). The power converters'
+currents (`set_current`/`rdbk_current`) are unchanged.
 
 ## Gotchas found while wiring this up
 

@@ -7,7 +7,7 @@ pytest.importorskip("tango")
 
 from dt4acc_lib.model.utils.identifiers import LatticeElementPropertyID  # noqa: E402
 
-from dt4acc.core.utils import integrated_strength  # noqa: E402
+from dt4acc.custom_facility.model import integrated_strength  # noqa: E402
 from dt4acc.custom_tango.ioc import single_server  # noqa: E402
 from dt4acc.custom_tango.ioc.sync_mexec_proxy import SyncMexecProxy  # noqa: E402
 

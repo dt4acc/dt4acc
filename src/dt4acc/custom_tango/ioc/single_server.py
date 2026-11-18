@@ -155,7 +155,7 @@ def _default_lattice_values() -> dict:
 
 def to_device_value(element_id: str, prop: str, value: float) -> float:
     """Lattice value -> the device's: the integrated strength if enabled
-    (see dt4acc.core.utils.integrated_strength), else unchanged"""
+    (see dt4acc.custom_facility.model.integrated_strength), else unchanged"""
     return value * _strength_factors.get((element_id, prop), 1.0)
 
 
