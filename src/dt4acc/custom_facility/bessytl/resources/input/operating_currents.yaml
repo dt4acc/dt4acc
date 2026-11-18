@@ -2,8 +2,11 @@
 # starts with [A].
 #
 # Source: bact2_bessyii process_data/misc/power_converters_magnets.csv
-# (magnet table of 2020, section "T"). Steerers start at 0 A.
+# (section "T"; committed 2020, where its numbers come from is not
+# documented). Steerers start at 0 A.
 # To be replaced by the currents of the operational optics once known.
+# Bends: operating currents given by BESSY II operations (2026-11-11); their
+# limits in the control system: B1PT 0 ... 365 A, B2PT 0.1 ... 2.0 A.
 Q1PT: 15.835
 Q2PT: 42.616
 Q3PT: 41.019
@@ -15,3 +18,5 @@ Q9PT: 41.339
 Q10PT: 46.324
 Q11PT: 23.134
 Q12PT: 80.625
+B1PT: 232.75
+B2PT: 1.486
