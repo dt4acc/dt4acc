@@ -38,6 +38,7 @@ from pathlib import Path
 
 from dt4acc.custom_facility.soleil.utils.command_line_interface import display_setup_from_args, parse_args
 from dt4acc.core.bl import handle_lattice
+from dt4acc.core.utils import integrated_strength
 from dt4acc.custom_tango.ioc import mexec_config, mexec_server_for_physics_engine
 from dt4acc.custom_tango.ioc import server_manager
 
@@ -83,6 +84,9 @@ def main():
     )
     os.environ["DT4ACC_MEXEC_PORT"] = str(args.port)
     os.environ["DT4ACC_VIEW"] = args.view
+    # magnets publish integrated strengths (K * L, kick angles in rad), as
+    # pyaml does: see dt4acc.core.utils.integrated_strength
+    os.environ.setdefault(integrated_strength.ENABLE_ENV, "1")
 
 
     handle_lattice.lattice_loader.set_lattice_file(args.lattice)

@@ -37,7 +37,7 @@ class HorizontalSteererDevice(BaseMagnetDevice):
         self._sync_write_value("magnetic_strength", self._magnetic_strength)
 
     @attribute(dtype=float, access=AttrWriteType.READ_WRITE,
-               label="Magnetic strength", unit="1/m")
+               label="Magnetic strength", unit="rad")
     def magnetic_strength(self) -> float:
         return self._magnetic_strength
 
@@ -84,7 +84,7 @@ class VerticalSteererDevice(BaseMagnetDevice):
         self._sync_write_value("magnetic_strength", self._magnetic_strength)
 
     @attribute(dtype=float, access=AttrWriteType.READ_WRITE,
-               label="Magnetic strength", unit="1/m")
+               label="Magnetic strength", unit="rad")
     def magnetic_strength(self) -> float:
         return self._magnetic_strength
 

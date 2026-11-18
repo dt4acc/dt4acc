@@ -74,6 +74,29 @@ class SyncMexecProxy:
             # return math.nan
             return 0.0
 
+    def sync_strength_factors(self) -> dict:
+        """{(element id, lattice property): device value / lattice value}
+
+        The Tango devices publish integrated strengths (see
+        dt4acc.core.utils.integrated_strength) when the facility enables it,
+        else there is nothing to convert: {}. Computed once, from the loaded
+        lattice and the facility's liaison manager.
+        """
+        from dt4acc.core.utils import integrated_strength
+
+        if not integrated_strength.enabled():
+            return {}
+        if getattr(self, "_strength_factors", None) is None:
+            from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import _get_load_managers
+
+            _, lm, _ = _get_load_managers()()
+            lat_ids = [lat_p for elem in lm.inverse_lut.lut for lat_p in elem.lat_ids]
+            self._strength_factors = integrated_strength.strength_factors(
+                self.mexec.backend.acc.acc, lat_ids
+            )
+            logger.warning("SyncMexecProxy: %d integrated strength factors", len(self._strength_factors))
+        return self._strength_factors
+
     def sync_trigger_read(self, rcmd_ids: Sequence[str], rcmd_properties: Sequence[str]):
         rcmds = [
             ReadCommand(id=i, property=p)

@@ -73,6 +73,10 @@ class BaseMagnetDevice(Device):
         the uuid is also the correct identifier.
         """
         from dt4acc_lib.model.utils.command import Command, BehaviourOnError
+        from dt4acc.custom_tango.ioc.single_server import to_lattice_value
+
+        # the device's value (integrated strength if enabled) -> the lattice's
+        value = to_lattice_value(self.lattice_id, property_name, value)
         self._async(
             get_controller().update(
                 cmd=Command(
