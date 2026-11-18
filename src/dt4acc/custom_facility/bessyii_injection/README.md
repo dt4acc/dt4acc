@@ -147,5 +147,6 @@ ring tracked from `MSEPEXIT` (the ring lattice rotated to start there).
 * **Entering beam of the line**: see `../bessytl/README.md`.
 * **One particle**: the centroid. A bunch (emittance, energy spread of the
   booster beam) and apertures (so that particles can be lost) are next.
-* **Kickers**: `KIK1D1R` ... `KIK4D1R` are drifts in the ring lattice: no
-  injection bump; the injected beam oscillates around the closed orbit.
+* **Kickers**: `KIK1D1R` ... `KIK4D1R` are correctors in the ring lattice,
+  but not fired (`KickAngle` 0): no injection bump; the injected beam
+  oscillates around the closed orbit.
