@@ -77,6 +77,27 @@ lattice loading (plain `lattice_loader` — no `lat2db` factory step needed
 since the bundled lattice is already atjson v1) and the dynamic catalog/
 lattice-driven `build_managers()` above.
 
+## Units: integrated strengths
+
+The magnets' strengths (`<magnet>:Cm:set`/`Cm:rdbk`, device property
+`main_strength`/`main_strength_rdbk`) are **integrated**, the convention
+of pyaml (accelerator middle layer), while the lattice stores the AT
+coefficients:
+
+| magnet | published | lattice |
+| --- | --- | --- |
+| quadrupole | K·L [1/m] | `PolynomB[1]` = K |
+| sextupole | integrated [1/m²] | `PolynomB[2]` |
+| horizontal steerer | kick angle [rad] = −`PolynomB[0]`·L | `PolynomB[0]` |
+| vertical steerer | kick angle [rad] = +`PolynomA[0]`·L | `PolynomA[0]` |
+
+L is the length of the element the backend acts on (first one with that
+UUID, else that FamName); a thin element (L = 0) already stores the
+integrated strength, it counts as L = 1. The horizontal sign is AT's:
+its integrators kick px by −`PolynomB[0]`·L. See
+`dt4acc.core.utils.integrated_strength`. The power converters' currents
+(`set_current`/`rdbk_current`) are unchanged.
+
 ## Gotchas found while wiring this up
 
 ### Combined-function correctors: steerer vs. multipole

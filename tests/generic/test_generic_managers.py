@@ -38,27 +38,55 @@ def test_cavities_through_get(managers):
     assert len(yp.get("cavities")) > 0
 
 
+@pytest.mark.parametrize("prop", ["main_strength", "main_strength_rdbk"])
 @pytest.mark.parametrize(
-    "steerer, host, lattice_property",
-    [("HCOR_001", "COR_001", "B1"), ("VCOR_001", "COR_001", "A1")],
+    "steerer, host, lattice_property, slope",
+    # thin correctors: kick angle in rad, horizontal = -PolynomB[0]
+    [("HCOR_001", "COR_001", "B1", -1.0), ("VCOR_001", "COR_001", "A1", 1.0)],
 )
-def test_steerer_main_strength_rdbk(managers, steerer, host, lattice_property):
-    """A steerer's read back resolves to its host's kick, converted as identity"""
+def test_steerer_kick_angle(managers, prop, steerer, host, lattice_property, slope):
+    """A steerer resolves to its host's kick, published as the kick angle"""
     _, lm, ts = managers
-    dev_p = DevicePropertyID(device_name=steerer, property="main_strength_rdbk")
+    dev_p = DevicePropertyID(device_name=steerer, property=prop)
     lat_p = LatticeElementPropertyID(element_name=host, property=lattice_property)
 
     assert list(lm.inverse(dev_p)) == [lat_p]
 
     conversion = ts.lut.get(ConversionID(lat_p, dev_p))
     assert isinstance(conversion, PolynomCoefficients)
-    assert list(conversion.coeffs) == [0.0, 1.0]
+    assert list(conversion.coeffs) == [0.0, slope]
     assert not conversion.energy_dependent
 
 
-def test_quadrupole_main_strength_rdbk_still_there(managers):
+@pytest.mark.parametrize("prop", ["main_strength", "main_strength_rdbk"])
+@pytest.mark.parametrize("magnet, length", [("QF_001", 0.4), ("QD_001", 0.4), ("SF_001", 0.1), ("SD_001", 0.1)])
+def test_quad_sext_integrated_strength(managers, prop, magnet, length):
+    """Quadrupoles and sextupoles publish K * L"""
     _, lm, ts = managers
-    dev_p = DevicePropertyID(device_name="QF_001", property="main_strength_rdbk")
+    dev_p = DevicePropertyID(device_name=magnet, property=prop)
     (lat_p,) = lm.inverse(dev_p)
-    assert lat_p == LatticeElementPropertyID(element_name="QF_001", property="main_strength")
-    assert ts.lut.get(ConversionID(lat_p, dev_p)) is not None
+    assert lat_p == LatticeElementPropertyID(element_name=magnet, property="main_strength")
+
+    conversion = ts.lut.get(ConversionID(lat_p, dev_p))
+    assert isinstance(conversion, PolynomCoefficients)
+    assert list(conversion.coeffs) == pytest.approx([0.0, length])
+    assert not conversion.energy_dependent
+
+
+def test_quadrupole_round_trip(managers):
+    """Writing K * L gives K in the lattice, reading K gives K * L back"""
+    _, _, ts = managers
+    lat_p = LatticeElementPropertyID(element_name="QF_001", property="main_strength")
+    dev_p = DevicePropertyID(device_name="QF_001", property="main_strength")
+    conv = ts.get(ConversionID(lat_p, dev_p))
+    assert conv.inverse(0.8) == pytest.approx(2.0)
+    assert conv.forward(2.0) == pytest.approx(0.8)
+
+
+def test_power_converter_current_unchanged(managers):
+    """The power converters' currents are no strengths: not rescaled"""
+    _, lm, ts = managers
+    for lat_p in lm.inverse(DevicePropertyID(device_name="QF_001", property="main_strength")):
+        (dev_p,) = [d for d in lm.forward(lat_p) if d.property == "set_current"]
+        conversion = ts.lut.get(ConversionID(lat_p, dev_p))
+        assert list(conversion.coeffs) == [0.0, 1.0]
