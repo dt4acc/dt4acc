@@ -33,6 +33,7 @@ from dt4acc.custom_tango.views.view import TangoView
 from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import (
     _connect_to_mexec_service,
     lattice_properties_for_device,
+    translated_design_view,
 )
 from dt4acc_lib.model.output.result import TranslatedReading, ReadTogetherAndTranslated, SingleReading
 from dt4acc_lib.model.utils.command import ReadCommand, Command
@@ -136,7 +137,6 @@ _my_magnet_uuids: list = []         # UUIDs of elements in this server process
 _uuid_to_prop: dict = {}            # uuid -> lattice properties
 _sync_proxy = None                  # MexecService proxy for live reads
 _device_view = False                # True only in device view
-_strength_factors: dict = {}        # (uuid, lattice property) -> device value / lattice value
 
 
 def _default_lattice_values() -> dict:
@@ -151,31 +151,6 @@ def _default_lattice_values() -> dict:
         "frequency": 0.0,
         "voltage": 0.0,
     }
-
-
-def to_device_value(element_id: str, prop: str, value: float) -> float:
-    """Lattice value -> the device's: the integrated strength if enabled
-    (see dt4acc.custom_facility.model.integrated_strength), else unchanged"""
-    return value * _strength_factors.get((element_id, prop), 1.0)
-
-
-def to_lattice_value(element_id: str, prop: str, value: float) -> float:
-    """Device value -> the lattice's: inverse of to_device_value"""
-    return value / _strength_factors.get((element_id, prop), 1.0)
-
-
-def _to_device_values(uuid: str, values: dict) -> dict:
-    return {prop: to_device_value(uuid, prop, value) for prop, value in values.items()}
-
-
-def _load_strength_factors(sync_proxy) -> None:
-    """Fetch the conversion table from the MexecService, once per process"""
-    global _strength_factors
-    try:
-        _strength_factors = dict(sync_proxy.sync_strength_factors())
-    except Exception as exc:
-        logger.error("Could not fetch integrated strength factors: %s - publishing lattice values", exc)
-        _strength_factors = {}
 
 
 def enable_device_view_readback() -> None:
@@ -199,7 +174,7 @@ def peek_from_lattice(element_id: str, prop: str) -> float:
         raw = _sync_proxy.sync_peek(element_id, prop)
     except Exception:
         return 0.0
-    return to_device_value(element_id, prop, _lattice_to_device_value(element_id, prop, raw))
+    return _lattice_to_device_value(element_id, prop, raw)
 
 
 def _lattice_to_device_value(element_id: str, prop: str, value: float) -> float:
@@ -280,23 +255,27 @@ def _add_cache_element(
 
 def get_initial_strength(uuid: str) -> float:
     """Called by MagnetDevice.init_device() to get cached initial value."""
-    return to_device_value(uuid, "main_strength", _initial_strength_cache.get(uuid, 0.0))
+    return _initial_strength_cache.get(uuid, 0.0)
 
 
 def get_initial_values(uuid: str) -> dict:
-    """Called by Tango devices to get cached initial values, as device
-    values (the cache holds lattice values)."""
+    """Called by Tango devices to get cached initial values.
+
+    ``uuid``: the id the device reads by, its command id (see
+    BaseMagnetDevice.command_id): its lattice element, or its own name when
+    the engine translates the commands (the values are then device values).
+    """
     values = _default_lattice_values()
     values.update(_initial_values_cache.get(uuid, {}))
-    return _to_device_values(uuid, values)
+    return values
 
 
 def get_nominal_values(uuid: str) -> dict:
-    """Called by MagnetDevice.RefreshFromCache() after reset, as device
-    values (the cache holds lattice values)."""
+    """Called by MagnetDevice.RefreshFromCache() after reset (``uuid``: as
+    get_initial_values)."""
     values = _default_lattice_values()
     values.update(_nominal_cache.get(uuid, {}))
-    return _to_device_values(uuid, values)
+    return values
 
 
 def get_rf_reference_frequency_khz() -> float:
@@ -450,7 +429,6 @@ def _inject_controller(prefix: str) -> None:
     sync_proxy, sync_reset, sync_reinit = _connect_to_mexec_service()
     global _sync_proxy
     _sync_proxy = sync_proxy
-    _load_strength_factors(sync_proxy)
     mexec = AsyncMexecAdapter(sync_proxy)
 
     controller = TangoController(
@@ -500,7 +478,10 @@ def main_loop(server_name: str, instance_name: str, event=None):
     try:
         sync_proxy, _, _ = _connect_to_mexec_service()
 
-        # Collect UUIDs for magnets belonging to this server/instance
+        # Collect UUIDs for magnets belonging to this server/instance: the ids
+        # their devices read by (BaseMagnetDevice.command_id), the magnets'
+        # names when the engine translates their commands
+        by_name = translated_design_view()
         my_uuids = []
         seen_uuids = set()
         uuid_to_prop = {}
@@ -527,7 +508,7 @@ def main_loop(server_name: str, instance_name: str, event=None):
                     continue
                 if trl.domain == server_name and trl.family == instance_name:
                     _add_cache_element(
-                        uuid=uuid,
+                        uuid=magnet_name if by_name and mtype != "RFCavity" else uuid,
                         props=props,
                         uuids=my_uuids,
                         seen_uuids=seen_uuids,

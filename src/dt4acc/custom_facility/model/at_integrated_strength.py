@@ -1,15 +1,23 @@
-"""Integrated magnet strengths, as the twins publish them
+"""Integrated magnet strengths in AT's normalisation, as the twins publish them
 
-**Not a general convention**: AT's normalisation, integrated over the
-element. Kept out of ``dt4acc.core`` until it is checked against the
-boundary conditions of the 2D (magneto quasi static) multipole expansion
-and the usual conventions of single particle beam dynamics.
+**Not a general convention**: the one of AT (and Tracy) users, opt-in
+(see :func:`enabled`). Kept out of ``dt4acc.core`` until it is checked
+against the boundary conditions of the 2D (magneto quasi static) multipole
+expansion and the usual conventions of single particle beam dynamics.
 
-Convention:
+Convention, in Beth's representation (European indexing, R_ref = 1):
 
-* the lattice stores AT's coefficients: By + i Bx = Brho * sum_n
-  (PolynomB[n] + i PolynomA[n]) (x + i y)^n. A thick element's coefficient
-  is per metre, a thin one (``Length == 0``) stores it integrated already.
+    B(z) = By + i Bx = sum_{n >= 1} (B_n + i A_n) z^(n - 1),  z = x + i y
+
+* the lattice stores AT's coefficients, normalised by the beam rigidity
+  p / q *with the sign of the charge*: PolynomB[n - 1] = B_n / (p / q),
+  PolynomA[n - 1] = A_n / (p / q) (dt4acc_lib names them B<n> / A<n>: B1 =
+  PolynomB[0], B2 = PolynomB[1], ...). AT integrates as for a positive
+  particle: a positive PolynomB[1] focuses horizontally whatever the
+  charge, for electrons the field B_n has the opposite sign. This module
+  handles no field, it only scales these normalised coefficients.
+* a thick element's coefficient is per metre, a thin one (``Length == 0``)
+  stores it integrated already.
 * published value = coefficient * L, L the element's length, 1 for a thin
   element. AT's coefficients include no n!: unlike MAD-X's ``knl`` this is
   K1 L for a quadrupole, but K2 L / 2 for a sextupole (PolynomB[2] = H =
@@ -29,10 +37,9 @@ Main dipoles (``at.Dipole``):
 
 device value = :func:`strength_factor` * lattice value
 
-The EPICS twin (custom_facility.generic) puts these factors in its
-translation service. The Tango twin's design view bypasses it: its devices
-convert with the table :func:`strength_factors` builds, when the facility
-enables it (DT4ACC_INTEGRATED_STRENGTH=1, see :func:`enabled`).
+The facilities put these factors in their translation service (slope of
+the magnets' conversions), see :func:`strength_factors`: the twins convert
+in one place, the command execution engine.
 """
 
 import logging
@@ -54,7 +61,7 @@ _HORIZONTAL_KICK_PROPERTY = "B1"
 #: lattice properties holding a multipole coefficient of the element: the
 #: magnet's main strength or a European-named multipole (B1 = PolynomB[0],
 #: A2 = PolynomA[1], ...)
-_MULTIPOLE_PREFIXES = ("A", "B")
+_MULTIPOLE_PREFIXES = ("B", "A")
 
 
 def is_strength_property(lattice_property: str) -> bool:
@@ -116,13 +123,14 @@ def strength_factor(acc, name: str, lattice_property: str) -> float:
     return element_factor(lattice_element(acc, name), lattice_property)
 
 
-#: environment variable a facility sets to "1" for its Tango devices to
-#: publish integrated strengths (inherited by the spawned server processes)
+#: environment variable a facility sets to "1" for its twin to publish
+#: integrated strengths (inherited by the spawned processes); unset, the
+#: magnets publish the lattice coefficients
 ENABLE_ENV = "DT4ACC_INTEGRATED_STRENGTH"
 
 
 def enabled() -> bool:
-    """Do the Tango devices publish integrated strengths (DT4ACC_INTEGRATED_STRENGTH=1)"""
+    """Does the twin publish integrated strengths (DT4ACC_INTEGRATED_STRENGTH=1)"""
     return os.environ.get(ENABLE_ENV) == "1"
 
 
@@ -134,16 +142,26 @@ def strength_factors(acc, lattice_property_ids) -> dict:
     left out, as the ones of no element of the lattice (logged): the
     backend can not act on these anyway.
     """
+    # same lookup as lattice_element, indexed once: UUIDs first, then FamNames
+    by_name = {}
+    for attribute in ("FamName", "UUID"):
+        for elem in reversed(acc):
+            name = getattr(elem, attribute, None)
+            if name is not None:
+                by_name[name] = elem
     factors = {}
     for lat_p in lattice_property_ids:
         key = (lat_p.element_name, lat_p.property)
         if key in factors or not is_strength_property(lat_p.property):
             continue
-        try:
-            factor = strength_factor(acc, *key)
-        except ValueError as exc:
-            logger.warning("integrated strength: %s, left as lattice value", exc)
+        element = by_name.get(lat_p.element_name)
+        if element is None:
+            logger.warning(
+                "integrated strength: no lattice element with UUID or FamName %r,"
+                " left as lattice value", lat_p.element_name,
+            )
             continue
+        factor = element_factor(element, lat_p.property)
         if factor != 1.0:
             factors[key] = factor
     return factors

@@ -4,6 +4,7 @@ No IOC needed: checks the yellow pages, liaison manager and translator
 service that ``run_epics_twin`` builds at startup.
 """
 
+import os
 from importlib import resources
 
 import pytest
@@ -17,20 +18,38 @@ from dt4acc_lib.model.utils.translator_manager_lookup_table import PolynomCoeffi
 from dt4acc.config.data import querries
 from dt4acc.core.bl.handle_lattice import LatticeLoader
 from dt4acc.custom_facility.generic.liasion_translator_setup import load_managers
+from dt4acc.custom_facility.model import at_integrated_strength
 
 _RESOURCES = resources.files("dt4acc").joinpath("custom_facility/generic/resources")
 
 
-@pytest.fixture(scope="module")
-def managers():
+def _build(integrated_strength: bool):
     previous = querries.get_data_file()
+    previous_env = os.environ.pop(at_integrated_strength.ENABLE_ENV, None)
+    if integrated_strength:
+        os.environ[at_integrated_strength.ENABLE_ENV] = "1"
     querries.configure_data_file(_RESOURCES.joinpath("accelerator_setup.json"))
     try:
         loader = LatticeLoader()
         loader.set_lattice_file(_RESOURCES.joinpath("fodo_lattice.json"))
-        yield load_managers(loader.load())
+        return load_managers(loader.load())
     finally:
         querries.configure_data_file(previous)
+        os.environ.pop(at_integrated_strength.ENABLE_ENV, None)
+        if previous_env is not None:
+            os.environ[at_integrated_strength.ENABLE_ENV] = previous_env
+
+
+@pytest.fixture(scope="module")
+def managers():
+    """Integrated strengths enabled (DT4ACC_INTEGRATED_STRENGTH=1)"""
+    return _build(integrated_strength=True)
+
+
+@pytest.fixture(scope="module")
+def plain_managers():
+    """Default: the magnets publish the lattice coefficients"""
+    return _build(integrated_strength=False)
 
 
 def test_cavities_through_get(managers):
@@ -89,4 +108,24 @@ def test_power_converter_current_unchanged(managers):
     for lat_p in lm.inverse(DevicePropertyID(device_name="QF_001", property="main_strength")):
         (dev_p,) = [d for d in lm.forward(lat_p) if d.property == "set_current"]
         conversion = ts.lut.get(ConversionID(lat_p, dev_p))
+        assert list(conversion.coeffs) == [0.0, 1.0]
+
+
+@pytest.mark.parametrize(
+    "device, host, lattice_property",
+    [
+        ("HCOR_001", "COR_001", "B1"),
+        ("VCOR_001", "COR_001", "A1"),
+        ("QF_001", "QF_001", "main_strength"),
+        ("SF_001", "SF_001", "main_strength"),
+    ],
+)
+def test_default_publishes_lattice_coefficients(plain_managers, device, host, lattice_property):
+    """Not enabled: slope 1, as before the integrated strengths"""
+    _, _, ts = plain_managers
+    for prop in ("main_strength", "main_strength_rdbk"):
+        conversion = ts.lut.get(ConversionID(
+            LatticeElementPropertyID(element_name=host, property=lattice_property),
+            DevicePropertyID(device_name=device, property=prop),
+        ))
         assert list(conversion.coeffs) == [0.0, 1.0]

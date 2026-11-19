@@ -3,11 +3,12 @@
 import at
 import pytest
 
-from dt4acc.custom_facility.model.integrated_strength import (
+from dt4acc.custom_facility.model.at_integrated_strength import (
     effective_length,
     is_strength_property,
     lattice_element,
     strength_factor,
+    strength_factors,
 )
 
 
@@ -67,3 +68,34 @@ def test_strength_factor(acc, name, prop, factor):
 )
 def test_is_strength_property(prop, expected):
     assert is_strength_property(prop) is expected
+
+
+def test_strength_factors_table(acc):
+    """Same lookup as strength_factor (UUID, then the first FamName); the
+    factors of 1 and the elements not in the lattice left out"""
+    from dt4acc_lib.model.utils.identifiers import LatticeElementPropertyID
+
+    ids = [
+        LatticeElementPropertyID(element_name=name, property=prop)
+        for name, prop in (
+            ("Q_uuid", "main_strength"),
+            ("Q", "main_strength"),  # FamName: the first Q, 0.4 m
+            ("COR", "B1"),
+            ("COR", "A1"),  # factor 1
+            ("BEND", "main_strength"),  # factor 1
+            ("S", "frequency"),  # no strength
+            ("missing", "B2"),  # not in the lattice
+        )
+    ]
+    assert strength_factors(acc, ids) == {
+        ("Q_uuid", "main_strength"): pytest.approx(0.4),
+        ("Q", "main_strength"): pytest.approx(0.4),
+        ("COR", "B1"): -1.0,
+    }
+
+
+def test_beth_order_of_prefixes():
+    """C_n = B_n + i A_n"""
+    from dt4acc.custom_facility.model import at_integrated_strength
+
+    assert at_integrated_strength._MULTIPOLE_PREFIXES == ("B", "A")

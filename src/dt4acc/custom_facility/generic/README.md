@@ -77,13 +77,16 @@ lattice loading (plain `lattice_loader` — no `lat2db` factory step needed
 since the bundled lattice is already atjson v1) and the dynamic catalog/
 lattice-driven `build_managers()` above.
 
-## Units: integrated strengths
+## Units: integrated strengths (opt-in)
 
-The magnets' strengths (`<magnet>:Cm:set`/`Cm:rdbk`, device property
-`main_strength`/`main_strength_rdbk`) are integrated in AT's
-normalisation: the AT coefficient times the element's length. **Not a
-general convention**: AT's coefficients carry no n!, so unlike MAD-X's
-`knl` a sextupole publishes K2·L/2.
+By default the magnets' strengths (`<magnet>:Cm:set`/`Cm:rdbk`, device
+property `main_strength`/`main_strength_rdbk`) are the lattice
+coefficients. With `--integrated-strength` (or
+`DT4ACC_INTEGRATED_STRENGTH=1`) they are integrated in AT's normalisation:
+the AT coefficient times the element's length. **Not a general
+convention**: AT's coefficients are normalised by the rigidity p/q with the
+sign of the charge (AT integrates as for a positive particle) and carry no
+n!, so unlike MAD-X's `knl` a sextupole publishes K2·L/2.
 
 | magnet | published | lattice |
 | --- | --- | --- |
@@ -97,10 +100,11 @@ UUID, else that FamName); a thin element (L = 0) already stores the
 integrated value, it counts as L = 1. The horizontal sign is AT's: its
 integrators kick px by −`PolynomB[0]`·L. A main dipole's `main_strength`
 (its bending field) is published unchanged; its `PolynomB[0]` only as a
-first order equivalent kick. See
-`dt4acc.custom_facility.model.integrated_strength` (kept out of `dt4acc.core`
-until checked against the general conventions). The power converters'
-currents (`set_current`/`rdbk_current`) are unchanged.
+first order equivalent kick. The factors are the slopes of the magnets'
+conversions in the translation service, computed from the lattice by
+`dt4acc.custom_facility.model.at_integrated_strength` (kept out of
+`dt4acc.core` until checked against the general conventions). The power
+converters' currents (`set_current`/`rdbk_current`) are unchanged.
 
 ## Gotchas found while wiring this up
 
