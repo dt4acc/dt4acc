@@ -3,6 +3,13 @@
 A TANGO-based digital twin of the SOLEIL II storage ring, built on top of pyAT
 and the `dt4acc_lib` accelerator model library.
 
+The transfer line TL2 alone (`src/dt4acc/custom_facility/soleil_tl2/README.md`) and TL2 with the
+ring, the beam handed over (`src/dt4acc/custom_facility/soleil_injection/README.md`: how to run,
+containers, what moves what, what to take care of) are set up the same way.
+
+Turn by turn data: the BPM devices' `XPosDD`, `ZPosDD` [mm], `DDBufferSize` (turns, shared by all
+BPMs) and the ring simulator's `tbt_*` (`dt4acc.custom_tango.ioc.turn_by_turn`).
+
 ---
 
 ## Architecture Overview

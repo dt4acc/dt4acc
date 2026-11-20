@@ -90,6 +90,46 @@ class InProcessProxy:
     def sync_tbt_at(self, bpm_id):
         return self.service.at(bpm_id)
 
+    def sync_tbt_inject(self, start, n_turns):
+        return self.service.inject(start, n_turns)
+
+
+def test_soleil_inject_tracks_the_shot_from_its_start(soleil_service):
+    """a shot: the injected beam's absolute start, against the closed orbit as it is now;
+    a new result every shot, also when nothing changed"""
+    offset = np.array([1e-4, 0, -1e-4, 0, 0, 0])
+    start = soleil_service.tbt.closed_orbit() + offset
+    summary = soleil_service.inject(list(start), 16)
+    np.testing.assert_allclose(summary["start"], start, atol=1e-15)
+    np.testing.assert_allclose(summary["offset"], offset, atol=1e-15)
+    assert summary["n_turns"] == 16 and summary["survived"][-1] == 1
+    assert soleil_service.inject(list(start), 16)["generation"] == summary["generation"] + 1
+    with pytest.raises(ValueError):
+        soleil_service.inject([0.0] * 5, 16)
+
+
+def test_follower_on_demand_tracks_only_shots(soleil_service):
+    news = []
+    arrived = threading.Event()
+
+    def on_new(summary):
+        news.append(summary)
+        arrived.set()
+
+    follower = TurnByTurnFollower(proxy=lambda: InProcessProxy(soleil_service), on_new=on_new, on_demand=True)
+    follower.set_n_turns(8)
+    follower.set_offset([2e-4, 0, 0, 0, 0, 0])
+    follower.request()  # as the heartbeat
+    assert not arrived.wait(1.0) and follower.count == 0, "no shot: nothing tracked"
+
+    start = list(soleil_service.tbt.closed_orbit() + np.array([0, 0, 1e-4, 0, 0, 0]))
+    follower.inject(start)
+    assert arrived.wait(30) and follower.count == 1
+    assert news[-1]["n_turns"] == 8, "the turns set before act at the shot"
+    np.testing.assert_allclose(news[-1]["start"], start, atol=1e-15)
+    with pytest.raises(ValueError):
+        follower.inject([0.0] * 5)
+
 
 def test_follower_publishes_new_results(soleil_service):
     news = []
@@ -114,6 +154,7 @@ def test_tracking_runs_on_the_service_loop(monkeypatch):
     """pyAT's tracking is not thread safe: all use of the lattice on one thread (the service
     loop), turn by turn too, else optics and tracking in two threads crash the physics engine"""
     import asyncio
+    from types import SimpleNamespace
 
     from dt4acc.custom_tango.ioc import sync_mexec_proxy, turn_by_turn
 
@@ -133,7 +174,7 @@ def test_tracking_runs_on_the_service_loop(monkeypatch):
     loop_thread.start()
     try:
         proxy = sync_mexec_proxy.SyncMexecProxy(mexec=object(), service_loop=loop)
-        monkeypatch.setattr(proxy, "mexec", type("M", (), {"backend": None})())
+        monkeypatch.setattr(proxy, "mexec", SimpleNamespace(backend=SimpleNamespace(acc=SimpleNamespace(is_ring=True))))
         proxy.sync_tbt_update()
     finally:
         loop.call_soon_threadsafe(loop.stop)

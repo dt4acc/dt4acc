@@ -12,8 +12,12 @@ at the ring's BPMs. Here it is spread over the twin's processes:
 * ring simulator device (``simulator/ringsimulator/ringsimulator``): the
   settings and the summary, attributes ``tbt_offset`` (``x, px, y, py,
   delta, ct``, as ``COORDINATES``), ``tbt_n_turns``, ``tbt_start``,
-  ``tbt_survived``, ``tbt_bpm_ids``, ``tbt_count``; command
-  ``TurnByTurnAt(<bpm lattice id>)``
+  ``tbt_survived``, ``tbt_bpm_ids``, ``tbt_count``; commands
+  ``TurnByTurnAt(<bpm lattice id>)``, ``Inject(<start state>)``
+* on demand (``mexec_config.TBT_ON_DEMAND``, an injection twin's ring): the
+  data are tracked only for a shot, ``Inject``: the injected beam from its
+  start state, against the closed orbit as it is at the shot. As at the
+  machine, where the turn by turn buffers are triggered by the injection
 * BPM devices: one BPM, as the Libera Brilliance Plus electronics' Tango
   devices at SOLEIL (names as SOLEIL's MML reads them): ``XPosDD`` /
   ``ZPosDD`` turn by turn, ``XPosSA`` / ``ZPosSA`` slow acquisition (the
@@ -104,6 +108,21 @@ class TurnByTurnService:
             survived=list(r.survived[:, -1]) if r else [],
         )
 
+    def inject(self, start: Sequence[float], n_turns: int) -> Dict:
+        """a shot: tracks ``start`` (absolute, ``COORDINATES``) now, against the closed orbit
+        as it is now (offset = start - closed orbit); a new result every shot"""
+        if len(start) != len(COORDINATES):
+            raise ValueError(f"start: expected {len(COORDINATES)} values ({COORDINATES}), got {len(start)}")
+        with self._lock:
+            offset = np.asarray(start, dtype=float) - self.tbt.closed_orbit()
+            for name, value in zip(COORDINATES, offset):
+                self.tbt.set_offset(name, value)
+            self.tbt.n_turns = n_turns
+            self._result = self.tbt.compute()
+            self.generation += 1
+            logger.info("turn by turn: shot, %d turns tracked, generation %d", self._result.n_turns, self.generation)
+            return self.summary()
+
     def at(self, bpm_id: str) -> List[float]:
         """the latest result at one BPM: x then y, turn after turn [m]; empty before the first result"""
         r = self._result
@@ -121,20 +140,36 @@ class TurnByTurnFollower:
     long; ``on_new(summary)`` is called when there is a new result.
     ``proxy`` returns the physics engine's ``SyncMexecProxy`` (None while
     not connected).
+
+    ``on_demand``: tracked only for a shot (:meth:`inject`); requests and
+    settings changes do not track, the settings act at the next shot.
     """
 
-    def __init__(self, proxy: Callable[[], object], on_new: Callable[[Dict], None]):
+    def __init__(self, proxy: Callable[[], object], on_new: Callable[[Dict], None], on_demand: bool = False):
         self._proxy = proxy
         self._on_new = on_new
+        self.on_demand = on_demand
         self.offset = list(DEFAULT_OFFSET)
         self.n_turns = DEFAULT_TURNS
         self.summary: Dict = {}
         self.count = 0
         self._configure = True
+        self._shot = None
         self._wake = threading.Event()
         threading.Thread(target=self._loop, daemon=True, name="turn-by-turn").start()
 
     def request(self) -> None:
+        """track again if the lattice or the settings changed; on demand: nothing"""
+        if not self.on_demand:
+            self._wake.set()
+
+    def inject(self, start: Sequence[float]) -> None:
+        """a shot: track ``start`` (absolute, ``COORDINATES``) for ``n_turns``; shots
+        that arrive while one is tracked are merged into the next"""
+        values = [float(v) for v in start]
+        if len(values) != len(COORDINATES):
+            raise ValueError(f"Inject: expected {len(COORDINATES)} values ({', '.join(COORDINATES)})")
+        self._shot = values
         self._wake.set()
 
     def set_offset(self, values: Sequence[float]) -> None:
@@ -164,13 +199,22 @@ class TurnByTurnFollower:
             self._wake.wait()
             self._wake.clear()
             proxy = self._proxy()
+            shot, self._shot = self._shot, None
             if proxy is None:
+                if shot is not None:
+                    logger.warning("turn by turn: no physics engine yet, shot dropped")
                 continue
             try:
-                if self._configure:
-                    self._configure = False
-                    proxy.sync_tbt_configure(self.offset, self.n_turns)
-                summary = proxy.sync_tbt_update()
+                if shot is not None:
+                    summary = proxy.sync_tbt_inject(shot, self.n_turns)
+                    self.offset = list(summary.get("offset", self.offset))
+                elif self.on_demand:
+                    continue
+                else:
+                    if self._configure:
+                        self._configure = False
+                        proxy.sync_tbt_configure(self.offset, self.n_turns)
+                    summary = proxy.sync_tbt_update()
             except Exception as exc:
                 logger.warning("turn by turn: %s", exc)
                 continue

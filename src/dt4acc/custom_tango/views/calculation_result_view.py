@@ -35,6 +35,7 @@ import asyncio
 import numpy as np
 from tango import DeviceProxy
 
+from dt4acc.custom_tango.ioc.mexec_config import SIMULATOR_DEVICE
 from dt4acc.core.utils.logger import get_logger
 
 logger = get_logger()
@@ -175,13 +176,13 @@ class CalculationResultView:
         self.prefix = prefix
 
     def _twiss_orbit_dev(self) -> str:
-        return "simulator/ringsimulator/ringsimulator"
+        return SIMULATOR_DEVICE
 
     def _bpm_dev(self) -> str:
-        return "simulator/ringsimulator/ringsimulator"
+        return SIMULATOR_DEVICE
 
     def _tune_dev(self) -> str:
-        return "simulator/ringsimulator/ringsimulator"
+        return SIMULATOR_DEVICE
 
     async def push_orbit(self, orbit_result) -> None:
         """

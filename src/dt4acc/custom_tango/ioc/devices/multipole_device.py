@@ -42,9 +42,10 @@ class MultipoleDevice(BaseMagnetDevice):
                polling_period=1000)
     def magnetic_strength(self) -> float:
         try:
-            from dt4acc.custom_tango.ioc.single_server import peek_from_lattice
+            from dt4acc.custom_tango.ioc.single_server import peek_from_lattice, supply_readback_enabled
             val = peek_from_lattice(self.lattice_id, self.lattice_property)
-            if val != 0.0:
+            # where the supplies read back too, a 0.0 is a true 0: set to zero through the supply
+            if val != 0.0 or supply_readback_enabled():
                 self._magnetic_strength = val
                 self._magnetic_strength_readback = val
         except Exception:

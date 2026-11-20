@@ -19,6 +19,7 @@ from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend
 # Suppress transitions state machine INFO logs across all processes
 logging.getLogger("transitions").setLevel(logging.WARNING)
 logging.getLogger("transitions.core").setLevel(logging.WARNING)
+logging.getLogger("dt4acc_lib").setLevel(logging.WARNING)
 
 from dt4acc_lib.model.utils.command import BehaviourOnError, Command  # noqa: E402
 
@@ -112,6 +113,21 @@ def lattice_properties_for_device(device_name: str, default=("main_strength",)) 
     return _device_to_lattice_properties().get(device_name, list(default))
 
 
+def twiss_in_from_env():
+    """the beam entering a transfer line (yaml: beta, alpha, dispersion, closed_orbit)
+    from ``DT4ACC_TWISS_IN_FILE``; None (a ring) if not set"""
+    path = os.environ.get("DT4ACC_TWISS_IN_FILE")
+    if not path:
+        return None
+    import yaml
+    from dt4acc_lib.model.input.twiss_in import TwissIn
+
+    with open(path) as fp:
+        twiss_in = TwissIn(**yaml.safe_load(fp))
+    logger.warning("MexecService: a transfer line, beam entering it %s", twiss_in)
+    return twiss_in
+
+
 def _build_mexec():
     """Build the TranslatingCommandExecutionEngine on the service process."""
     from dt4acc.core.bl.translating_command_execution_engine import (
@@ -121,7 +137,7 @@ def _build_mexec():
     acc = lattice_loader.load()
     backend = SimulatorBackend(
         name="Facility specific PYAT",
-        acc=PyATAcceleratorSimulator(at_lattice=acc),
+        acc=PyATAcceleratorSimulator(at_lattice=acc, twiss_in=twiss_in_from_env()),
     )
     load_managers = _get_load_managers()
     _, lm, ts = load_managers()
