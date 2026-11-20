@@ -9,10 +9,11 @@ put back at the end.
 """
 import argparse
 import os
-import time
 
 import numpy as np
 from p4p.client.thread import Context
+
+from dt4acc.custom_facility.bessyii_injection.mockup import InjectionMockup
 
 STEPS = [
     ("start", [], "Line not steered, geometry 0: the beam enters the ring on its axis and stays close "
@@ -24,7 +25,9 @@ STEPS = [
     ("injection geometry", [("INJ:geometry:x", -2e-3), ("INJ:geometry:xp", 1e-4)],
      "The line's axis 2 mm inside / 0.1 mrad against the ring's axis: the injected beam is shifted by "
      "that, the oscillation in the ring grows; the line itself does not change."),
-    ("more turns", [("INJ:n_turns", 5)], "Track 5 turns: the plot shows 5 ring circumferences."),
+    ("more turns", [("INJ:n_turns", 5)],
+     "Track the injected beam over 5 ring turns (INJ:n_turns: turns per shot, not shots): the plot shows "
+     "5 ring circumferences."),
     ("change the ring", [("Q1PDR:set", None)],
      "Ring quadrupole supply Q1PDR +1 %: the horizontal tune moves from .85 to about .96, close to an "
      "integer: the oscillation of the injected beam (3 mm off) grows turn by turn and the beam is lost "
@@ -47,26 +50,20 @@ def main():
     def get(name):
         return ctx.get(pv(name), timeout=5).value
 
-    def shot(before):
-        """fire a shot, wait until it is computed"""
-        ctx.put(pv("INJ:trigger"), 1)
-        t0 = time.time()
-        while int(get("INJ:count")) <= before and time.time() - t0 < 30:
-            time.sleep(0.2)
+    injection = InjectionMockup(prefix=a.prefix, ctx=ctx)
 
     originals = {}
     for title, changes, expect in STEPS:
         print(f"\n== {title}\n   expect: {expect}")
         if not a.no_wait:
             input("   [Enter] ")
-        count = int(get("INJ:count"))
         for name, value in changes:
             originals.setdefault(name, float(get(name)))
             value = originals[name] * 1.01 if value is None else value
             print(f"   {name} = {value:g}")
             ctx.put(pv(name), value)
         print("   INJ:trigger = 1 (a shot)")
-        shot(count)
+        injection.shot()
         n_turns = int(get("INJ:n_turns"))
         x = np.asarray(get("INJ:tbt:x"))
         n_bpm = len(get("INJ:tbt:names"))

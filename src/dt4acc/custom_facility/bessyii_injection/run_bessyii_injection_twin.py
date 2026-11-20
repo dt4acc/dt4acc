@@ -1,20 +1,26 @@
 """BESSY II injection twin: transfer line and storage ring in one IOC
 
+"Injection" here is the injection into the storage ring: the beam extracted
+from the booster passes the transfer line (booster -> storage ring) and is
+injected at the septa. It is not the injection line (LINAC -> booster), which
+this twin does not model.
+
 Two models, as two MML submachines, each with its own devices and its own
 simulation engine, and the hand over of the beam between them:
 
 * storage ring: the BESSY II ring twin, PVs as there (``<P>:Q1PDR:set``,
   ``<P>:beam:orbit:x``, ...)
-* transfer line: the transfer line twin cut at the injection septum exit.
-  Its devices keep their machine names, as in the transfer line twin
-  (``<P>:Q1PT:set``, ``<P>:Q1MT:Cm:rdbk``, ``<P>:FOMZ1T:x``; they do not
-  clash with the ring's: line names end in T, ring names in R). Only its
-  model PVs, which the ring has under the same names, are one level down:
-  ``<P>:TL:beam:orbit:*``, ``<P>:TL:beam:twiss:*``, ``<P>:TL:survey:*``,
+* transfer line: the transfer line twin cut at the injection septum exit,
+  with the same PV names as the transfer line twin on its own. Its devices
+  keep their machine names (``<P>:Q1PT:set``, ``<P>:Q1MT:Cm:rdbk``,
+  ``<P>:FOMZ1T:image``; they do not clash with the ring's: line names end in
+  T, ring names in R), its model is under ``TL``: ``<P>:TL:beam:orbit:*``,
+  ``<P>:TL:beam:twiss:*``, ``<P>:TL:beam:emittance:*``, ``<P>:TL:survey:*``,
   ``<P>:TL:ORBITCC:*``
 * hand over: ``<P>:INJ:...`` (see ``pvs.py``): the beam leaving the line,
   put into the ring at ``MSEPEXIT`` and tracked turn by turn, when a shot is
-  fired (``<P>:INJ:trigger``). The line's monitors (BPMs, screens,
+  fired (``<P>:INJ:trigger``; to fire shots from a client, e.g. at a
+  repetition rate: :mod:`.mockup`). The line's monitors (BPMs, screens,
   ``TL:ORBITCC:rdBpm``) show the beam passing only then; its model
   (``TL:beam:orbit:*``, ``TL:beam:twiss:*``) and the ring's closed orbit follow
   every change
@@ -43,12 +49,7 @@ from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encap
 from dt4acc.custom_facility.bessyii.run_bessyii_twin import initialise_pvs as ring_pvs
 from dt4acc.custom_facility.bessyii_injection.handover import InjectionHandover
 from dt4acc.custom_facility.bessyii_injection.pvs import InjectionPVs
-from dt4acc.custom_epics.ioc.pv_setup import (
-    initialize_orbit_pvs,
-    initialize_power_converter_pvs,
-    initialize_survey_info_pvs,
-    initialize_twiss_pvs,
-)
+from dt4acc.custom_epics.ioc.pv_setup import initialize_power_converter_pvs
 from dt4acc.custom_facility.bessytl.twin_setup import (
     ACCELERATOR_SETUP,
     ORBIT_MONITOR_PREFIXES,
@@ -57,7 +58,14 @@ from dt4acc.custom_facility.bessytl.twin_setup import (
     load_twiss_in,
     monitor_names,
 )
-from dt4acc.custom_facility.bessytl.view import TransferLineView, initialize_monitor_pvs
+from dt4acc.custom_facility.bessytl.view import (
+    TRACK,
+    TWISS,
+    TransferLineView,
+    initialize_model_pvs,
+    initialize_monitor_pvs,
+    model_device,
+)
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
 from dt4acc_lib.model.utils.command import ReadCommand
 from dt4acc_lib.pyat_simulator.accelerator_simulator import PyATAcceleratorSimulator
@@ -70,8 +78,7 @@ logger = logging.getLogger("dt4acc-bessyii-injection")
 
 #: the transfer line ends at the septum exit, where the ring takes over
 SEPTUM = "SEK2D1R"
-TRACK = ReadCommand("track", "pos")
-DELAYED = [TRACK, ReadCommand("twiss", "parameters")]
+DELAYED = [TRACK, TWISS]
 
 
 def engine(backend, lm, ts):
@@ -120,7 +127,10 @@ def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
     line_lm, line_ts = line_managers()
     line_monitors = monitor_names(line)
     # the line carries beam only during a shot (InjectionPVs, INJ:trigger)
-    line_view = TransferLineView(monitors=line_monitors, single_pass=True, orbit_server=orbit_server(f"{prefix}:TL", monitor_prefixes=ORBIT_MONITOR_PREFIXES))
+    line_view = TransferLineView(
+        monitors=line_monitors, single_pass=True,
+        orbit_server=orbit_server(model_device(prefix), monitor_prefixes=ORBIT_MONITOR_PREFIXES),
+    )
     tl = Controller(name="transfer-line", mexec=engine(line_backend, line_lm, line_ts), view=line_view,
                     default_delayed_reads=DELAYED)
 
@@ -132,16 +142,18 @@ def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
 
 
 def line_shot(twin: InjectionTwin):
-    """The transfer line's part of a shot: its monitors show the trajectory
+    """The transfer line's part of a shot: its monitors show the beam
 
-    The trajectory is read when the shot is fired, not taken from the last
-    delayed read: a shot right after a change sees the line as it is now.
-    No trajectory (the line's optics failed): the monitors show NaN.
+    Trajectory and optics (the screens' beam size) are read when the shot is
+    fired, not taken from the last delayed read: a shot right after a change
+    sees the line as it is now. No trajectory (the line's optics failed): the
+    BPMs show NaN, the screens a dark image.
     """
     async def shot():
         try:
-            (translated,) = (await twin.tl.trigger_read([TRACK])).data
-            await twin.line_view.dispatch(TRACK, translated)
+            for rcmd in DELAYED:
+                (translated,) = (await twin.tl.trigger_read([rcmd])).data
+                await twin.line_view.dispatch(rcmd, translated)
         except Exception as exc:
             logger.error("injection: no transfer line trajectory for the shot: %s", exc)
             await twin.line_view.push_invalid()
@@ -166,14 +178,12 @@ async def initialise_pvs(builder, prefix: str, twin: InjectionTwin) -> Injection
         **await initialize_power_converter_pvs(builder, controller=twin.tl),
         **initialize_monitor_pvs(twin.line_monitors, builder=builder),
     })
-    # model PVs of the transfer line: the ring has the same names
-    builder.SetDeviceName(f"{prefix}:TL")
-    n_elements = len(twin.line) + 1
-    twin.line_view.update_process_variables({
-        **initialize_survey_info_pvs(builder, n_elements=n_elements),
-        **initialize_orbit_pvs(builder, n_elements=n_elements),
-        **initialize_twiss_pvs(builder, n_elements=n_elements),
-    })
+    # model PVs of the transfer line, under TL as in the transfer line twin
+    # (the ring serves beam:*, ORBITCC:*)
+    builder.SetDeviceName(model_device(prefix))
+    twin.line_view.update_process_variables(
+        initialize_model_pvs(builder, twin.line_view, n_elements=len(twin.line) + 1)
+    )
     return injection
 
 

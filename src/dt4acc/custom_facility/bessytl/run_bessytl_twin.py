@@ -5,9 +5,14 @@ PVs (prefixed with ``DT4ACC_PREFIX``, default: the user name):
 * supplies: ``<supply>:set``, ``<supply>:rdbk`` [A] (``Q1PT`` ... ``Q12PT``,
   ``H1PT`` ... ``V8PT``)
 * magnets: ``<magnet>:Cm:set``, ``<magnet>:Cm:rdbk`` (K [1/m^2] or kick [rad])
-* monitors: ``<monitor>:x``, ``<monitor>:y`` [m]: trajectory
-* along the line: ``beam:orbit:{x,y,names,uids}``, ``beam:twiss:{x,y}:{beta,alpha,nu}``,
-  ``survey:s``; PVA ``ORBITCC:rdBpm`` (BPMZ* and striplines SLZ*, in lattice order, nm)
+* BPMs and striplines: ``<bpm>:signal:sa:X`` / ``Y`` [mm]
+* screens: ``<screen>:image``, beam centre ``<screen>:x`` / ``y`` and size
+  ``<screen>:sigma:x`` / ``y`` [mm] (see ``screens.py``)
+* the model, under ``TL:`` (as in the injection twin, see ``view.py``):
+  ``TL:beam:orbit:{x,y,names,uids}``, ``TL:beam:twiss:{x,y}:{beta,alpha,nu}``,
+  ``TL:beam:emittance:{x,y}`` (writable), ``TL:survey:s``; PVA
+  ``TL:ORBITCC:rdBpm`` (BPMZ* and striplines SLZ*, in lattice order, nm),
+  ``TL:ORBITCC:rdModel``
 
 ``DT4ACC_BESSYTL_TWISS_IN``: yaml file with the beam entering the line
 (default: the placeholder in resources/input/twiss_in.yaml).
@@ -16,23 +21,20 @@ import asyncio
 import getpass
 import logging
 import os
+from dataclasses import dataclass
 from importlib import resources
-from typing import Any, Dict
+from typing import List
+
+import at
 
 from softioc import builder, softioc
 
 from dt4acc.config.data.querries import configure_data_file
 from dt4acc.core.bl.controller import Controller, read_and_dispatch
 from dt4acc.core.bl.translating_command_execution_engine import TranslatingCommandExecutionEngine
-from dt4acc.core.interfaces.controller_interface import ControllerInterface
 from dt4acc.custom_epics.ioc.controller import dispatcher
 from dt4acc.custom_epics.ioc.orbit_pva import OrbitTwinServer
-from dt4acc.custom_epics.ioc.pv_setup import (
-    initialize_orbit_pvs,
-    initialize_power_converter_pvs,
-    initialize_survey_info_pvs,
-    initialize_twiss_pvs,
-)
+from dt4acc.custom_epics.ioc.pv_setup import initialize_power_converter_pvs
 from dt4acc.custom_facility.bessytl.twin_setup import (
     ACCELERATOR_SETUP,
     ORBIT_MONITOR_PREFIXES,
@@ -41,7 +43,12 @@ from dt4acc.custom_facility.bessytl.twin_setup import (
     load_twiss_in,
     monitor_names,
 )
-from dt4acc.custom_facility.bessytl.view import TransferLineView, initialize_monitor_pvs
+from dt4acc.custom_facility.bessytl.view import (
+    TransferLineView,
+    initialize_model_pvs,
+    initialize_monitor_pvs,
+    model_device,
+)
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
 from dt4acc_lib.model.utils.command import ReadCommand
 from dt4acc_lib.pyat_simulator.accelerator_simulator import PyATAcceleratorSimulator
@@ -52,10 +59,17 @@ logging.getLogger("lat2db").setLevel(level=logging.WARNING)
 logger = logging.getLogger("dt4acc-bessytl")
 
 
-async def main():
-    # the supplies and magnets the PVs are made for
-    configure_data_file(resources.files("dt4acc").joinpath(*ACCELERATOR_SETUP))
+@dataclass
+class TransferLineTwin:
+    line: at.Lattice
+    controller: Controller
+    view: TransferLineView
+    monitors: List[str]
 
+
+def assemble(prefix: str, *, orbit_server: bool = True) -> TransferLineTwin:
+    """Model, controller and view; ``orbit_server``: the PVA server of the BPM
+    structures (``TL:ORBITCC``), left out in tests"""
     line = bessytl_lattice()
     twiss_in = load_twiss_in(os.environ.get("DT4ACC_BESSYTL_TWISS_IN"))
     logger.warning("BESSY II transfer line: %d elements, entering beam %s", len(line), twiss_in)
@@ -70,44 +84,53 @@ async def main():
         expected_view_for_output="device",
         num_readings=1,
     )
-
-    prefix = os.environ.get("DT4ACC_PREFIX", getpass.getuser())
-    pva_prefix = prefix + ":" if prefix else ""
-    orbit_server = OrbitTwinServer(pva_prefix + "ORBITCC:rdBpm", pva_prefix + "ORBITCC:rdModel",
-                                   monitor_prefixes=ORBIT_MONITOR_PREFIXES)
-    orbit_server.start()
+    model = model_device(prefix)
+    server = OrbitTwinServer(f"{model}:ORBITCC:rdBpm", f"{model}:ORBITCC:rdModel",
+                             monitor_prefixes=ORBIT_MONITOR_PREFIXES) if orbit_server else None
     monitors = monitor_names(line)
-    view = TransferLineView(monitors=monitors, orbit_server=orbit_server)
-
+    view = TransferLineView(monitors=monitors, orbit_server=server)
     controller = Controller(
         name="epics-bessytl-ctrller",
         mexec=mexec,
         view=view,
         default_delayed_reads=[ReadCommand("track", "pos"), ReadCommand("twiss", "parameters")],
     )
-    controller.start()
-    if prefix:
-        builder.SetDeviceName(prefix)
+    return TransferLineTwin(line=line, controller=controller, view=view, monitors=monitors)
 
-    view.update_process_variables(await initialise_pvs(builder, controller, monitors, n_elements=len(line) + 1))
+
+async def main():
+    # the supplies and magnets the PVs are made for
+    configure_data_file(resources.files("dt4acc").joinpath(*ACCELERATOR_SETUP))
+    prefix = os.environ.get("DT4ACC_PREFIX", getpass.getuser())
+    twin = assemble(prefix)
+    twin.view.orbit_server.start()
+    twin.controller.start()
+    await initialise_pvs(builder, prefix, twin)
     await read_and_dispatch(
-        controller=controller,
-        view=view,
-        rcmds=[ReadCommand("survey", "s")] + list(controller.default_delayed_reads),
+        controller=twin.controller,
+        view=twin.view,
+        rcmds=[ReadCommand("survey", "s")] + list(twin.controller.default_delayed_reads),
     )
     builder.LoadDatabase()
     softioc.iocInit(dispatcher)
     softioc.interactive_ioc(globals())
 
 
-async def initialise_pvs(builder, controller: ControllerInterface, monitors, *, n_elements) -> Dict[ReadCommand, Any]:
-    return {
-        **await initialize_power_converter_pvs(builder, controller=controller),
-        **initialize_survey_info_pvs(builder, n_elements=n_elements),
-        **initialize_orbit_pvs(builder, n_elements=n_elements),
-        **initialize_twiss_pvs(builder, n_elements=n_elements),
-        **initialize_monitor_pvs(monitors),
-    }
+async def initialise_pvs(builder, prefix: str, twin: TransferLineTwin) -> None:
+    """The line's records, handed to its view: devices under their machine
+    names (``<prefix>:Q1PT:set``), the model under ``<prefix>:TL``
+
+    The PV names are the twin's interface (``pv_list.md``,
+    ``tests/bessytl/test_bessytl_pvs.py``).
+    """
+    if prefix:
+        builder.SetDeviceName(prefix)
+    twin.view.update_process_variables({
+        **await initialize_power_converter_pvs(builder, controller=twin.controller),
+        **initialize_monitor_pvs(twin.monitors, builder=builder),
+    })
+    builder.SetDeviceName(model_device(prefix))
+    twin.view.update_process_variables(initialize_model_pvs(builder, twin.view, n_elements=len(twin.line) + 1))
 
 
 def run():
