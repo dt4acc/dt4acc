@@ -67,6 +67,16 @@ class BaseMagnetDevice(Device):
 
         return self.magnet_name if translated_design_view() else self.lattice_id
 
+    def _set_unit(self, attr_name: str, unit: str) -> None:
+        """Set the unit of the attribute ``attr_name``, for a unit known only
+        at run time (e.g. integrated strengths or not, see
+        dt4acc.custom_facility.model.at_integrated_strength.enabled)"""
+        attr = self.get_device_attr().get_attr_by_name(attr_name)
+        props = attr.get_properties()
+        if props.unit != unit:
+            props.unit = unit
+            attr.set_properties(props)
+
     def _async(self, coro):
         """Submit coroutine to shared loop, block until done, raise DevFailed on error."""
         try:

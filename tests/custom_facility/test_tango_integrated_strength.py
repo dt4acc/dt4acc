@@ -225,3 +225,16 @@ def test_sync_trigger_read_reports_requested_ids(engine):
     values = {i: v for i, _, v in out}
     assert values[QUAD] == pytest.approx(2.0 * _length(acc, "QF_001"))
     assert values["RF_001"] == pytest.approx(352e6)
+
+
+@pytest.mark.parametrize("flag, steerer, skew_quad", [("1", "rad", "1/m"), (None, "1/m", "1/m²")])
+def test_attribute_units_follow_flag(monkeypatch, flag, steerer, skew_quad):
+    """The steerers' and skew quadrupoles' units: those of the published value"""
+    pytest.importorskip("tango")
+    from dt4acc.custom_tango.ioc.devices import skew_quad_device, steerer_device
+
+    monkeypatch.delenv(at_integrated_strength.ENABLE_ENV, raising=False)
+    if flag is not None:
+        monkeypatch.setenv(at_integrated_strength.ENABLE_ENV, flag)
+    assert steerer_device._strength_unit() == steerer
+    assert skew_quad_device._strength_unit() == skew_quad

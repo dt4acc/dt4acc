@@ -20,6 +20,15 @@ from dt4acc.core.utils.logger import get_logger
 logger = get_logger()
 
 
+def _strength_unit() -> str:
+    """Unit of magnetic_strength: 1/m (K * L) with integrated strengths
+    (DT4ACC_INTEGRATED_STRENGTH=1), else 1/m² (the lattice coefficient K of
+    a thick element)"""
+    from dt4acc.custom_facility.model import at_integrated_strength
+
+    return "1/m" if at_integrated_strength.enabled() else "1/m²"
+
+
 class SkewQuadDevice(BaseMagnetDevice):
     """
     Tango device for CQLN/CQLT correctors on octupoles.
@@ -35,6 +44,7 @@ class SkewQuadDevice(BaseMagnetDevice):
 
     def init_device(self):
         super().init_device()
+        self._set_unit("magnetic_strength", _strength_unit())
         from dt4acc.custom_tango.ioc.single_server import get_initial_values
         self._magnetic_strength = get_initial_values(self.command_id).get(
             self.lattice_property,
