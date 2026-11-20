@@ -212,6 +212,12 @@ def build_managers(setup: Sequence[dict] = None) -> Tuple[LiaisonManager, Transl
     return lm, ts
 
 
+#: emittance of the beam entering the line [m rad], for the screens' images
+#: (``beam:emittance:x`` / ``y``, writable). PLACEHOLDER: not booster data,
+#: as the entering optics (``twiss_in.yaml``)
+EMITTANCE = {"x": 1e-7, "y": 1e-8}
+
+
 #: what the line's BPM structure (``ORBITCC:rdBpm``) serves: its BPMs and its
 #: striplines (beam position monitors of another geometry), in lattice order
 ORBIT_MONITOR_PREFIXES = ("BPMZ", "SLZ")

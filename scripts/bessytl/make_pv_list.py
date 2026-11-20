@@ -9,7 +9,8 @@ plane), the monitors (FOMs, BPMs, striplines), then the virtual devices
 what a write does, the protocol (CA and PVA for the soft IOC's records, PVA
 only for the twin's p4p server; measured: pvlist per server and caget) and
 whether the PV exists on the machine. PV names are given without the twin's
-prefix (``DT4ACC_PREFIX``, e.g. ``TL:Q1PT:set``).
+prefix (``DT4ACC_PREFIX``). The model (trajectory, optics, emittance, survey,
+BPM structures) is under ``TL:``, as in the injection twin.
 
     scripts/bessyii/dump_twin_pvs.sh <dump>       # with the twin running
     python scripts/bessytl/make_pv_list.py <dump>
@@ -48,8 +49,16 @@ TYPES = [("Quadrupole", "Quadrupoles", QUAD_FIELDS),
          ("Steerer:H", "Horizontal steerers", STEERER_FIELDS),
          ("Steerer:V", "Vertical steerers", STEERER_FIELDS)]
 
-MONITOR_FIELDS = [("x", "horizontal beam position (mm)", RO, NO),
-                  ("y", "vertical beam position (mm)", RO, NO)]
+#: screens: an image of the beam spot (custom_facility/bessytl/screens.py)
+SCREEN_FIELDS = [("image", "image of the beam spot: image:height rows of image:width pixels, row 0 at the top (+y),"
+                           " fraction of the beam per pixel", RO, NO),
+                 ("image:width", "pixels per row", RO, NO),
+                 ("image:height", "rows", RO, NO),
+                 ("image:pixel", "pixel size (mm)", RO, NO),
+                 ("x", "beam centre, horizontal (mm)", RO, NO),
+                 ("y", "beam centre, vertical (mm)", RO, NO),
+                 ("sigma:x", "beam size, horizontal (mm): sqrt(emittance beta)", RO, NO),
+                 ("sigma:y", "beam size, vertical (mm): sqrt(emittance beta)", RO, NO)]
 #: BPMs and striplines: named as the BPM system (dt4acc.custom_epics.ioc.bpm_pvs)
 BPM_FIELDS = [("signal:sa:X", "horizontal beam position (mm)", RO, SIMILAR),
               ("signal:sa:Y", "vertical beam position (mm)", RO, SIMILAR)]
@@ -58,33 +67,37 @@ MONITORS = [("FOMZ", "FOMs (screens)"), ("BPMZ", "Beam position monitors"), ("SL
 # virtual devices: (section, [(pv, description, write, machine)]); a PV the dump lacks is left out
 VIRTUAL = [
     ("BPMs (structures)", [
-        ("ORBITCC:rdBpm", "BPMZ* and striplines SLZ* positions, in lattice order (nm), structure (BPM, X, Y, ...)", RO, NO),
-        ("ORBITCC:rdModel", "model optics at the BPMs, structure (SPos, beta, ...)", RO, NO),
+        ("TL:ORBITCC:rdBpm", "BPMZ* and striplines SLZ* positions, in lattice order (nm), structure (BPM, X, Y, ...)", RO, NO),
+        ("TL:ORBITCC:rdModel", "model optics at the BPMs, structure (SPos, beta, ...)", RO, NO),
     ]),
     ("Trajectory (every lattice element and the exit of the line)", [
-        ("beam:orbit:x", "horizontal position (m)", RO, NO),
-        ("beam:orbit:y", "vertical position (m)", RO, NO),
-        ("beam:orbit:found", "trajectory computed", RO, NO),
-        ("beam:orbit:names", "element names (last: KIK4D1R:exit)", RO, NO),
-        ("beam:orbit:uids", "element ids", RO, NO),
-        ("beam:orbit:x0", "not updated", RO, NO),
+        ("TL:beam:orbit:x", "horizontal position (m)", RO, NO),
+        ("TL:beam:orbit:y", "vertical position (m)", RO, NO),
+        ("TL:beam:orbit:found", "trajectory computed", RO, NO),
+        ("TL:beam:orbit:names", "element names (last: KIK4D1R:exit)", RO, NO),
+        ("TL:beam:orbit:uids", "element ids", RO, NO),
+        ("TL:beam:orbit:x0", "not updated", RO, NO),
     ]),
     ("Optics (every lattice element and the exit of the line)", [
-        ("beam:twiss:x:beta", "horizontal beta (m)", RO, NO),
-        ("beam:twiss:y:beta", "vertical beta (m)", RO, NO),
-        ("beam:twiss:x:alpha", "horizontal alpha", RO, NO),
-        ("beam:twiss:y:alpha", "vertical alpha", RO, NO),
-        ("beam:twiss:x:nu", "horizontal phase advance / 2π", RO, NO),
-        ("beam:twiss:y:nu", "vertical phase advance / 2π", RO, NO),
-        ("beam:twiss:x:tune", "not updated: a line has no tune", RO, NO),
-        ("beam:twiss:y:tune", "not updated: a line has no tune", RO, NO),
-        ("beam:twiss:names", "element names", RO, NO),
-        ("beam:twiss:uids", "element ids", RO, NO),
+        ("TL:beam:twiss:x:beta", "horizontal beta (m)", RO, NO),
+        ("TL:beam:twiss:y:beta", "vertical beta (m)", RO, NO),
+        ("TL:beam:twiss:x:alpha", "horizontal alpha", RO, NO),
+        ("TL:beam:twiss:y:alpha", "vertical alpha", RO, NO),
+        ("TL:beam:twiss:x:nu", "horizontal phase advance / 2π", RO, NO),
+        ("TL:beam:twiss:y:nu", "vertical phase advance / 2π", RO, NO),
+        ("TL:beam:twiss:x:tune", "not updated: a line has no tune", RO, NO),
+        ("TL:beam:twiss:y:tune", "not updated: a line has no tune", RO, NO),
+        ("TL:beam:twiss:names", "element names", RO, NO),
+        ("TL:beam:twiss:uids", "element ids", RO, NO),
+    ]),
+    ("Beam", [
+        ("TL:beam:emittance:x", "horizontal emittance of the beam (m rad), for the screens' images; placeholder", ACTS, NO),
+        ("TL:beam:emittance:y", "vertical emittance of the beam (m rad), for the screens' images; placeholder", ACTS, NO),
     ]),
     ("Survey", [
-        ("survey:s", "position along the line (m)", RO, NO),
-        ("survey:names", "element names", RO, NO),
-        ("survey:uids", "element ids", RO, NO),
+        ("TL:survey:s", "position along the line (m)", RO, NO),
+        ("TL:survey:names", "element names", RO, NO),
+        ("TL:survey:uids", "element ids", RO, NO),
     ]),
 ]
 
@@ -94,15 +107,18 @@ HEADER = """\
 What the dt4acc BESSY II transfer line twin serves: {n} PVs, with a short description each.
 No values: read them from a running twin. Generated by `scripts/bessytl/make_pv_list.py`
 from a running twin (`scripts/bessyii/dump_twin_pvs.sh`). Names are given without the
-twin's prefix: the IOC prepends `DT4ACC_PREFIX`, e.g. `TL:Q1PT:set`.
+twin's prefix: the IOC prepends `DT4ACC_PREFIX`, e.g. `<P>:Q1PT:set`. Devices keep their
+machine names; the line's model is under `TL:` (`TL:beam:orbit:x`, `TL:ORBITCC:rdBpm`), the
+same names as in the injection twin.
 
 > **Not every PV here exists on the real machine.** Supplies and monitors are named after
 > the machine's devices, but their PV names and formats are not checked against the
 > machine. Magnet PVs, the trajectory and optics along the line and the survey exist only
 > in the twin. Check a PV on the machine before using it there.
 
-> The beam entering the line is a placeholder (`resources/input/twiss_in.yaml`): monitors
-> read 0 until a steerer is set, the optics are those of an assumed entering beam.
+> The beam entering the line is a placeholder (`resources/input/twiss_in.yaml`, the emittance
+> `TL:beam:emittance:*`): monitors read 0 until a steerer is set, the optics and the
+> screens' beam size are those of an assumed entering beam.
 
 Columns:
 
@@ -203,13 +219,15 @@ def main(a):
     lines += ["## Monitors", "",
               "Beam position at each monitor of the lattice, in lattice order: the trajectory of",
               "the beam entering the line. BPMs and striplines are named as the BPM system",
-              "(`<bpm>:signal:sa:X` / `Y`), screens `<screen>:x` / `y`.", ""]
+              "(`<bpm>:signal:sa:X` / `Y`). Screens are no BPMs: they show an image of the beam",
+              "spot, from its centre (the trajectory) and its size (the emittance and beta at the",
+              "screen).", ""]
     monitor_devs = [d for d in devices_with_pvs if any(d.startswith(m) for m, _ in MONITORS)]
     for stem, title in MONITORS:
         devs = sorted((d for d in monitor_devs if d.startswith(stem)), key=lambda d: (d.endswith("R"), number(d)))
         if devs:
             if stem == "FOMZ":
-                lines += group(title, MONITOR_FIELDS, devs, "<screen>")
+                lines += group(title, SCREEN_FIELDS, devs, "<screen>")
             else:
                 lines += group(title, BPM_FIELDS, devs, "<bpm>")
 

@@ -3,6 +3,13 @@
 The transfer line twin (`../bessytl`) and the storage ring twin (`../bessyii`)
 in one IOC, with the beam handed from the line to the ring.
 
+**Which injection.** At BESSY II the *injection line* is the line from the LINAC to the
+booster. This twin does not model it. "Injection" here is the injection into the storage
+ring: the beam extracted from the booster passes the *transfer line* (booster -> storage
+ring) and enters the ring at the septa. So the twin's parts are named after what they
+are: the transfer line's PVs are the transfer line twin's (devices by machine name, model
+under `TL:`), and only the hand over into the ring is `INJ:`.
+
 ## How they are put together
 
 * **Two models, two submachines.** As in MML (where a transfer line is a
@@ -28,13 +35,32 @@ in one IOC, with the beam handed from the line to the ring.
 
   | | follows every change | shows the beam only at a shot, keeps it until the next |
   |---|---|---|
-  | transfer line | model: `TL:beam:orbit:*`, `TL:beam:twiss:*`, `TL:ORBITCC:rdModel` | monitors: `<bpm>:signal:sa:X` / `Y`, screens `<screen>:x` / `y`, `TL:ORBITCC:rdBpm` (the line carries beam only during a shot) |
+  | transfer line | model: `TL:beam:orbit:*`, `TL:beam:twiss:*`, `TL:ORBITCC:rdModel` | monitors: `<bpm>:signal:sa:X` / `Y`, screens `<screen>:image` (and `x`, `y`, `sigma:*`), `TL:ORBITCC:rdBpm` (the line carries beam only during a shot) |
   | storage ring | stored beam: closed orbit, its BPMs' `<bpm>:signal:sa:*`, `ORBITCC:rdBpm`, optics | injected beam: `INJ:*`, `<bpm>:signal:tbt:X` / `Y` (turn by turn, triggered by the injection) |
 
   A shot reads the line as it is when fired, so a change followed at once by
-  a trigger is seen. Changes of `INJ:geometry:*` and `INJ:n_turns` act at the
-  next shot. Nothing is injected at start up: `INJ:count` is 0 until the
-  first trigger.
+  a trigger is seen. Changes of `INJ:geometry:*`, `INJ:n_turns` and
+  `TL:beam:emittance:*` act at the next shot. Nothing is injected at start up:
+  `INJ:count` is 0 until the first trigger. A trigger that arrives while a
+  shot is computed is merged into one more shot.
+* **Turns, not shots**: `INJ:n_turns` is how many turns in the ring *each shot*
+  tracks the injected beam, i.e. the length of the turn by turn data
+  (`INJ:tbt:*`, `<bpm>:signal:tbt:*`). The number of shots is `INJ:count`.
+* **Shots from a client** (`mockup.py`, `InjectionMockup`): the twin injects one
+  shot per trigger, as the machine per injection timing event. Shooting
+  repeatedly, e.g. at a repetition rate as while filling or at top up, is the
+  timing's job, so it is a client of the twin, distributed with it:
+
+  ```bash
+  DT4ACC_PREFIX=BI dt4acc_bessyii_injection_mockup --shots 10 --rate 1   # 10 shots at 1 Hz
+  ```
+
+  ```python
+  from dt4acc.custom_facility.bessyii_injection.mockup import InjectionMockup
+  InjectionMockup(prefix="BI").shots(10, rate=1.0)
+  ```
+
+  Each shot waits until the twin has computed it, so none is merged.
 
 ## Run
 
@@ -47,17 +73,17 @@ PVs, prefixed with `DT4ACC_PREFIX` (`<P>`, default: the user name):
 | PVs | what |
 |---|---|
 | `<P>:Q1PDR:set`, `<P>:beam:orbit:x`, `<P>:ORBITCC:rdBpm`, ... | the storage ring, as the ring twin |
-| `<P>:Q1PT:set`, `<P>:Q1MT:Cm:rdbk`, `<P>:FOMZ1T:x`, ... | the transfer line's supplies, magnets and monitors (up to the septum exit), machine names as in the transfer line twin; they do not clash with the ring's (line names end in T, ring names in R) |
-| `<P>:TL:beam:orbit:*`, `<P>:TL:beam:twiss:*`, `<P>:TL:survey:*`, `<P>:TL:ORBITCC:*` | the transfer line's model PVs: the ring has PVs of the same names, so these are one level down |
-| `<P>:INJ:trigger` | write 1 to fire a shot (back at 0 once accepted) |
+| `<P>:Q1PT:set`, `<P>:Q1MT:Cm:rdbk`, `<P>:BPMZ1T:signal:sa:X`, `<P>:FOMZ1T:image`, ... | the transfer line's supplies, magnets and monitors (up to the septum exit), machine names as in the transfer line twin; they do not clash with the ring's (line names end in T, ring names in R) |
+| `<P>:TL:beam:orbit:*`, `<P>:TL:beam:twiss:*`, `<P>:TL:beam:emittance:*`, `<P>:TL:survey:*`, `<P>:TL:ORBITCC:*` | the transfer line's model PVs, the same names as in the transfer line twin (the ring's are without `TL:`) |
+| `<P>:INJ:trigger` | write 1 to fire a shot (back at 0 once accepted); repeated shots: `dt4acc_bessyii_injection_mockup` |
 | `<P>:INJ:geometry:{x,xp,y,yp,delta,ct}` | the line's reference against the ring's at the septum exit, a difference state [m, rad, 1, m] (writable) |
-| `<P>:INJ:n_turns` | turns tracked in the ring (1 ... 256, writable) |
+| `<P>:INJ:n_turns` | turns in the ring each shot tracks the injected beam (1 ... 256, writable); not a number of shots |
 | `<P>:INJ:line_exit:{x,xp,y,yp,delta,ct}` | centroid leaving the line, line frame |
 | `<P>:INJ:injected:{x,xp,y,yp,delta,ct}` | the injected beam, ring frame, at `MSEPEXIT` |
 | `<P>:INJ:tbt:x`, `<P>:INJ:tbt:y`, `<P>:INJ:tbt:names` | position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... [m] |
 | `<P>:<bpm>:signal:tbt:X`, `<P>:<bpm>:signal:tbt:Y` | one ring BPM, turn after turn [mm] |
 | `<P>:INJ:survived` | particles still there after each turn |
-| `<P>:INJ:count` | shots computed so far |
+| `<P>:INJ:count` | shots computed so far (the number of shots) |
 
 ## Try it
 
@@ -97,8 +123,9 @@ caput BI:INJ:trigger 1            # a shot: the line's BPMs and the ring's turn 
 caput BI:H5PT:set 0.4             # transfer line steerer supply [A]: the line's model follows,
 caget BI:BPMZ1T:signal:sa:X       #   its BPMs still show the last shot
 caput BI:INJ:trigger 1            # the next shot shows the change
+caget BI:FOMZ3T:x BI:FOMZ3T:sigma:x   # a screen: beam centre and size [mm] (image: FOMZ3T:image)
 caput BI:INJ:geometry:x -0.002    # line axis against ring axis [m]
-caput BI:INJ:n_turns 5            # turns tracked in the ring
+caput BI:INJ:n_turns 5            # turns tracked in the ring per shot
 caput BI:Q1PDR:set 207.85         # ring quadrupole supply [A] (was 205.79)
 caput BI:INJ:trigger 1
 pvget BI:INJ:injected:x BI:INJ:survived
@@ -139,13 +166,16 @@ DT4ACC_PREFIX=<P> python scripts/bessyii_injection/check_twin.py  # against a ru
 
 Both compare with plain pyAT: the line tracked up to the septum exit, the
 ring tracked from `MSEPEXIT` (the ring lattice rotated to start there).
+`check_twin.py` and `demo.py` fire their shots with the `InjectionMockup`.
 
 ## Not yet known (placeholders)
 
 * **Injection geometry**: 0 (the line's axis on the ring's axis). Needs the
   septum position and angle against the ring axis.
 * **Entering beam of the line**: see `../bessytl/README.md`.
-* **One particle**: the centroid. A bunch (emittance, energy spread of the
-  booster beam) and apertures (so that particles can be lost) are next.
+* **One particle**: the centroid. The emittance only sets the beam size on the
+  transfer line's screens. A bunch tracked into the ring (emittance, energy
+  spread of the booster beam) and apertures (so that particles can be lost)
+  are next.
 * **Kickers**: `KIK1D1R` ... `KIK4D1R` are drifts in the ring lattice: no
   injection bump; the injected beam oscillates around the closed orbit.
