@@ -212,5 +212,10 @@ def build_managers(setup: Sequence[dict] = None) -> Tuple[LiaisonManager, Transl
     return lm, ts
 
 
+#: what the line's BPM structure (``ORBITCC:rdBpm``) serves: its BPMs and its
+#: striplines (beam position monitors of another geometry), in lattice order
+ORBIT_MONITOR_PREFIXES = ("BPMZ", "SLZ")
+
+
 def monitor_names(line: at.Lattice) -> List[str]:
     return [line[i].FamName for i in line.get_uint32_index(at.Monitor)]

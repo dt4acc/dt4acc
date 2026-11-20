@@ -157,7 +157,7 @@ Computed by the twin from the lattice.
 
 | PV | | write | protocol | machine |
 |---|---|---|---|---|
-| `ORBITCC:rdBpm` | BPMZ* positions (nm), structure (BPM, X, Y, ...) |  | PVA | no |
+| `ORBITCC:rdBpm` | BPMZ* and striplines SLZ* positions, in lattice order (nm), structure (BPM, X, Y, ...) |  | PVA | no |
 | `ORBITCC:rdModel` | model optics at the BPMs, structure (SPos, beta, ...) |  | PVA | no |
 
 #### Trajectory (every lattice element and the exit of the line)

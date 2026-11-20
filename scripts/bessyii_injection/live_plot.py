@@ -1,7 +1,7 @@
 """Live plot of a running BESSY II injection twin
 
-Redraws whenever the hand over is recomputed (``INJ:count`` changes), i.e.
-after any change of a transfer line or ring supply or of the ``INJ:`` settings:
+Redraws after every shot (``INJ:trigger``; ``INJ:count`` changes). A change of
+a supply or of the ``INJ:`` settings shows at the next shot:
 
 1. transfer line: trajectory along the line (x, y), its monitors marked
 2. ring, horizontal: the injected beam at the ring BPMs, turn after turn

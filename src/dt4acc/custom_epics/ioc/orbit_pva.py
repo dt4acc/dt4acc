@@ -146,10 +146,17 @@ initial_beam_physics_data = dict(
 
 
 class OrbitTwinServer:
+    """``pv_name``: the beam position monitors' readings (``ORBITCC:rdBpm``);
+    ``bpm_physics_data``: the model at them (``ORBITCC:rdModel``).
+    ``monitor_prefixes``: the monitors ``pv_name`` serves, by the start of their
+    name, in the order of the readings pushed (the lattice's)"""
+
     def __init__(
-        self, pv_name: str = "ORBITCC:rdBpm", bpm_physics_data="ORBITCC:rdModel"
+        self, pv_name: str = "ORBITCC:rdBpm", bpm_physics_data="ORBITCC:rdModel",
+        monitor_prefixes: Sequence[str] = ("BPM",),
     ):
         self.pv_name = pv_name
+        self.monitor_prefixes = tuple(monitor_prefixes)
         self.pv = SharedPV(initial=Value(orbit_type, initial_data))
         self.beam_physics_info_pv_name = bpm_physics_data
         self.beam_physics_info = SharedPV(
@@ -222,7 +229,7 @@ class OrbitTwinServer:
         self.beam_physics_info.post(Value(beam_physics_info_type, data))
 
     def push(self, *, x: List[float], y: List[float], names: List[str]) -> None:
-        bpm_mask = [n.startswith("BPM") for n in names]
+        bpm_mask = [n.startswith(self.monitor_prefixes) for n in names]
         x = [v for v, keep in zip(x, bpm_mask) if keep]
         y = [v for v, keep in zip(y, bpm_mask) if keep]
         names = [n for n, keep in zip(names, bpm_mask) if keep]
