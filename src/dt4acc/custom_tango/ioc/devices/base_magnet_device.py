@@ -16,6 +16,7 @@ from dt4acc.core.utils.logger import get_logger
 from dt4acc.custom_tango.ioc.controller_registry import get_controller
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
 from dt4acc.custom_tango.ioc.devices.write_value_sync import sync_write_value
+from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import translated_design_view
 
 logger = get_logger()
 
@@ -63,8 +64,6 @@ class BaseMagnetDevice(Device):
         translates them (the liaison manager and the translation service
         convert its values to its lattice element's), else its lattice
         element (see mexec_server_for_physics_engine.translated_design_view)."""
-        from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import translated_design_view
-
         return self.magnet_name if translated_design_view() else self.lattice_id
 
     def _set_unit(self, attr_name: str, unit: str) -> None:

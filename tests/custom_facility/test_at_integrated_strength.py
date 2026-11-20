@@ -3,7 +3,12 @@
 import at
 import pytest
 
+import numpy as np
+from dt4acc_lib.pyat_simulator.proxies.proxy_factory import create_at_properties_lut_per_element_cls
+
 from dt4acc.custom_facility.model.at_integrated_strength import (
+    HORIZONTAL_KICK_SIGN,
+    element_factor,
     effective_length,
     is_strength_property,
     lattice_element,
@@ -99,3 +104,71 @@ def test_beth_order_of_prefixes():
     from dt4acc.custom_facility.model import at_integrated_strength
 
     assert at_integrated_strength._MULTIPOLE_PREFIXES == ("B", "A")
+
+
+_X, _Y = 1e-3, 0.5e-3
+
+
+def _kick(elem):
+    """(dpx, dpy) of a particle at (_X, _Y) through ``elem``, tracked by AT"""
+    r_in = np.zeros((6, 1))
+    r_in[0, 0], r_in[2, 0] = _X, _Y
+    r_out = at.lattice_track(at.Lattice([elem], energy=1e9), r_in.copy(), 1)[0]
+    return float(r_out[1].flat[0]), float(r_out[3].flat[0])
+
+
+@pytest.mark.parametrize("thick", [False, True], ids=["thin", "thick"])
+@pytest.mark.parametrize("skew", [False, True], ids=["normal", "skew"])
+@pytest.mark.parametrize("n", [1, 2, 3, 4])
+def test_published_value_is_beth_coefficient_times_length(n, skew, thick):
+    """Cross-check against AT's tracking, order by order (Beth's
+    representation, European indexing): with C_n L = B_n L + i A_n L the
+    integrated coefficient the published values stand for,
+
+        dpx - i dpy = -C_n L (x + i y)^(n - 1)
+
+    (B1: the published value is the kick angle, -PolynomB[0] * L)"""
+    coefficient = 0.37
+    poly = [0.0] * n
+    poly[n - 1] = coefficient
+    zeros = [0.0] * n
+    poly_a, poly_b = (poly, zeros) if skew else (zeros, poly)
+    length = 1e-4
+    elem = (at.Multipole("M", length, poly_a, poly_b) if thick
+            else at.ThinMultipole("M", poly_a, poly_b))
+    prop = f"{'A' if skew else 'B'}{n}"
+
+    published = coefficient * element_factor(elem, prop)
+    assert published == pytest.approx(
+        coefficient * (length if thick else 1.0) * (HORIZONTAL_KICK_SIGN if prop == "B1" else 1.0)
+    )
+    integrated = published * (HORIZONTAL_KICK_SIGN if prop == "B1" else 1.0)
+    c_n = 1j * integrated if skew else integrated
+    expected = -c_n * complex(_X, _Y) ** (n - 1)
+
+    dpx, dpy = _kick(elem)
+    rel = 1e-3 if thick else 1e-9
+    assert dpx == pytest.approx(expected.real, rel=rel, abs=1e-18)
+    assert -dpy == pytest.approx(expected.imag, rel=rel, abs=1e-18)
+    if prop == "B1":
+        assert dpx == pytest.approx(published, rel=rel)  # the kick angle
+    if prop == "A1":
+        assert dpy == pytest.approx(published, rel=rel)
+
+
+@pytest.mark.parametrize(
+    "elem, beth",
+    [
+        (at.Quadrupole("Q", 0.4, 1.2), "B2"),
+        (at.Sextupole("S", 0.1, 2.5), "B3"),
+        (at.Octupole("O", 0.1, [0.0] * 4, [0.0, 0.0, 0.0, 30.0]), "B4"),
+    ],
+    ids=["quadrupole", "sextupole", "octupole"],
+)
+def test_main_strength_is_beth_coefficient(elem, beth):
+    """dt4acc_lib's main_strength of a quadrupole / sextupole / octupole is
+    its B2 / B3 / B4 (PolynomB[1] / [2] / [3]): same factor L"""
+    props = create_at_properties_lut_per_element_cls()[type(elem).__name__]
+    n = int(beth[1:])
+    assert props["main_strength"].peek(elem) == props[beth].peek(elem) == elem.PolynomB[n - 1]
+    assert element_factor(elem, "main_strength") == element_factor(elem, beth) == pytest.approx(elem.Length)

@@ -20,6 +20,7 @@ A1/PolynomA[0].
 from tango.server import attribute, command, device_property
 from tango import DevState, AttrWriteType
 
+from dt4acc.custom_facility.model import at_integrated_strength
 from dt4acc.custom_tango.ioc.devices.base_magnet_device import BaseMagnetDevice
 from dt4acc.core.utils.logger import get_logger
 
@@ -30,8 +31,6 @@ def _strength_unit() -> str:
     """Unit of a steerer's magnetic_strength: rad (kick angle) with
     integrated strengths, else 1/m (PolynomB[0] / PolynomA[0] of a thick
     element)"""
-    from dt4acc.custom_facility.model import at_integrated_strength
-
     return "rad" if at_integrated_strength.enabled() else "1/m"
 
 
