@@ -111,3 +111,21 @@ def test_s1_supply_drives_the_16_s1_sextupoles(twin) -> None:
         assert element(backend, name).H == pytest.approx(h_before[name] * 1.01, rel=1e-12), name
         assert read(mexec, name, "main_strength_rdbk") == pytest.approx(element(backend, name).H, rel=1e-12)
     assert element(backend, "S2M2D1R").H == s2_before
+
+
+def test_supply_current_converts_with_the_beams_brho(twin) -> None:
+    """K = slope * I / brho with the brho of the lattice's energy (1.7185 GeV: 5.7323 T m)"""
+    import yaml
+    from dt4acc.custom_facility.bessyii.liasion_translator_setup import design_brho
+
+    backend, mexec = twin
+    brho = backend.acc.acc.BRho
+    assert design_brho() == pytest.approx(brho, rel=1e-12)
+    assert brho == pytest.approx(5.7323, abs=1e-4)
+    with open(resources.files("dt4acc").joinpath(
+            "custom_facility", "bessyii", "resources", "storage_ring", "input", "magnets.yaml"), "rt") as fp:
+        slopes = {m["elem_id"]: m["conversion"]["slope"] for m in yaml.safe_load(fp)}
+    for magnet, pc in (("Q1M2D1R", "Q1PDR"), ("S1MD1R", "S1PR")):
+        current = read(mexec, pc, "set_current")
+        k = element(backend, magnet).PolynomB[1 if magnet.startswith("Q") else 2]
+        assert k == pytest.approx(slopes[magnet] * current / brho, rel=1e-12), magnet

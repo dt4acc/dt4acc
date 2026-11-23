@@ -1,5 +1,6 @@
 import functools
 import logging
+import math
 from collections import defaultdict
 from importlib.resources import files
 from pathlib import Path
@@ -8,6 +9,9 @@ from typing import Tuple
 import jsons
 import yaml
 from pydantic import TypeAdapter
+from scipy.constants import c, electron_mass, electron_volt
+
+from dt4acc.custom_facility.bessyii.provide_lattice import ENERGY
 
 from dt4acc.core.model.view import ProcessVariableCollection
 from dt4acc_lib.bl.liaison_manager import LiaisonManager
@@ -22,6 +26,21 @@ from dt4acc_lib.model.utils.liaison_manager_lookup_table import LiaisonManagerIn
 from dt4acc_lib.model.utils.translator_manager_lookup_table import TranslatorLookupTable
 
 logger = logging.getLogger("dt4acc")
+
+#: [eV]
+ELECTRON_REST_ENERGY = electron_mass * c ** 2 / electron_volt
+
+
+def design_brho(energy: float = ENERGY) -> float:
+    """Magnetic rigidity [T m] of the electrons at the ring's design energy
+    (total energy [eV]), as pyAT's ``Lattice.BRho``: 5.7323 T m at 1.7185 GeV.
+
+    The magnets' calibrations (``magnets.yaml``: ``K * brho = slope * I``) are
+    field per current, MML's ``HW2PhysicsParams`` times its brho at 1.7 GeV
+    (``getbrho(1.7)``: 5.67229 T m, 1.7 GeV kinetic energy); the conversion
+    divides by the beam's brho.
+    """
+    return math.sqrt(energy ** 2 - ELECTRON_REST_ENERGY ** 2) / c
 
 
 @functools.lru_cache(maxsize=1)
@@ -47,8 +66,7 @@ def build_managers(config_dir: Tuple[str]):
 
     obj = load_file(config_dir + ("bessyii_translation_service_lookup_table.yml",))
     ts_lut = jsons.load(obj, TranslatorLookupTable)
-    #: Todo: use correct brho!
-    ts = TranslatorService(lut=ts_lut, brho=5.4)
+    ts = TranslatorService(lut=ts_lut, brho=design_brho())
 
     obj = load_file(config_dir + ("bessyii_process_variables.yml",))
     pv_col = TypeAdapter(ProcessVariableCollection).validate_python(obj)
