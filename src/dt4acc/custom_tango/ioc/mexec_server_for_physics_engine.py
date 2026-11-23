@@ -40,6 +40,25 @@ def expected_view() -> str:
     return os.environ.get("DT4ACC_VIEW", EXPECTED_VIEW)
 
 
+def engine_view() -> str:
+    """The view the command execution engine expects its commands in:
+    DT4ACC_ENGINE_VIEW, else the twin's view (expected_view()).
+
+    A facility running design-view devices (no power converters) may still
+    have its engine in the device view: the magnets then write and read in
+    their device space (their names), translated to the lattice by the
+    liaison manager and the translation service, the one conversion path
+    (see translated_design_view())."""
+    return os.environ.get("DT4ACC_ENGINE_VIEW", expected_view())
+
+
+def translated_design_view() -> bool:
+    """Design-view devices whose commands the engine translates: the magnet
+    devices address the engine by their device name, not their lattice
+    element (see engine_view())."""
+    return expected_view() == "design" and engine_view() == "device"
+
+
 def settle_supplies_enabled() -> bool:
     """Start (and re-initialise) at the power supplies' nominal currents:
     DT4ACC_SETTLE_SUPPLIES=1, device view only (see _settle_supplies)."""
@@ -131,7 +150,7 @@ def _build_mexec():
     return TranslatingCommandExecutionEngine(
         backend=backend,
         cmd_rewriter=cmd_rewriter,
-        expected_view_for_output=expected_view(),
+        expected_view_for_output=engine_view(),
         num_readings=1,
     )
 

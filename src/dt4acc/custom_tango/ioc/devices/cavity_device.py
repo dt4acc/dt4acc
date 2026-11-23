@@ -20,6 +20,11 @@ class CavityDevice(BaseMagnetDevice):
     Exposes frequency and voltage.
     """
 
+    def _command_id(self) -> str:
+        """Its lattice element: the cavities' are addressed directly (identity
+        conversions where the engine translates)."""
+        return self.lattice_id
+
     def init_device(self):
         super().init_device()
         from dt4acc.custom_tango.ioc.single_server import get_initial_values

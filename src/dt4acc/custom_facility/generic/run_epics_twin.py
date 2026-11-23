@@ -10,6 +10,11 @@ code is required: this is the EPICS-side equivalent of
 If neither ``--lattice``/``DT4ACC_LATTICE_FILE`` nor
 ``--accelerator-setup-file``/``DT4ACC_ACCELERATOR_SETUP_FILE`` are supplied,
 falls back to the bundled FODO test lattice/catalog under ``resources/``.
+
+``--integrated-strength``/``DT4ACC_INTEGRATED_STRENGTH=1``: the magnets
+publish integrated strengths in AT's normalisation (see
+``custom_facility.model.at_integrated_strength``), else the lattice
+coefficients.
 """
 
 import argparse
@@ -28,6 +33,7 @@ from dt4acc.core.bl.controller import read_and_dispatch
 from dt4acc.core.bl.handle_lattice import lattice_loader
 from dt4acc.core.interfaces.controller_interface import ControllerInterface
 from dt4acc.config.data.querries import configure_data_file
+from dt4acc.custom_facility.model import at_integrated_strength
 from dt4acc.custom_epics.ioc.pv_setup import (
     initialize_master_clock_pvs,
     initialize_cavity_pvs,
@@ -97,6 +103,13 @@ def _build_args_parser() -> argparse.ArgumentParser:
         "--prefix",
         help="EPICS PV prefix. Default: DT4ACC_PREFIX, else the current user name.",
     )
+    parser.add_argument(
+        "--integrated-strength",
+        action="store_true",
+        help="Magnets publish integrated strengths in AT's normalisation (coefficient * L,"
+        " kick angles in rad). Default: DT4ACC_INTEGRATED_STRENGTH=1, else the lattice"
+        " coefficients.",
+    )
     return parser
 
 
@@ -139,6 +152,8 @@ async def main(argv=None):
     # pv_setup/liasion_translator_setup above). Point it explicitly at the
     # resolved path before anything reads the catalog.
     configure_data_file(accelerator_setup_file)
+    if args.integrated_strength:
+        os.environ[at_integrated_strength.ENABLE_ENV] = "1"
 
     lattice_loader.set_lattice_file(lattice_file)
     acc = lattice_loader.load()

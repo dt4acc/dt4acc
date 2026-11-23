@@ -41,6 +41,7 @@ from dt4acc_lib.model.utils.translator_manager_lookup_table import (
 )
 
 from dt4acc.config.data.querries import get_controlled_elements
+from dt4acc.custom_facility.model import at_integrated_strength
 
 
 def _yellow_pages_lut(magnets, acc) -> dict:
@@ -193,7 +194,9 @@ def _build_liaison_manager_lut(magnets, yp: YellowPages):
     return lut_fwd, lut_inv
 
 
-def _build_translator_manager_lut(magnets, yp: YellowPages, lm_inv: LiaisonManagerInverseLookupTable):
+def _build_translator_manager_lut(
+    magnets, yp: YellowPages, lm_inv: LiaisonManagerInverseLookupTable, strength_factors: dict
+):
     lut = []
 
     for cavity_name in yp.get("cavities"):
@@ -264,10 +267,11 @@ def _build_translator_manager_lut(magnets, yp: YellowPages, lm_inv: LiaisonManag
         if dev_p.device_name in steerers and dev_p.property in ("main_strength", "main_strength_rdbk"):
             (lat_p,) = lm_inv.get(dev_p)
             assert lat_p.property in ("B1", "A1")
+            # kick angle in rad (sign included) if enabled: see _strength_conversion
             lut.append(
                 TranslatorLookupTableElement(
                     ConversionID(lat_p, dev_p),
-                    PolynomCoefficients([0.0, 1.0], energy_dependent=False),
+                    _strength_conversion(strength_factors, lat_p),
                 )
             )
         else:
@@ -277,10 +281,11 @@ def _build_translator_manager_lut(magnets, yp: YellowPages, lm_inv: LiaisonManag
     for dev_p in all_keys:
         if dev_p.property in ("main_strength", "main_strength_rdbk") and dev_p.device_name in quad_sext_names:
             (lat_p,) = lm_inv.get(dev_p)
+            # integrated strength (coefficient * L) if enabled: see _strength_conversion
             lut.append(
                 TranslatorLookupTableElement(
                     ConversionID(lat_p, dev_p),
-                    PolynomCoefficients([0.0, 1.0], energy_dependent=False),
+                    _strength_conversion(strength_factors, lat_p),
                 )
             )
         else:
@@ -315,6 +320,29 @@ def _build_translator_manager_lut(magnets, yp: YellowPages, lm_inv: LiaisonManag
     )
 
     return lut
+
+
+def _strength_conversion(strength_factors: dict, lat_p: LatticeElementPropertyID) -> PolynomCoefficients:
+    """The magnet's device strength: device = factor * lattice
+
+    ``strength_factors``: {(element, lattice property): factor}, empty
+    (factor 1: the lattice coefficient) unless the integrated strengths are
+    enabled, see _strength_factors. The translator needs no knowledge of the
+    lattice, only these factors.
+    """
+    factor = strength_factors.get((lat_p.element_name, lat_p.property), 1.0)
+    return PolynomCoefficients([0.0, factor], energy_dependent=False)
+
+
+def _strength_factors(acc, lm_inv: LiaisonManagerInverseLookupTable) -> dict:
+    """The magnets' integrated strength factors, from the lengths of their
+    lattice elements (dt4acc.custom_facility.model.at_integrated_strength),
+    if enabled (DT4ACC_INTEGRATED_STRENGTH=1 / --integrated-strength), else
+    none: the magnets publish the lattice coefficients."""
+    if not at_integrated_strength.enabled():
+        return {}
+    lat_ids = [lat_p for elem in lm_inv.lut for lat_p in elem.lat_ids]
+    return at_integrated_strength.strength_factors(acc, lat_ids)
 
 
 def _brho(acc) -> float:
@@ -352,7 +380,9 @@ def build_managers(acc) -> "tuple[YellowPagesBase, LiaisonManagerBase, Translato
     lut_inv.verify()
     lm = LiaisonManager(forward_lut=lut_fwd, inverse_lut=lut_inv)
 
-    tlut = TranslatorLookupTable(lut=_build_translator_manager_lut(magnets, yp, lut_inv))
+    tlut = TranslatorLookupTable(
+        lut=_build_translator_manager_lut(magnets, yp, lut_inv, _strength_factors(acc, lut_inv))
+    )
     tlut.verify()
     ts = TranslatorService(lut=tlut, brho=_brho(acc))
 

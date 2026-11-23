@@ -14,10 +14,18 @@ is the plain host octupole UUID — no compound IDs.
 from tango.server import attribute, command, device_property
 from tango import DevState, AttrWriteType
 
+from dt4acc.custom_facility.model import at_integrated_strength
 from dt4acc.custom_tango.ioc.devices.base_magnet_device import BaseMagnetDevice
 from dt4acc.core.utils.logger import get_logger
 
 logger = get_logger()
+
+
+def _strength_unit() -> str:
+    """Unit of magnetic_strength: 1/m (K * L) with integrated strengths
+    (DT4ACC_INTEGRATED_STRENGTH=1), else 1/m² (the lattice coefficient K of
+    a thick element)"""
+    return "1/m" if at_integrated_strength.enabled() else "1/m²"
 
 
 class SkewQuadDevice(BaseMagnetDevice):
@@ -35,8 +43,9 @@ class SkewQuadDevice(BaseMagnetDevice):
 
     def init_device(self):
         super().init_device()
+        self._set_unit("magnetic_strength", _strength_unit())
         from dt4acc.custom_tango.ioc.single_server import get_initial_values
-        self._magnetic_strength = get_initial_values(self.lattice_id).get(
+        self._magnetic_strength = get_initial_values(self.command_id).get(
             self.lattice_property,
             0.0,
         )
@@ -66,8 +75,8 @@ class SkewQuadDevice(BaseMagnetDevice):
     def RefreshFromCache(self) -> None:
         try:
             from dt4acc.custom_tango.ioc.single_server import refresh_one_from_lattice, get_nominal_values
-            refresh_one_from_lattice(self.lattice_id)
-            vals = get_nominal_values(self.lattice_id)
+            refresh_one_from_lattice(self.command_id)
+            vals = get_nominal_values(self.command_id)
             self._magnetic_strength = vals.get(self.lattice_property, 0.0)
             self._sync_write_value("magnetic_strength", self._magnetic_strength)
             logger.info("%s: RefreshFromCache done — magnetic_strength=%.6f",

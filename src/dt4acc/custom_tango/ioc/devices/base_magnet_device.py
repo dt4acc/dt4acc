@@ -16,6 +16,7 @@ from dt4acc.core.utils.logger import get_logger
 from dt4acc.custom_tango.ioc.controller_registry import get_controller
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
 from dt4acc.custom_tango.ioc.devices.write_value_sync import sync_write_value
+from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import translated_design_view
 
 logger = get_logger()
 
@@ -49,12 +50,31 @@ class BaseMagnetDevice(Device):
         # UUID is the unique key into the pyAT lattice.
         # Falls back to member name if not set (shouldn't happen after registration).
         self.lattice_id = self.element_uuid if self.element_uuid else self.member
+        # the id the device writes and reads by, see _command_id
+        self.command_id = self._command_id()
 
         logger.info("Initializing %s: %s lattice_id=%s",
                     self.__class__.__name__, self.magnet_name, self.lattice_id)
 
         self._loop = get_shared_event_loop()
         self.set_state(DevState.ON)
+
+    def _command_id(self) -> str:
+        """The id of the device's commands: its own name when the engine
+        translates them (the liaison manager and the translation service
+        convert its values to its lattice element's), else its lattice
+        element (see mexec_server_for_physics_engine.translated_design_view)."""
+        return self.magnet_name if translated_design_view() else self.lattice_id
+
+    def _set_unit(self, attr_name: str, unit: str) -> None:
+        """Set the unit of the attribute ``attr_name``, for a unit known only
+        at run time (e.g. integrated strengths or not, see
+        dt4acc.custom_facility.model.at_integrated_strength.enabled)"""
+        attr = self.get_device_attr().get_attr_by_name(attr_name)
+        props = attr.get_properties()
+        if props.unit != unit:
+            props.unit = unit
+            attr.set_properties(props)
 
     def _async(self, coro):
         """Submit coroutine to shared loop, block until done, raise DevFailed on error."""
@@ -67,16 +87,17 @@ class BaseMagnetDevice(Device):
     def _send(self, property_name: str, value: float) -> None:
         """Send a set command to the backend via TangoController.
 
-        cmd.id = self.lattice_id (the AT element uuid stored in element_uuid
-        DB property). In design view the command rewriter does no
-        translation so the uuid goes directly to acc.get(). In device view
-        the uuid is also the correct identifier.
+        cmd.id = self.command_id: the device's name when the engine
+        translates its commands (the device's value converted to its lattice
+        element's there), else its lattice element (the AT element uuid
+        stored in element_uuid DB property), written as is.
         """
         from dt4acc_lib.model.utils.command import Command, BehaviourOnError
+
         self._async(
             get_controller().update(
                 cmd=Command(
-                    id=self.lattice_id,
+                    id=self.command_id,
                     property=property_name,
                     value=value,
                     behaviour_on_error=BehaviourOnError.stop,
