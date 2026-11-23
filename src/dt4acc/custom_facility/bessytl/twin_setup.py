@@ -8,25 +8,9 @@ Inputs (``resources/input`` and ``custom_epics/data/transfer_line``):
 
 * ``accelerator_setup.json``: magnets, their supply (``pc``) and calibration
   (``magnetic_strength``): quadrupoles gradient per current [T/m/A],
-  steerers kick per current [rad/A] at the design energy, bends field per
-  current (transfer function ``t_f``) [T/A], the current giving the design
-  angle at the design energy (``reference_current``), their design angle
-  (``bending_angle``) and length
+  steerers kick per current [rad/A] at the design energy
 * ``operating_currents.yaml``: supply currents the twin starts with
 * ``twiss_in.yaml``: beam entering the line
-
-Bends (B1M1T and B1M2T on B1PT, B2MT on B2PT): the lattice keeps the design
-angle (``BendingAngle``, the geometry); the current sets the field error
-``PolynomB[0]`` [1/m]:
-
-    PolynomB[0] = t_f * (I - I_ref) / brho,   I_ref = reference_current * brho / BRHO
-
-0 at ``I_ref``, the current giving the design angle at the beam's energy:
-the reference current scales with the energy, as the design field does.
-More current, more field, the beam bent more. Linear: no saturation; the
-small change of the edge and body focusing is left out. The magnet's own
-value (``Cm``) is its bending angle [rad]: ``design angle + length *
-PolynomB[0]``.
 """
 import json
 import logging
@@ -35,7 +19,6 @@ from importlib.resources import files
 from typing import Dict, List, Sequence, Tuple
 
 import at
-import numpy as np
 import yaml
 from scipy.constants import c
 
@@ -115,8 +98,6 @@ def calibration(magnet: dict) -> PolynomCoefficients:
     The conversion handles the energy: quadrupoles are given as gradient per
     current (per brho), steerers as kick per current at the design energy
     (``reference_brho``: the conversion scales the kick with the beam's brho).
-    Bends: their field error ``PolynomB[0]`` (:func:`bend_field_error`):
-    ``I = brho * (reference_current / BRHO + PolynomB[0] / t_f)``.
     """
     if magnet["type"] == "Quadrupole":
         return PolynomCoefficients([0.0, 1.0 / slope(magnet)], energy_dependent=True)
@@ -124,25 +105,7 @@ def calibration(magnet: dict) -> PolynomCoefficients:
         return PolynomCoefficients(
             [0.0, 1.0 / magnet["magnetic_strength"]], energy_dependent=True, reference_brho=BRHO
         )
-    if magnet["type"] == "Bend":
-        # PolynomB[0] = t_f (I - I_ref) / brho  =>  I = brho (I_ref / BRHO + PolynomB[0] / t_f)
-        return PolynomCoefficients(
-            [magnet["reference_current"] / BRHO, 1.0 / magnet["magnetic_strength"]], energy_dependent=True
-        )
     raise ValueError(f"{magnet['name']}: no calibration for type {magnet['type']}")
-
-
-def bend_field_error(magnet: dict, current: float, brho: float = BRHO) -> float:
-    """A bend's field error ``PolynomB[0]`` [1/m] at ``current``: ``t_f (I - I_ref) / brho``,
-    0 at the current giving the design angle (``I_ref``, scaled with brho)"""
-    i_ref = magnet["reference_current"] * brho / BRHO
-    return magnet["magnetic_strength"] * (current - i_ref) / brho
-
-
-def bend_angle(magnet: dict) -> PolynomCoefficients:
-    """A bend's own value, its bending angle [rad], from its field error:
-    ``design angle + length * PolynomB[0]``"""
-    return PolynomCoefficients([magnet["bending_angle"], magnet["length"]], energy_dependent=False)
 
 
 def bessytl_lattice(
@@ -172,19 +135,10 @@ def bessytl_lattice(
             elem.Energy = ENERGY
     by_name = {elem.FamName: elem for elem in line}
     for magnet in setup:
-        if magnet["type"] == "Quadrupole":
-            elem = by_name[magnet["name"]]
-            elem.update(K=slope(magnet) * currents.get(magnet["pc"], 0.0) / BRHO)
-        elif magnet["type"] == "Bend":
-            elem = by_name[magnet["name"]]
-            for key, value in (("bending_angle", elem.BendingAngle), ("length", elem.Length)):
-                if not np.isclose(value, magnet[key], rtol=1e-9, atol=0.0):
-                    raise ValueError(f"{magnet['name']}: {key} {magnet[key]} in the device database,"
-                                     f" {value} in the lattice")
-            # the field error at the operating current (0 where it gives the design angle)
-            polynom_b = np.array(elem.PolynomB, dtype=float)
-            polynom_b[0] = bend_field_error(magnet, currents[magnet["pc"]])
-            elem.update(PolynomB=polynom_b)
+        if magnet["type"] != "Quadrupole":
+            continue
+        elem = by_name[magnet["name"]]
+        elem.update(K=slope(magnet) * currents.get(magnet["pc"], 0.0) / BRHO)
     return line
 
 
@@ -195,8 +149,7 @@ def build_lookup_tables(
     Sequence[LiaisonManagerInverseLookupElement],
     Sequence[TranslatorLookupTableElement],
 ]:
-    """Supplies drive their magnets (one each, B1PT the two bends B1M1T and
-    B1M2T): supply current <-> magnet strength"""
+    """Supplies drive magnets one to one: supply current <-> magnet strength"""
     fwd = defaultdict(list)
     inv = defaultdict(list)
     conversions = []
@@ -212,9 +165,6 @@ def build_lookup_tables(
             lattice_property = "main_strength"
         elif magnet["type"] == "Steerer":
             lattice_property = kick_plane(magnet["name"])
-        elif magnet["type"] == "Bend":
-            # PolynomB[0]
-            lattice_property = "B1"
         else:
             continue
         name, pc = magnet["name"], magnet["pc"]
@@ -223,11 +173,10 @@ def build_lookup_tables(
         per_current = calibration(magnet)
         add(DevicePropertyID(device_name=pc, property="set_current"), lat_p, per_current, forward=True)
         add(DevicePropertyID(device_name=pc, property="rdbk_current"), lat_p, per_current, forward=False)
-        # magnet strength in lattice units; a bend: its bending angle
+        # magnet strength in lattice units
         same = PolynomCoefficients([0.0, 1.0], energy_dependent=False)
-        own = bend_angle(magnet) if magnet["type"] == "Bend" else same
-        add(DevicePropertyID(device_name=name, property="main_strength"), lat_p, own, forward=False)
-        add(DevicePropertyID(device_name=name, property="main_strength_rdbk"), lat_p, own, forward=False)
+        add(DevicePropertyID(device_name=name, property="main_strength"), lat_p, same, forward=False)
+        add(DevicePropertyID(device_name=name, property="main_strength_rdbk"), lat_p, same, forward=False)
         # pyAT correctors only kick; quadrupoles can be displaced
         for offset, lattice_offset in (("x", "dx"), ("y", "dy")) if magnet["type"] == "Quadrupole" else ():
             add(
