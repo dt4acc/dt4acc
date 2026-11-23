@@ -28,8 +28,8 @@ Columns:
 
 One supply drives one magnet, B1PT the two bends B1M1T and B1M2T (the Liaison
 Manager's tables). These are the PVs to set the line with. A bend's current
-acts as a field error: the design angle at the operating current (B1PT 232.75 A,
-B2PT 1.486 A), the beam bent more or less at another current.
+sets its field error (PolynomB[0]): the design angle at the operating current
+(B1PT 232.75 A, B2PT 1.486 A), the beam bent more or less at another current.
 
 #### Quadrupoles (11)
 

@@ -22,7 +22,7 @@ To refresh it: export again with the script, then update this table.
 Every magnet and cavity setting is identical; tunes, RF and closed orbit are
 unchanged. The differences come from bessy2reflat:
 
-* injection kickers `KIK1D1R` ... `KIK4D1R`: drifts → correctors
+* storage ring injection kickers `KIK1D1R` ... `KIK4D1R`: drifts → correctors
   (`KickAngle` 0), with the drifts around them adjusted to keep the length
 * new correctors (`KickAngle` 0): warm steerers of the wavelength
   shifters `MHW7I1T1R`, `MHW7I2T1R`, `MHW7I1T7R`, `MHW7I2T7R`; diagnostic
