@@ -194,6 +194,13 @@ def build_liaison_manager_lut(
                 fwd_d[lat_p].append(pc_dev_p)
                 inv_d[pc_dev_p].append(lat_p)
                 inv_d[mag_dev_p].append(lat_p)
+                # the magnet's own value read back (Cm:rdbk), as for the
+                # quadrupoles and sextupoles
+                inv_d[
+                    DevicePropertyID(
+                        device_name=str(entry.dev_id), property="main_strength_rdbk"
+                    )
+                ].append(lat_p)
 
                 # Readback current only needs to go one way
                 inv_d[
@@ -541,7 +548,7 @@ def build_translator_manager_lut(
         assert conv.conversion_type == "linear"
         intercept, slope = conv.intercept, conv.slope
         assert intercept == 0.0
-        if dev_p.property == "main_strength":
+        if dev_p.property in ("main_strength", "main_strength_rdbk"):
             # Todo: need to find out how to convert x_kick / y_kick to magnet
             #       strength
             #       something with length?
@@ -871,6 +878,23 @@ def create_yellow_pages_lut_from_config(
     return r
 
 
+#: fields of dt4acc-lib's PolynomCoefficients newer than these tables, at their
+#: defaults: left out, as jsons does not load a table written with them back
+#: as PolynomCoefficients (main() checks the round trip)
+POLYNOM_DEFAULTS = dict(polynomial_of="lattice", scale=1.0, range=None)
+
+
+def without_polynom_defaults(table: dict) -> dict:
+    for entry in table["lut"]:
+        info = entry["conversion_info"]
+        # TuneConversionCoefficients: the polynomial one level down
+        for coeffs in (info, info.get("conversion") or {}):
+            for key, default in POLYNOM_DEFAULTS.items():
+                if key in coeffs and coeffs[key] == default:
+                    del coeffs[key]
+    return table
+
+
 def main():
     header_fmt = """#
 # BESSY II {data_type}: {date}
@@ -972,7 +996,7 @@ def main():
         fp.write(
             header_fmt.format(**dict(data_type="Translation service table", date=now))
         )
-        yaml.dump(asdict(tlut), fp, Dumper=CompressedSequenceDumper)
+        yaml.dump(without_polynom_defaults(asdict(tlut)), fp, Dumper=CompressedSequenceDumper)
         fp.write("# EOF\n")
 
     with open(ts_fname, "rt") as fp:
