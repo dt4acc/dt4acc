@@ -87,9 +87,26 @@ def ring_monitors(backend: SimulatorBackend, name_prefix: Optional[str] = None) 
     ]
 
 
+def parse_stops(text: str) -> List[str]:
+    """element ids separated by commas or blanks, e.g. ``"Q1M2D1R, BPMZ3D1R"``; empty: none"""
+    return text.replace(",", " ").split()
+
+
+def check_stops(backend: SimulatorBackend, stops: Sequence[str]) -> None:
+    """ValueError if a stop is no element of the lattice"""
+    uids = backend.get_element_uids()[: len(backend.acc.acc)]
+    unknown = [stop for stop in stops if stop not in uids]
+    if unknown:
+        raise ValueError(f"stops: no element {', '.join(unknown)} in the lattice")
+
+
 class RingTurnByTurn:
     """Tracks the ring from its first element: closed orbit + ``offset``, ``n_turns``,
-    read at ``monitors`` (lattice element ids, e.g. from :func:`ring_monitors`)"""
+    read at ``monitors`` (lattice element ids, e.g. from :func:`ring_monitors`).
+
+    ``stops`` (lattice element ids): the beam ends at the first one it
+    reaches. A BPM that is the stop still sees the beam, the later ones and
+    all later turns do not (NaN, none survived)."""
 
     def __init__(self, backend: SimulatorBackend, monitors: Sequence[str],
                  offset: Sequence[float] = DEFAULT_OFFSET, n_turns: int = DEFAULT_TURNS):
@@ -99,6 +116,17 @@ class RingTurnByTurn:
         self.monitors = list(monitors)
         self.offset = ParticleState.from_sequence(offset)
         self.n_turns = n_turns
+        self._stops: List[str] = []
+
+    @property
+    def stops(self) -> List[str]:
+        return list(self._stops)
+
+    @stops.setter
+    def stops(self, value: Sequence[str]):
+        value = list(value)
+        check_stops(self.backend, value)
+        self._stops = value
 
     @property
     def n_turns(self) -> int:
@@ -128,7 +156,7 @@ class RingTurnByTurn:
     def compute(self) -> TurnByTurnResult:
         """tracks now"""
         start = ParticleState.from_sequence(self.closed_orbit() + self.offset.as_array())
-        turns = self.backend.compute_track([start], self.n_turns, self.monitors)
+        turns = self.backend.compute_track([start], self.n_turns, self.monitors, stops=self.stops)
         return TurnByTurnResult.from_turns(start, self.n_turns, self.monitors, turns)
 
 
@@ -144,7 +172,7 @@ class LatestTurnByTurn:
     def _state(self):
         # the backend computes new optics after each lattice change: compared as the object
         _, __, optics = self.tbt.backend.get_optics()
-        return optics, tuple(self.tbt.offset.as_array()), self.tbt.n_turns, tuple(self.tbt.monitors)
+        return optics, tuple(self.tbt.offset.as_array()), self.tbt.n_turns, tuple(self.tbt.monitors), tuple(self.tbt.stops)
 
     def _is_current(self, state) -> bool:
         if self._computed_for is None:
@@ -163,5 +191,5 @@ class LatestTurnByTurn:
 
 __all__: Sequence[str] = [
     "COORDINATES", "DEFAULT_OFFSET", "DEFAULT_TURNS", "MAX_TURNS", "UNITS",
-    "LatestTurnByTurn", "RingTurnByTurn", "TurnByTurnResult", "ring_monitors",
+    "LatestTurnByTurn", "RingTurnByTurn", "TurnByTurnResult", "check_stops", "parse_stops", "ring_monitors",
 ]

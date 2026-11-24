@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
-from dt4acc.core.bl.turn_by_turn import MAX_TURNS, LatestTurnByTurn, RingTurnByTurn, ring_monitors
+from dt4acc.core.bl.turn_by_turn import MAX_TURNS, LatestTurnByTurn, RingTurnByTurn, parse_stops, ring_monitors
 from dt4acc.custom_facility.bessyii.run_bessyii_twin import BPM_PREFIX
 
 #: design tunes of the BESSY II twin (TUNEZR:flq:rdH / rdV)
@@ -105,3 +105,35 @@ def test_n_turns_up_to_the_hardware():
 def test_offset_named_as_particle_state(backend):
     with pytest.raises(ValueError):
         ring_tbt(backend).set_offset("xp", 1e-5)
+
+
+def test_beam_ends_at_a_stop(backend):
+    tbt = ring_tbt(backend, n_turns=4)
+    free = tbt.compute()
+    stop = tbt.monitors[10]
+    tbt.stops = [stop]
+    r = tbt.compute()
+    np.testing.assert_array_equal(r.x[0, :11], free.x[0, :11])
+    assert np.isnan(r.x[0, 11:]).all() and np.isnan(r.x[1:]).all()
+    assert r.survived[0, 10] == 1 and r.survived[0, 11:].sum() == 0 and r.survived[1:].sum() == 0
+    tbt.stops = []
+    np.testing.assert_array_equal(tbt.compute().x, free.x)
+
+
+def test_a_stop_is_a_change_for_the_latest_result(backend):
+    tbt = ring_tbt(backend, n_turns=2)
+    latest = LatestTurnByTurn(tbt)
+    first = latest.get()
+    tbt.stops = [tbt.monitors[0]]
+    assert latest.get() is not first
+
+
+def test_unknown_stop_is_rejected(backend):
+    tbt = ring_tbt(backend)
+    with pytest.raises(ValueError, match="NOPE"):
+        tbt.stops = ["NOPE"]
+    assert tbt.stops == []
+
+
+def test_stops_from_text():
+    assert parse_stops(" A, B C,") == ["A", "B", "C"] and parse_stops("") == []

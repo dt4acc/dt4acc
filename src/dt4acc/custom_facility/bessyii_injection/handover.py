@@ -87,6 +87,8 @@ class InjectionHandover:
         self.monitors = list(monitors)
         self.geometry = geometry or no_offset()
         self.n_turns = n_turns
+        #: ring elements the injected beam ends at, the first one it reaches
+        self.stops: List[str] = []
 
     def line_exit(self) -> ParticleState:
         """Centroid leaving the line: last point of its optics"""
@@ -105,6 +107,7 @@ class InjectionHandover:
             ("n_turns", self.n_turns),
             ("data_needed_at", self.monitors),
             ("start_at", INJECTION_ELEMENT),
+            ("stops", self.stops),
         ):
             await self.ring.set("turn_by_turn_start", prop, value)
         turns = await self.ring.read("turn_by_turn", "pos")

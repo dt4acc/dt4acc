@@ -52,6 +52,7 @@ PVs, prefixed with `DT4ACC_PREFIX` (`<P>`, default: the user name):
 | `<P>:INJ:trigger` | write 1 to fire a shot (back at 0 once accepted) |
 | `<P>:INJ:geometry:{x,xp,y,yp,delta,ct}` | the line's reference against the ring's at the septum exit, a difference state [m, rad, 1, m] (writable) |
 | `<P>:INJ:n_turns` | turns tracked in the ring (1 ... 256, writable) |
+| `<P>:INJ:stops` | ring elements the injected beam ends at, writable: `caput -S <P>:INJ:stops "BPMZ5D1R"`; empty: none |
 | `<P>:INJ:line_exit:{x,xp,y,yp,delta,ct}` | centroid leaving the line, line frame |
 | `<P>:INJ:injected:{x,xp,y,yp,delta,ct}` | the injected beam, ring frame, at `MSEPEXIT` |
 | `<P>:INJ:tbt:x`, `<P>:INJ:tbt:y`, `<P>:INJ:tbt:names` | position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... [m] |
