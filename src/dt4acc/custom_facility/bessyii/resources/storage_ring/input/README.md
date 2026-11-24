@@ -47,6 +47,28 @@ both wavelength shifters, 20 slices per pole, tunes and RF re-matched.
 | RF (Hz) | 499 636 630.203 | 499 636 629.871 |
 | changed | | K of the 64 Q3 quadrupoles, the 4 main cavities' frequency |
 
+### How to test
+
+Needs a dt4acc-lib with `SimulatorBackend.load_lattice`. Automated:
+
+    python -m pytest tests/bessyii/test_runtime_lattice.py
+
+With a running ring twin, its PVs below `<prefix>`:
+
+    caput -S <prefix>:simulator_ring:lattice bessy2_storage_ring_wls.json
+    caget -S <prefix>:simulator_ring:lattice:message
+    caput -S <prefix>:simulator_ring:lattice ""
+
+| | start lattice | with the wavelength shifters |
+| --- | --- | --- |
+| `simulator_ring:lattice:message` after loading | `loaded the start lattice: 1137 elements` | `loaded bessy2_storage_ring_wls.json: 1255 elements` |
+| `Q3M1D1R:Cm:set` | -2.02592 | -2.02286 |
+| `Q3PD1R:set` (A) | 172.473 | 172.212 |
+
+A name with a path (`../pv_list.md`) or a file that is not there is refused
+(`refused: ...`) and the lattice kept. A monitor on a settings PV is updated
+once the lattice is replaced.
+
 ## Other files
 
 `magnets.yaml`, `power_converters.yaml`: magnets and their power supplies.

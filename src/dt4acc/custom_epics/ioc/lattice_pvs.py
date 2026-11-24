@@ -20,6 +20,7 @@ after). The model PVs are recomputed.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 from pathlib import Path
 from typing import Awaitable, Callable, Dict, Optional, Sequence
@@ -59,31 +60,47 @@ def settings_read_commands(process_variables: Dict[ReadCommand, object]) -> Dict
     return result
 
 
+def takes_process(record) -> bool:
+    """True for softioc's output records: their ``set`` takes ``process``, the
+    input records' does not (softioc wraps both in the same class, so the type
+    does not tell)"""
+    return "process" in inspect.signature(record.set).parameters
+
+
 def set_unprocessed(record, value) -> None:
-    """Set a record's value; an output record without processing it, so that
-    its on_update (a write to the lattice) is not called. softioc's input
-    records have no ``process`` argument."""
-    try:
+    """Set a record's value without calling its on_update (a write to the
+    lattice). Clients' CA and PVA monitors are updated all the same. Input
+    records have no on_update: a plain set."""
+    if takes_process(record):
         record.set(value, process=False)
-    except TypeError:
+    else:
         record.set(value)
 
 
 async def refresh_settings(controller, process_variables: Dict[ReadCommand, object]) -> int:
     """Set the settings PVs to the lattice's values, without processing them
-    (no write back to the lattice); returns how many were set"""
-    n = 0
+    (no write back to the lattice); returns how many were set
+
+    All values are read first, then set without an await in between: the
+    clients' updates come together, after the lattice is replaced."""
+    values = {}
     for rcmd, source in settings_read_commands(process_variables).items():
         try:
             vals = await controller.trigger_read([source])
             # a supply driving several magnets: one reading per magnet, the
             # mean as at startup (pv_setup.add_pc_pvs)
-            value = float(np.mean([reading.payload for reading in vals.all_readings()]))
+            values[rcmd] = float(np.mean([reading.payload for reading in vals.all_readings()]))
         except Exception as exc:
             logger.debug("lattice refresh: no value for %s: %s", rcmd, exc)
-            continue
-        set_unprocessed(process_variables[rcmd], value)
-        n += 1
+    n = 0
+    for rcmd, value in values.items():
+        try:
+            set_unprocessed(process_variables[rcmd], value)
+        except Exception:
+            # one PV that can not be set must not keep the others at the old lattice
+            logger.exception("lattice refresh: %s not set to %s", rcmd, value)
+        else:
+            n += 1
     return n
 
 

@@ -10,14 +10,18 @@ class Record:
     def __init__(self, name: str, kind: str, initial_value=None):
         self.name, self.kind, self.value = name, kind, initial_value
 
-    def set(self, value, *args, **kwargs):
-        # as softioc: only output records take ``process``
-        if "process" in kwargs and self.kind.endswith("In"):
-            raise TypeError(f"{self.kind}.set() got an unexpected keyword argument 'process'")
+    def set(self, value, process=True, *args, **kwargs):
         self.value = value
 
     def get(self):
         return self.value
+
+
+class InRecord(Record):
+    """as softioc: only output records' ``set`` takes ``process``"""
+
+    def set(self, value, severity=None, alarm=None, timestamp=None):
+        self.value = value
 
 
 class RecordingBuilder:
@@ -37,7 +41,8 @@ class RecordingBuilder:
         def make(name, *args, initial_value=None, **kwargs):
             full = f"{self.prefix}:{name}" if self.prefix else name
             assert full not in self.records, f"PV {full} created twice"
-            self.records[full] = Record(full, kind, initial_value)
+            cls = InRecord if kind.endswith("In") else Record
+            self.records[full] = cls(full, kind, initial_value)
             return self.records[full]
 
         return make

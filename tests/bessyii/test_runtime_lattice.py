@@ -8,7 +8,9 @@ import pytest
 # loads the EPICS record types, before any module that imports softioc's records
 from softioc import builder as _softioc_builder  # noqa: F401
 
-from dt4acc.custom_epics.ioc.lattice_pvs import LatticeSwitch, after_load_refresh, required_elements
+from dt4acc.custom_epics.ioc.lattice_pvs import (
+    LatticeSwitch, after_load_refresh, refresh_settings, required_elements, set_unprocessed, takes_process,
+)
 from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_managers
 from dt4acc.custom_facility.bessyii.provide_lattice import bessyii_pyat_lattice, provide_backend, provide_lattice
 from dt4acc.custom_facility.bessyii.run_bessyii_twin import BPM_PREFIX, initialise_pvs
@@ -148,3 +150,60 @@ def test_the_bundled_lattice_with_the_wavelength_shifters(twin):
     assert pv(builder, f"{QUAD}:Cm:set") != pytest.approx(k_before, rel=1e-9)
     tune = asyncio.run(backend.read("tune", "transversal"))
     np.testing.assert_allclose([tune.x, tune.y], [0.848074, 0.726783], atol=1e-5)
+
+
+def test_only_output_records_take_process():
+    """softioc's own records"""
+    _softioc_builder.SetDeviceName("TEST_RUNTIME_LATTICE")
+    assert takes_process(_softioc_builder.aOut("out", initial_value=0.0))
+    assert not takes_process(_softioc_builder.aIn("in", initial_value=0.0))
+
+
+def test_a_type_error_of_the_record_is_not_hidden():
+    class Failing:
+        def set(self, value, process=True):
+            raise TypeError("bad value")
+
+    with pytest.raises(TypeError, match="bad value"):
+        set_unprocessed(Failing(), "x")
+
+
+class _Settings:
+    """controller and records that note the order of reads and sets"""
+
+    class Reading:
+        payload = 1.0
+
+    def __init__(self, n, failing=()):
+        self.log = []
+        outer = self
+
+        class Rec:
+            def __init__(self, name):
+                self.name = name
+
+            def set(self, value, process=True):
+                if self.name in failing:
+                    raise ValueError(self.name)
+                outer.log.append("set" if not process else "processed")
+
+        self.records = {ReadCommand(f"M{i}", "main_strength"): Rec(f"M{i}") for i in range(n)}
+
+    async def trigger_read(self, rcmds):
+        self.log.append("read")
+        return self
+
+    def all_readings(self):
+        return [self.Reading()]
+
+
+def test_all_settings_are_read_before_the_first_is_set():
+    settings = _Settings(3)
+    assert asyncio.run(refresh_settings(settings, settings.records)) == 3
+    assert settings.log == ["read"] * 3 + ["set"] * 3
+
+
+def test_one_failing_record_does_not_stop_the_others(caplog):
+    settings = _Settings(3, failing=("M0",))
+    assert asyncio.run(refresh_settings(settings, settings.records)) == 2
+    assert "not set" in caplog.text
