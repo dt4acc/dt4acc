@@ -77,6 +77,7 @@ test = [
 dt4acc_bessyii = "dt4acc.custom_facility.bessyii.run_bessyii_twin:run"
 dt4acc_bessytl = "dt4acc.custom_facility.bessytl.run_bessytl_twin:run"
 dt4acc_bessyii_injection = "dt4acc.custom_facility.bessyii_injection.run_bessyii_injection_twin:run"
+dt4acc_bessyii_injection_mockup = "dt4acc.custom_facility.bessyii_injection.mockup:main"
 dt4acc_mls = "dt4acc.custom_facility.mls.run_mls_twin:run"
 dt4acc_soleil = "dt4acc.custom_facility.soleil.run_soleil_twin:main"
 dt4acc_maxiv = "dt4acc.custom_facility.maxiv.run_maxiv_twin:main"

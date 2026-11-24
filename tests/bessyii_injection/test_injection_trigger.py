@@ -191,3 +191,88 @@ def test_twin_line_change_reaches_the_monitors_only_with_a_shot(twin_and_injecti
     assert injection.rec["count"].get() == 1
     assert injection.rec["injected:x"].get() != 0.0, "the steered beam entered the ring"
     assert np.abs(injection.rec["tbt:x"].get()).max() > 1e-4, "and oscillates in it"
+
+
+def test_a_trigger_as_a_shot_ends_is_not_lost():
+    """#99: the shot state (_pending, _running) is only touched on the shared
+    loop. fire() used to set it from the IOC's thread: a trigger arriving
+    after the loop had left ``while self._pending`` but before its
+    ``finally`` saw _running still set and scheduled nothing, the shot was
+    lost. With the loop blocked, fire() changes nothing until the loop runs."""
+    import threading
+
+    from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
+
+    pvs = InjectionPVs(FakeHandover([]), builder=RecordingBuilder())
+    pvs._running = True  # as at the end of a shot: the loop is about to clear it
+    release, blocked = threading.Event(), threading.Event()
+
+    def block():
+        blocked.set()
+        release.wait(5)
+        pvs._running = False  # the shot's finally, on the loop
+
+    get_shared_event_loop().call_soon_threadsafe(block)
+    assert blocked.wait(5)
+    pvs.fire()
+    assert pvs._pending is False, "fire() touched the shot state off the loop"
+    release.set()
+    t0 = time.time()
+    while pvs.rec["count"].get() != 1 and time.time() - t0 < 5:
+        time.sleep(0.01)
+    assert pvs.rec["count"].get() == 1, "the trigger got its shot"
+
+
+# --- the mockup: shots from a client
+class FakeContext:
+    """p4p's client context, served by InjectionPVs: a put of INJ:trigger fires"""
+
+    def __init__(self, pvs):
+        self.pvs = pvs
+        self.puts = []
+
+    def get(self, name, timeout=None):
+        assert name == "P:INJ:count"
+        return SimpleNamespace(value=self.pvs.rec["count"].get())
+
+    def put(self, name, value):
+        self.puts.append((name, value))
+        assert name == "P:INJ:trigger"
+        self.pvs._on_trigger(value)
+
+
+def test_mockup_fires_shots_and_waits_for_each():
+    from dt4acc.custom_facility.bessyii_injection.mockup import InjectionMockup
+
+    pvs = InjectionPVs(FakeHandover([]), builder=RecordingBuilder())
+    ctx = FakeContext(pvs)
+    inj = InjectionMockup(prefix="P", ctx=ctx, poll=0.005)
+    assert inj.shot() == 1
+    counts = []
+    t0 = time.monotonic()
+    assert inj.shots(3, rate=20.0, after_each=counts.append) == 4
+    assert counts == [2, 3, 4], "one shot per trigger, none merged"
+    assert time.monotonic() - t0 >= 2 / 20.0, "at the repetition rate"
+    assert len(ctx.puts) == 4
+
+
+def test_mockup_times_out_without_a_twin():
+    from dt4acc.custom_facility.bessyii_injection.mockup import InjectionMockup
+
+    pvs = InjectionPVs(FakeHandover([]), builder=RecordingBuilder())
+    pvs.fire = lambda: None  # a twin that never computes
+    inj = InjectionMockup(prefix="P", ctx=FakeContext(pvs), timeout=0.05, poll=0.01)
+    with pytest.raises(TimeoutError):
+        inj.shot()
+
+
+def test_twin_screens_show_the_beam_only_at_a_shot(twin_and_injection):
+    """the line's screens: a dark image until a shot, then the spot"""
+    twin, injection = twin_and_injection
+    view = twin.line_view
+    screen = "FOMZ1T"
+    asyncio.run(injection.shot())
+    image = np.asarray(view.process_variables[ReadCommand(screen, "image")].get())
+    sigma = view.process_variables[ReadCommand(screen, "sigma_x")].get()
+    assert image.sum() > 0.9 and sigma > 0, f"{screen}: the beam spot after a shot"
+    assert math.isfinite(view.process_variables[ReadCommand(screen, "x")].get())
