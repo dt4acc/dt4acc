@@ -5,6 +5,10 @@ import at
 from dt4acc_lib.pyat_simulator.accelerator_simulator import PyATAcceleratorSimulator
 from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend
 
+#: the storage ring's design energy [eV] (total energy, as pyAT's): the
+#: lattice file has to be at it, the magnets' calibrations convert with its brho
+ENERGY = 1.7185e9
+
 #: BESSY II storage ring lattice, exported from bessy2reflat (pyAT JSON;
 #: source in resources/storage_ring/input/README.md)
 LATTICE_FILE = "custom_facility/bessyii/resources/storage_ring/input/bessy2_storage_ring.json"
@@ -32,6 +36,7 @@ def bessyii_pyat_lattice(filename) -> at.Lattice:
     """The lattice in ``filename`` (pyAT JSON) as the twin uses it: 6D, the
     main cavities (CAV*) at the synchronous phase"""
     r = at.load_lattice(str(filename))
+    assert r.energy == ENERGY, f"BESSY II lattice at {r.energy} eV, the twin expects {ENERGY}"
     r.enable_6d()
     r.cavpts = "CAV*"
     r.set_cavity_phase(cavpts=r.cavpts)

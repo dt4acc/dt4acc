@@ -7,7 +7,8 @@ From MML's accelerator object (``ao``, HZB MML fork, BESSY II ``*init.m``):
 16 skew quadrupoles ``CQS<f>M<n><sector>R``, each on its own supply
 ``CQS<f>P<n><sector>R`` (``Setpoint.ChannelNames``), coils on the sextupole
 ``S<f>M<n><sector>R`` (``AT.ATIndex``); ``K = HW2PhysicsParams * I`` at the
-design energy (1.7185 GeV, brho 5.67229 T m), i.e. ``K * brho = slope * I``
+brho of MML's calibrations (``getbrho(1.7)``, 1.7 GeV kinetic energy: 5.67229 T m),
+i.e. ``K * brho = slope * I``
 with slope = HW2PhysicsParams * 5.67229 (the convention of the other magnets
 in magnets.yaml). Existing CQS entries are replaced.
 
@@ -22,7 +23,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 INPUT = ROOT / "src/dt4acc/custom_facility/bessyii/resources/storage_ring/input"
 DEVICE_DB = ROOT / "src/dt4acc/custom_epics/data/standard/accelerator_setup.json"
-BRHO = 5.67229387129245          # 1.7185 GeV, the twin's design energy (custom_epics/data/constants.py)
+BRHO = 5.67229387129245          # MML's getbrho(1.7): the brho its HW2PhysicsParams are given at
 
 
 def host_of(magnet: str) -> str:

@@ -1,5 +1,5 @@
 #
-# BESSY II Liaison manager forward table: 2026-10-28 17:10:31.248210
+# BESSY II Liaison manager forward table: 2026-11-23 16:12:40.317870
 # WARNING: automatically generated data
 #          please check when it is updated if you edit it by hand!
 lut:
@@ -582,6 +582,70 @@ lut:
 - dev_ids: [{device_name: PQIT6R, property: set_current}]
   lat_id:
     element_name: QIT6R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MD1R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MT1R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MD2R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MT2R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MD3R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MT3R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MD4R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MT4R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MD5R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MT5R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MD6R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MT6R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MD7R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MT7R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MD8R
+    property: main_strength
+- dev_ids: [{device_name: S1PR, property: set_current}]
+  lat_id:
+    element_name: S1MT8R
     property: main_strength
 - dev_ids: [{device_name: S2PDR, property: set_current}]
   lat_id:
@@ -2059,6 +2123,70 @@ lut:
   lat_id:
     element_name: QIT6R
     property: dx
+- dev_ids: [{device_name: S1MD1R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MD1R
+    property: dx
+- dev_ids: [{device_name: S1MT1R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MT1R
+    property: dx
+- dev_ids: [{device_name: S1MD2R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MD2R
+    property: dx
+- dev_ids: [{device_name: S1MT2R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MT2R
+    property: dx
+- dev_ids: [{device_name: S1MD3R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MD3R
+    property: dx
+- dev_ids: [{device_name: S1MT3R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MT3R
+    property: dx
+- dev_ids: [{device_name: S1MD4R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MD4R
+    property: dx
+- dev_ids: [{device_name: S1MT4R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MT4R
+    property: dx
+- dev_ids: [{device_name: S1MD5R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MD5R
+    property: dx
+- dev_ids: [{device_name: S1MT5R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MT5R
+    property: dx
+- dev_ids: [{device_name: S1MD6R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MD6R
+    property: dx
+- dev_ids: [{device_name: S1MT6R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MT6R
+    property: dx
+- dev_ids: [{device_name: S1MD7R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MD7R
+    property: dx
+- dev_ids: [{device_name: S1MT7R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MT7R
+    property: dx
+- dev_ids: [{device_name: S1MD8R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MD8R
+    property: dx
+- dev_ids: [{device_name: S1MT8R, property: dx_rdbk}]
+  lat_id:
+    element_name: S1MT8R
+    property: dx
 - dev_ids: [{device_name: S2M2D1R, property: dx_rdbk}]
   lat_id:
     element_name: S2M2D1R
@@ -3022,6 +3150,70 @@ lut:
 - dev_ids: [{device_name: QIT6R, property: dy_rdbk}]
   lat_id:
     element_name: QIT6R
+    property: dy
+- dev_ids: [{device_name: S1MD1R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MD1R
+    property: dy
+- dev_ids: [{device_name: S1MT1R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MT1R
+    property: dy
+- dev_ids: [{device_name: S1MD2R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MD2R
+    property: dy
+- dev_ids: [{device_name: S1MT2R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MT2R
+    property: dy
+- dev_ids: [{device_name: S1MD3R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MD3R
+    property: dy
+- dev_ids: [{device_name: S1MT3R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MT3R
+    property: dy
+- dev_ids: [{device_name: S1MD4R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MD4R
+    property: dy
+- dev_ids: [{device_name: S1MT4R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MT4R
+    property: dy
+- dev_ids: [{device_name: S1MD5R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MD5R
+    property: dy
+- dev_ids: [{device_name: S1MT5R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MT5R
+    property: dy
+- dev_ids: [{device_name: S1MD6R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MD6R
+    property: dy
+- dev_ids: [{device_name: S1MT6R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MT6R
+    property: dy
+- dev_ids: [{device_name: S1MD7R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MD7R
+    property: dy
+- dev_ids: [{device_name: S1MT7R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MT7R
+    property: dy
+- dev_ids: [{device_name: S1MD8R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MD8R
+    property: dy
+- dev_ids: [{device_name: S1MT8R, property: dy_rdbk}]
+  lat_id:
+    element_name: S1MT8R
     property: dy
 - dev_ids: [{device_name: S2M2D1R, property: dy_rdbk}]
   lat_id:

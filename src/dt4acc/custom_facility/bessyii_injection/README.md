@@ -99,7 +99,7 @@ caget BI:BPMZ1T:signal:sa:X       #   its BPMs still show the last shot
 caput BI:INJ:trigger 1            # the next shot shows the change
 caput BI:INJ:geometry:x -0.002    # line axis against ring axis [m]
 caput BI:INJ:n_turns 5            # turns tracked in the ring
-caput BI:Q1PDR:set 207.85         # ring quadrupole supply [A] (was 205.79)
+caput BI:Q1PDR:set 220.64         # ring quadrupole supply [A] (was 218.46)
 caput BI:INJ:trigger 1
 pvget BI:INJ:injected:x BI:INJ:survived
 ```

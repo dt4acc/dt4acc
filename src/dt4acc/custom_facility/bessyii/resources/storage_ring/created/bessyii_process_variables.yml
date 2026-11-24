@@ -1,5 +1,5 @@
 #
-# BESSY II process variables: 2026-10-28 17:10:31.248210
+# BESSY II process variables: 2026-11-23 16:12:40.317870
 # WARNING: automatically generated data
 #          please check when it is updated if you edit it by hand!
 vars:
@@ -1447,6 +1447,166 @@ vars:
     id: QIT6R
     property: main_strength
   pv_name: QIT6R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD1R
+    property: main_strength
+  pv_name: S1MD1R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT1R
+    property: main_strength
+  pv_name: S1MT1R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD2R
+    property: main_strength
+  pv_name: S1MD2R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT2R
+    property: main_strength
+  pv_name: S1MT2R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD3R
+    property: main_strength
+  pv_name: S1MD3R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT3R
+    property: main_strength
+  pv_name: S1MT3R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD4R
+    property: main_strength
+  pv_name: S1MD4R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT4R
+    property: main_strength
+  pv_name: S1MT4R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD5R
+    property: main_strength
+  pv_name: S1MD5R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT5R
+    property: main_strength
+  pv_name: S1MT5R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD6R
+    property: main_strength
+  pv_name: S1MD6R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT6R
+    property: main_strength
+  pv_name: S1MT6R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD7R
+    property: main_strength
+  pv_name: S1MD7R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT7R
+    property: main_strength
+  pv_name: S1MT7R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD8R
+    property: main_strength
+  pv_name: S1MD8R:main_strength
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT8R
+    property: main_strength
+  pv_name: S1MT8R:main_strength
   prec: 3
   update: immediate
   treat_returned_data: average
@@ -3768,6 +3928,62 @@ vars:
   record_type: ao
   always_update: false
   reads: [{id: PQIT6R, property: rdbk_current}, {id: QIT6R, property: main_strength}]
+- rcmd:
+    id: S1PR
+    property: rdbk_current
+  pv_name: S1PR:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1PR
+    property: set_current
+  pv_name: S1PR:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads:
+  - id: S1PR
+    property: rdbk_current
+  - id: S1MD1R
+    property: main_strength
+  - id: S1MT1R
+    property: main_strength
+  - id: S1MD2R
+    property: main_strength
+  - id: S1MT2R
+    property: main_strength
+  - id: S1MD3R
+    property: main_strength
+  - id: S1MT3R
+    property: main_strength
+  - id: S1MD4R
+    property: main_strength
+  - id: S1MT4R
+    property: main_strength
+  - id: S1MD5R
+    property: main_strength
+  - id: S1MT5R
+    property: main_strength
+  - id: S1MD6R
+    property: main_strength
+  - id: S1MT6R
+    property: main_strength
+  - id: S1MD7R
+    property: main_strength
+  - id: S1MT7R
+    property: main_strength
+  - id: S1MD8R
+    property: main_strength
+  - id: S1MT8R
+    property: main_strength
 - rcmd:
     id: S2PDR
     property: rdbk_current
@@ -11349,6 +11565,358 @@ vars:
   always_update: false
   reads: [{id: QIT6R, property: dx_rdbk}]
 - rcmd:
+    id: S1MD1R
+    property: dx_rdbk
+  pv_name: S1MD1R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD1R
+    property: dx
+  pv_name: S1MD1R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD1R, property: dx_rdbk}]
+- rcmd:
+    id: S1MT1R
+    property: dx_rdbk
+  pv_name: S1MT1R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT1R
+    property: dx
+  pv_name: S1MT1R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT1R, property: dx_rdbk}]
+- rcmd:
+    id: S1MD2R
+    property: dx_rdbk
+  pv_name: S1MD2R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD2R
+    property: dx
+  pv_name: S1MD2R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD2R, property: dx_rdbk}]
+- rcmd:
+    id: S1MT2R
+    property: dx_rdbk
+  pv_name: S1MT2R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT2R
+    property: dx
+  pv_name: S1MT2R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT2R, property: dx_rdbk}]
+- rcmd:
+    id: S1MD3R
+    property: dx_rdbk
+  pv_name: S1MD3R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD3R
+    property: dx
+  pv_name: S1MD3R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD3R, property: dx_rdbk}]
+- rcmd:
+    id: S1MT3R
+    property: dx_rdbk
+  pv_name: S1MT3R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT3R
+    property: dx
+  pv_name: S1MT3R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT3R, property: dx_rdbk}]
+- rcmd:
+    id: S1MD4R
+    property: dx_rdbk
+  pv_name: S1MD4R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD4R
+    property: dx
+  pv_name: S1MD4R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD4R, property: dx_rdbk}]
+- rcmd:
+    id: S1MT4R
+    property: dx_rdbk
+  pv_name: S1MT4R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT4R
+    property: dx
+  pv_name: S1MT4R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT4R, property: dx_rdbk}]
+- rcmd:
+    id: S1MD5R
+    property: dx_rdbk
+  pv_name: S1MD5R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD5R
+    property: dx
+  pv_name: S1MD5R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD5R, property: dx_rdbk}]
+- rcmd:
+    id: S1MT5R
+    property: dx_rdbk
+  pv_name: S1MT5R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT5R
+    property: dx
+  pv_name: S1MT5R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT5R, property: dx_rdbk}]
+- rcmd:
+    id: S1MD6R
+    property: dx_rdbk
+  pv_name: S1MD6R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD6R
+    property: dx
+  pv_name: S1MD6R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD6R, property: dx_rdbk}]
+- rcmd:
+    id: S1MT6R
+    property: dx_rdbk
+  pv_name: S1MT6R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT6R
+    property: dx
+  pv_name: S1MT6R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT6R, property: dx_rdbk}]
+- rcmd:
+    id: S1MD7R
+    property: dx_rdbk
+  pv_name: S1MD7R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD7R
+    property: dx
+  pv_name: S1MD7R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD7R, property: dx_rdbk}]
+- rcmd:
+    id: S1MT7R
+    property: dx_rdbk
+  pv_name: S1MT7R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT7R
+    property: dx
+  pv_name: S1MT7R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT7R, property: dx_rdbk}]
+- rcmd:
+    id: S1MD8R
+    property: dx_rdbk
+  pv_name: S1MD8R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD8R
+    property: dx
+  pv_name: S1MD8R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD8R, property: dx_rdbk}]
+- rcmd:
+    id: S1MT8R
+    property: dx_rdbk
+  pv_name: S1MT8R:dx:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT8R
+    property: dx
+  pv_name: S1MT8R:dx:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT8R, property: dx_rdbk}]
+- rcmd:
     id: S2M2D1R
     property: dx_rdbk
   pv_name: S2M2D1R:dx:rdbk
@@ -16650,6 +17218,358 @@ vars:
   record_type: ao
   always_update: false
   reads: [{id: QIT6R, property: dy_rdbk}]
+- rcmd:
+    id: S1MD1R
+    property: dy_rdbk
+  pv_name: S1MD1R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD1R
+    property: dy
+  pv_name: S1MD1R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD1R, property: dy_rdbk}]
+- rcmd:
+    id: S1MT1R
+    property: dy_rdbk
+  pv_name: S1MT1R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT1R
+    property: dy
+  pv_name: S1MT1R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT1R, property: dy_rdbk}]
+- rcmd:
+    id: S1MD2R
+    property: dy_rdbk
+  pv_name: S1MD2R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD2R
+    property: dy
+  pv_name: S1MD2R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD2R, property: dy_rdbk}]
+- rcmd:
+    id: S1MT2R
+    property: dy_rdbk
+  pv_name: S1MT2R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT2R
+    property: dy
+  pv_name: S1MT2R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT2R, property: dy_rdbk}]
+- rcmd:
+    id: S1MD3R
+    property: dy_rdbk
+  pv_name: S1MD3R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD3R
+    property: dy
+  pv_name: S1MD3R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD3R, property: dy_rdbk}]
+- rcmd:
+    id: S1MT3R
+    property: dy_rdbk
+  pv_name: S1MT3R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT3R
+    property: dy
+  pv_name: S1MT3R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT3R, property: dy_rdbk}]
+- rcmd:
+    id: S1MD4R
+    property: dy_rdbk
+  pv_name: S1MD4R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD4R
+    property: dy
+  pv_name: S1MD4R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD4R, property: dy_rdbk}]
+- rcmd:
+    id: S1MT4R
+    property: dy_rdbk
+  pv_name: S1MT4R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT4R
+    property: dy
+  pv_name: S1MT4R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT4R, property: dy_rdbk}]
+- rcmd:
+    id: S1MD5R
+    property: dy_rdbk
+  pv_name: S1MD5R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD5R
+    property: dy
+  pv_name: S1MD5R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD5R, property: dy_rdbk}]
+- rcmd:
+    id: S1MT5R
+    property: dy_rdbk
+  pv_name: S1MT5R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT5R
+    property: dy
+  pv_name: S1MT5R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT5R, property: dy_rdbk}]
+- rcmd:
+    id: S1MD6R
+    property: dy_rdbk
+  pv_name: S1MD6R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD6R
+    property: dy
+  pv_name: S1MD6R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD6R, property: dy_rdbk}]
+- rcmd:
+    id: S1MT6R
+    property: dy_rdbk
+  pv_name: S1MT6R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT6R
+    property: dy
+  pv_name: S1MT6R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT6R, property: dy_rdbk}]
+- rcmd:
+    id: S1MD7R
+    property: dy_rdbk
+  pv_name: S1MD7R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD7R
+    property: dy
+  pv_name: S1MD7R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD7R, property: dy_rdbk}]
+- rcmd:
+    id: S1MT7R
+    property: dy_rdbk
+  pv_name: S1MT7R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT7R
+    property: dy
+  pv_name: S1MT7R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT7R, property: dy_rdbk}]
+- rcmd:
+    id: S1MD8R
+    property: dy_rdbk
+  pv_name: S1MD8R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MD8R
+    property: dy
+  pv_name: S1MD8R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MD8R, property: dy_rdbk}]
+- rcmd:
+    id: S1MT8R
+    property: dy_rdbk
+  pv_name: S1MT8R:dy:rdbk
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ai
+- rcmd:
+    id: S1MT8R
+    property: dy
+  pv_name: S1MT8R:dy:set
+  prec: 3
+  update: immediate
+  treat_returned_data: average
+  default_waveform_length: -1
+  device_suffix: ''
+  record_type: ao
+  always_update: false
+  reads: [{id: S1MT8R, property: dy_rdbk}]
 - rcmd:
     id: S2M2D1R
     property: dy_rdbk
