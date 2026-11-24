@@ -19,6 +19,16 @@ The liaison maps device properties to lattice element properties.
 The proxy (in dt4acc_lib) then knows how to read/write each property on the AT object.
 
 build_managers() always returns (yp, lm, tm) — three values.
+
+The engine translates the magnets' commands (device name -> host element)
+through these, the one conversion path of the twin (engine in the device
+view, see mexec_server_for_physics_engine.translated_design_view): the
+magnets' slopes are 1 (lattice coefficients) or, if enabled
+(DT4ACC_INTEGRATED_STRENGTH=1), their integrated strength factors (see
+dt4acc.custom_facility.model.at_integrated_strength). The cavities' lattice
+elements are also addressed directly by their UUID (identity conversions):
+the cavity devices, the cavity power converter and the ring simulator write
+these.
 """
 
 import functools
@@ -44,6 +54,8 @@ from dt4acc_lib.model.utils.translator_manager_lookup_table import (
 )
 
 from dt4acc.config.data.constants import ring_parameters
+from dt4acc.core.bl.handle_lattice import lattice_loader
+from dt4acc.custom_facility.model import at_integrated_strength
 from dt4acc.custom_facility.model.config.elementmodel import MagnetElementSetup
 from dt4acc.config.data.querries import get_controlled_elements, get_unique_power_converters_for_types, get_elements_per_power_converter
 from dt4acc.custom_facility.soleil.soleil_yellow_pages import soleil_yellow_pages
@@ -73,6 +85,14 @@ def _remove_id(d: Dict) -> Dict:
 def _get_cavity_names() -> list:
     """Return cavity device names directly from the setup JSON."""
     return [m["name"] for m in get_controlled_elements() if m.get("type") == "RFCavity"]
+
+
+def _get_cavity_uuids() -> dict:
+    """Cavity device name -> its lattice element (UUID, else the name)."""
+    return {
+        m["name"]: (m.get("uuid") or m["name"])
+        for m in get_controlled_elements() if m.get("type") == "RFCavity"
+    }
 
 
 def magnet_infos_from_db() -> Sequence[MagnetElementSetup]:
@@ -154,20 +174,50 @@ def _host_element_name(element_name: str, yp: YellowPages, name_to_uuid: dict = 
         return name_to_uuid.get(element_name, element_name)
 
     return element_name
+# Magnet types that have a control interface in SOLEIL design view.
+_CONTROLLED_TYPES = {
+    "Quadrupole", "Sextupole", "Octupole", "Multipole", "Steerer", "Corrector",
+    "SkewQuadrupoleCorrector", "RFCavity", "QuadrupoleCorrector"
+}
+
+
+def _magnet_entries(infos, yp: YellowPages, name_to_uuid: dict):
+    """(info, device property, host element, lattice property) of the magnets
+
+    The controlled types, and the main dipoles ("Bend": their devices read
+    and write their main_strength, the bending field, unchanged by the
+    integrated strengths).
+    """
+    for info in infos:
+        if info.type == "Bend":
+            host = name_to_uuid.get(info.name, info.name)
+            yield info, "main_strength", host, "main_strength"
+            continue
+        if info.type not in _CONTROLLED_TYPES:
+            continue
+        dev_prop = _lattice_property(info.name, yp)  # device exposes same name as proxy
+        lat_prop = _lattice_property(info.name, yp)  # proxy property name
+        yield info, dev_prop, _host_element_name(info.name, yp, name_to_uuid), lat_prop
+
+
 # ---------------------------------------------------------------------------
 # build_managers
 # ---------------------------------------------------------------------------
-def build_managers():
+def build_managers(strength_factors: dict = None):
     """
     Build and return (yp, lm, tm) for the SOLEIL II design-view twin.
 
     Design-view: no power converters. Magnet devices map device properties
     directly to lattice element properties via the new property proxy architecture.
-    All unit conversions use PolynomCoefficients(slope=1.0) — no energy dependence.
+    Unit conversions are linear, no energy dependence: slope 1, but for the
+    magnets ``strength_factors`` {(element, lattice property): factor}
+    (integrated strengths, see strength_factors_from_lattice).
     """
+    strength_factors = strength_factors or {}
     yp = soleil_yellow_pages()
     infos = magnet_infos_from_db()
     cavity_names = _get_cavity_names()
+    cavity_uuids = _get_cavity_uuids()
 
     cavity_pc_names = get_unique_power_converters_for_types(["RFCavity"])
 
@@ -189,37 +239,27 @@ def build_managers():
     # All magnets — device property → lattice element property
     # The device property name is what the Tango device exposes (e.g. "main_strength")
     # The lattice property name is what the proxy handles (e.g. "main_strength", "B4", "A2")
-    # Magnet types that have a control interface in SOLEIL design view.
-    # Bends (dipoles) are not directly controlled — skip them.
-    _CONTROLLED_TYPES = {
-        "Quadrupole", "Sextupole", "Octupole", "Multipole", "Steerer", "Corrector",
-        "SkewQuadrupoleCorrector", "RFCavity", "QuadrupoleCorrector"
-    }
-
-    for info in infos:
-        if info.type not in _CONTROLLED_TYPES:
-            continue
-        dev_prop = _lattice_property(info.name, yp)  # device exposes same name as proxy
-        lat_prop = _lattice_property(info.name, yp)  # proxy property name
-        host = _host_element_name(info.name, yp, name_to_uuid)
+    magnet_entries = list(_magnet_entries(infos, yp, name_to_uuid))
+    for info, dev_prop, host, lat_prop in magnet_entries:
         inverse_lut[
             DevicePropertyID(device_name=info.name, property=dev_prop)
         ] = (LatticeElementPropertyID(element_name=host, property=lat_prop),)
 
-    # Cavities → frequency and voltage
+    # Cavities → frequency and voltage of their lattice element, by name and
+    # (identity: the devices writing the lattice element) by UUID
     for name in cavity_names:
-        inverse_lut[
-            DevicePropertyID(device_name=name, property="frequency")
-        ] = (LatticeElementPropertyID(element_name=name, property="frequency"),)
-        inverse_lut[
-            DevicePropertyID(device_name=name, property="voltage")
-        ] = (LatticeElementPropertyID(element_name=name, property="voltage"),)
+        uuid = cavity_uuids[name]
+        for prop in ("frequency", "voltage"):
+            for dev_name in (name, uuid):
+                inverse_lut[
+                    DevicePropertyID(device_name=dev_name, property=prop)
+                ] = (LatticeElementPropertyID(element_name=uuid, property=prop),)
 
     # Master clock → all cavity frequencies
     inverse_lut[
         DevicePropertyID(device_name="master_clock", property="reference_frequency")
     ] = tuple(
-        LatticeElementPropertyID(element_name=name, property="frequency")
+        LatticeElementPropertyID(element_name=cavity_uuids[name], property="frequency")
         for name in cavity_names
     )
 
@@ -231,7 +271,7 @@ def build_managers():
             inverse_lut[
                 DevicePropertyID(device_name=cavity_pc_name, property="set_current")
             ] = tuple(
-                LatticeElementPropertyID(element_name=name, property="voltage")
+                LatticeElementPropertyID(element_name=cavity_uuids.get(name, name), property="voltage")
                 for name in controlled
             )
 
@@ -261,33 +301,29 @@ def build_managers():
     # ------------------------------------------------------------------
     translator_lut: dict = {}
 
-    # All controlled magnets — same set as inverse_lut
-    for info in infos:
-        if info.type not in _CONTROLLED_TYPES:
-            continue
-        dev_prop = _lattice_property(info.name, yp)
-        lat_prop = _lattice_property(info.name, yp)
-        host = _host_element_name(info.name, yp, name_to_uuid)
+    # All magnets — same set as inverse_lut
+    for info, dev_prop, host, lat_prop in magnet_entries:
+        # device = factor * lattice: 1, or the integrated strength factor
+        factor = strength_factors.get((host, lat_prop), 1.0)
         translator_lut[ConversionID(
             LatticeElementPropertyID(element_name=host, property=lat_prop),
             DevicePropertyID(device_name=info.name, property=dev_prop),
-        )] = _poly()
+        )] = PolynomCoefficients(coeffs=[0.0, factor], energy_dependent=False)
 
-    # Cavities — Hz ↔ Hz, slope=1.0 for direct frequency write
+    # Cavities — Hz ↔ Hz, V ↔ V, slope=1.0, by name and by UUID
     for name in cavity_names:
-        translator_lut[ConversionID(
-            LatticeElementPropertyID(element_name=name, property="frequency"),
-            DevicePropertyID(device_name=name, property="frequency"),
-        )] = _poly()
-        translator_lut[ConversionID(
-            LatticeElementPropertyID(element_name=name, property="voltage"),
-            DevicePropertyID(device_name=name, property="voltage"),
-        )] = _poly()
+        uuid = cavity_uuids[name]
+        for prop in ("frequency", "voltage"):
+            for dev_name in (name, uuid):
+                translator_lut[ConversionID(
+                    LatticeElementPropertyID(element_name=uuid, property=prop),
+                    DevicePropertyID(device_name=dev_name, property=prop),
+                )] = _poly()
 
     # Master clock — kHz on master clock device
     for name in cavity_names:
         translator_lut[ConversionID(
-            LatticeElementPropertyID(element_name=name, property="frequency"),
+            LatticeElementPropertyID(element_name=cavity_uuids[name], property="frequency"),
             DevicePropertyID(device_name="master_clock", property="reference_frequency"),
         )] = PolynomCoefficients(coeffs=[0.0, 1e-3], energy_dependent=False)  # kHz on master clock
 
@@ -297,7 +333,7 @@ def build_managers():
                       if m.get("type") == "RFCavity"]
         for name in controlled:
             translator_lut[ConversionID(
-                LatticeElementPropertyID(element_name=name, property="voltage"),
+                LatticeElementPropertyID(element_name=cavity_uuids.get(name, name), property="voltage"),
                 DevicePropertyID(device_name=cavity_pc_name, property="set_current"),
             )] = _poly()
 
@@ -324,10 +360,22 @@ def build_managers():
     return yp, lm, tm
 
 
+def strength_factors_from_lattice() -> dict:
+    """The magnets' integrated strength factors, from the lengths of their
+    lattice elements (the twin's lattice file), if enabled
+    (DT4ACC_INTEGRATED_STRENGTH=1), else none: the magnets publish the
+    lattice coefficients."""
+    if not at_integrated_strength.enabled():
+        return {}
+    _, lm, _ = build_managers()
+    lat_ids = [lat_p for elem in lm.inverse_lut.lut for lat_p in elem.lat_ids]
+    return at_integrated_strength.strength_factors(lattice_loader.load(), lat_ids)
+
+
 @functools.lru_cache(maxsize=1)
 def load_managers():
     """Cached entry point."""
-    return build_managers()
+    return build_managers(strength_factors_from_lattice())
 
 
 if __name__ == "__main__":

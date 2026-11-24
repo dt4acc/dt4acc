@@ -29,6 +29,9 @@ PLANES = [("x", "horizontal position (m)"), ("xp", "horizontal angle (rad)"), ("
           ("yp", "vertical angle (rad)"), ("delta", "momentum offset (1)"), ("ct", "path length offset (m)")]
 
 INJECTION = [
+    ("Shot", [
+        ("INJ:trigger", "write 1 to fire a shot: the line's monitors and the ring's turn by turn data show it (back at 0 once accepted)", ACTS, NO),
+    ]),
     ("Geometry: the line's reference against the ring's at the septum exit (ring = line + geometry)",
      [(f"INJ:geometry:{p}", d, ACTS, NO) for p, d in PLANES]),
     ("Beam leaving the line (line frame)",
@@ -41,7 +44,7 @@ INJECTION = [
         ("INJ:tbt:y", "vertical position at the ring BPMs, as INJ:tbt:x (m)", RO, NO),
         ("INJ:tbt:names", "the ring BPMs, in the order of INJ:tbt:x / y", RO, NO),
         ("INJ:survived", "particles still there after each turn", RO, NO),
-        ("INJ:count", "hand overs computed so far", RO, NO),
+        ("INJ:count", "shots computed so far", RO, NO),
     ]),
 ]
 TBT_FIELDS = [("signal:tbt:X", "horizontal position, turn after turn (mm)", RO, NO),
@@ -150,7 +153,7 @@ def main(a):
               "```text", *sorted(tl_model), "```", ""]
 
     lines += ["## Hand over", "", "The beam leaving the line, put into the ring at `MSEPEXIT` and tracked turn",
-              "by turn; recomputed whenever line, ring or these settings change.", ""]
+              "by turn, when a shot is fired (`INJ:trigger`). The settings act at the next shot.", ""]
     for title, rows in INJECTION:
         lines += [f"#### {title}", "", *TABLE_HEAD, *[row(pv, d, w, inj[pv], m) for pv, d, w, m in rows], ""]
     lines += [f"#### Ring BPMs, turn by turn ({len(bpms)})", "", *TABLE_HEAD]

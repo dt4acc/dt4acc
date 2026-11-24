@@ -11,8 +11,10 @@ pytest.importorskip("lat2db.tools.pyat.bessy2_TL_reflat")
 from dt4acc.core.bl.translating_command_execution_engine import TranslatingCommandExecutionEngine  # noqa: E402
 from dt4acc.custom_facility.bessytl.twin_setup import (  # noqa: E402
     BRHO,
+    bend_field_error,
     bessytl_lattice,
     build_managers,
+    calibration,
     load_accelerator_setup,
     load_operating_currents,
     load_twiss_in,
@@ -117,23 +119,29 @@ def test_bends_start_at_their_design_angle(twin) -> None:
     """at the operating currents the bends bend as designed: no field error"""
     backend, mexec = twin
     assert PC_OF["B1M1T"] == PC_OF["B1M2T"] == "B1PT" and PC_OF["B2MT"] == "B2PT"
+    currents = load_operating_currents()
     for name in BENDS:
-        assert element(backend, name).KickAngle == pytest.approx([0.0, 0.0], abs=1e-15), name
+        assert currents[PC_OF[name]] == SETUP[name]["reference_current"], name
+        assert element(backend, name).PolynomB[0] == pytest.approx(0.0, abs=1e-15), name
+        assert not np.any(getattr(element(backend, name), "KickAngle", np.zeros(2))), "no kick on a bend"
         (angle,) = read(mexec, name, "main_strength")
         assert angle == pytest.approx(element(backend, name).BendingAngle, rel=1e-12), name
 
 
-def test_supply_current_sets_its_bends(twin) -> None:
-    """B1PT drives B1M1T and B1M2T: both bend more, a field error as a kick"""
+def test_supply_current_sets_its_bends_field(twin) -> None:
+    """B1PT drives B1M1T and B1M2T: PolynomB[0] = t_f (I - I_ref) / brho, more current bends more"""
     backend, mexec = twin
     write(mexec, "B1PT", "set_current", 233.0)
     for name in ("B1M1T", "B1M2T"):
-        s, design = SETUP[name]["magnetic_strength"], SETUP[name]["bending_angle"]
-        assert element(backend, name).KickAngle[0] == pytest.approx(design - s * 233.0, rel=1e-12)
-        assert element(backend, name).KickAngle[1] == 0.0
+        m = SETUP[name]
+        b0 = element(backend, name).PolynomB[0]
+        assert b0 == pytest.approx(m["magnetic_strength"] * (233.0 - m["reference_current"]) / BRHO, rel=1e-12)
+        assert b0 > 0.0
+        assert element(backend, name).BendingAngle == m["bending_angle"], "the geometry stays the design's"
         (angle,) = read(mexec, name, "main_strength_rdbk")
-        assert angle == pytest.approx(s * 233.0, rel=1e-12), "its own value: the bending angle"
-    assert element(backend, "B2MT").KickAngle[0] == 0.0, "B2PT unchanged"
+        assert angle == pytest.approx(m["bending_angle"] + m["length"] * b0, rel=1e-12), "its own value: the bending angle"
+        assert angle == pytest.approx(m["bending_angle"] * 233.0 / m["reference_current"], rel=1e-12), "linear in I"
+    assert element(backend, "B2MT").PolynomB[0] == 0.0, "B2PT unchanged"
     assert read(mexec, "B1PT", "rdbk_current") == pytest.approx([233.0, 233.0], rel=1e-12)
 
 
@@ -143,27 +151,29 @@ def test_bend_change_moves_the_trajectory_as_a_field_error(twin) -> None:
     write(mexec, "B2PT", "set_current", 1.486 * 1.01)
     line = bessytl_lattice()
     (b2,) = [e for e in line if e.FamName == "B2MT"]
-    b2.PolynomB[0] += b2.BendingAngle * 0.01 / b2.Length
+    b2.PolynomB[0] = b2.BendingAngle * 0.01 / b2.Length
     _, _, ed = line.get_optics(at.All, twiss_in=load_twiss_in().as_at())
     _, _, twin_ed = backend.acc.acc.get_optics(at.All, twiss_in=load_twiss_in().as_at())
     idx = line.get_uint32_index(at.Monitor)
-    np.testing.assert_allclose(twin_ed.closed_orbit[idx, 0], ed.closed_orbit[idx, 0], rtol=1e-6, atol=1e-9)
+    np.testing.assert_allclose(twin_ed.closed_orbit[idx, 0], ed.closed_orbit[idx, 0], rtol=1e-9, atol=1e-12)
     assert np.abs(ed.closed_orbit[idx, 0]).max() > 1e-4, "B2PT +1 % moves the beam at the monitors"
 
 
-def test_a_bend_field_error_is_a_momentum_error():
-    """the sign of the kick: in a bend a field error of +e acts as a momentum error of -e"""
-    theta, length, eps = 0.38397, 1.778, 1e-3
-
-    def end(kick=0.0, delta=0.0):
-        bend = at.Dipole("B", length, theta, PassMethod="BndMPoleSymplectic4Pass", KickAngle=np.array([kick, 0.0]))
-        line = at.Lattice([bend, at.Drift("D", 3.0)], energy=1.7e9)
-        r = np.zeros((6, 1))
-        r[4] = delta
-        out, *_ = line.track(r, refpts=len(line), nturns=1)
-        return out[:2, 0, 0, 0]
-
-    np.testing.assert_allclose(end(kick=-theta * eps), end(delta=-eps), rtol=2e-3)
+@pytest.mark.parametrize("name", BENDS)
+@pytest.mark.parametrize("energy_ratio", (1.0, 0.9, 1.05))
+def test_bend_calibration_follows_the_energy(name, energy_ratio) -> None:
+    """the reference current scales with brho: at any energy I_ref gives the design angle,
+    and the calibration (current <- PolynomB[0]) inverts bend_field_error"""
+    m, brho = SETUP[name], BRHO * energy_ratio
+    i_ref = m["reference_current"] * energy_ratio
+    assert bend_field_error(m, i_ref, brho) == pytest.approx(0.0, abs=1e-15)
+    c0, c1 = calibration(m).coeffs
+    assert calibration(m).energy_dependent
+    for current in (0.9 * i_ref, i_ref, 1.1 * i_ref):
+        b0 = bend_field_error(m, current, brho)
+        assert brho * (c0 + c1 * b0) == pytest.approx(current, rel=1e-12)
+    # the design field: t_f * I_ref = brho * angle / length, at every energy
+    assert m["magnetic_strength"] * i_ref == pytest.approx(brho * m["bending_angle"] / m["length"], rel=1e-12)
 
 
 def test_magnets_read_back_in_lattice_units(twin) -> None:

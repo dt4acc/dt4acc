@@ -8,19 +8,25 @@ Inputs (``resources/input`` and ``custom_epics/data/transfer_line``):
 
 * ``accelerator_setup.json``: magnets, their supply (``pc``) and calibration
   (``magnetic_strength``): quadrupoles gradient per current [T/m/A],
-  steerers kick per current [rad/A] at the design energy, bends bending
-  angle per current [rad/A] and their design angle (``bending_angle``)
+  steerers kick per current [rad/A] at the design energy, bends field per
+  current (transfer function ``t_f``) [T/A], the current giving the design
+  angle at the design energy (``reference_current``), their design angle
+  (``bending_angle``) and length
 * ``operating_currents.yaml``: supply currents the twin starts with
 * ``twiss_in.yaml``: beam entering the line
 
-Bends (B1M1T and B1M2T on B1PT, B2MT on B2PT): the design angle stays the
-lattice's; a current that differs from the one giving it is a field error,
-a horizontal kick on the beam: ``x_kick = design angle - angle(I)``, with
-``angle(I) = magnetic_strength * I`` (linear, no saturation; the small
-change of the edge and body focusing is left out). The sign is pyAT's: a
-field error of +e in a bend acts as a momentum error of -e, i.e. a kick of
-``-angle * e``; more current bends more. The magnet's own value (``Cm``) is
-its bending angle [rad].
+Bends (B1M1T and B1M2T on B1PT, B2MT on B2PT): the lattice keeps the design
+angle (``BendingAngle``, the geometry); the current sets the field error
+``PolynomB[0]`` [1/m]:
+
+    PolynomB[0] = t_f * (I - I_ref) / brho,   I_ref = reference_current * brho / BRHO
+
+0 at ``I_ref``, the current giving the design angle at the beam's energy:
+the reference current scales with the energy, as the design field does.
+More current, more field, the beam bent more. Linear: no saturation; the
+small change of the edge and body focusing is left out. The magnet's own
+value (``Cm``) is its bending angle [rad]: ``design angle + length *
+PolynomB[0]``.
 """
 import json
 import logging
@@ -109,7 +115,8 @@ def calibration(magnet: dict) -> PolynomCoefficients:
     The conversion handles the energy: quadrupoles are given as gradient per
     current (per brho), steerers as kick per current at the design energy
     (``reference_brho``: the conversion scales the kick with the beam's brho).
-    Bends: their kick (:func:`bend_kick`), at the design energy.
+    Bends: their field error ``PolynomB[0]`` (:func:`bend_field_error`):
+    ``I = brho * (reference_current / BRHO + PolynomB[0] / t_f)``.
     """
     if magnet["type"] == "Quadrupole":
         return PolynomCoefficients([0.0, 1.0 / slope(magnet)], energy_dependent=True)
@@ -118,21 +125,24 @@ def calibration(magnet: dict) -> PolynomCoefficients:
             [0.0, 1.0 / magnet["magnetic_strength"]], energy_dependent=True, reference_brho=BRHO
         )
     if magnet["type"] == "Bend":
-        # x_kick = design - s * I  =>  I = (design - x_kick) / s
-        s, design = magnet["magnetic_strength"], magnet["bending_angle"]
-        return PolynomCoefficients([design / s, -1.0 / s], energy_dependent=False)
+        # PolynomB[0] = t_f (I - I_ref) / brho  =>  I = brho (I_ref / BRHO + PolynomB[0] / t_f)
+        return PolynomCoefficients(
+            [magnet["reference_current"] / BRHO, 1.0 / magnet["magnetic_strength"]], energy_dependent=True
+        )
     raise ValueError(f"{magnet['name']}: no calibration for type {magnet['type']}")
 
 
-def bend_kick(magnet: dict, current: float) -> float:
-    """A bend's field error as a horizontal kick [rad] at ``current``: the design
-    angle minus its bending angle there (0 at the current giving the design angle)"""
-    return magnet["bending_angle"] - magnet["magnetic_strength"] * current
+def bend_field_error(magnet: dict, current: float, brho: float = BRHO) -> float:
+    """A bend's field error ``PolynomB[0]`` [1/m] at ``current``: ``t_f (I - I_ref) / brho``,
+    0 at the current giving the design angle (``I_ref``, scaled with brho)"""
+    i_ref = magnet["reference_current"] * brho / BRHO
+    return magnet["magnetic_strength"] * (current - i_ref) / brho
 
 
 def bend_angle(magnet: dict) -> PolynomCoefficients:
-    """A bend's own value, its bending angle [rad], from its kick: design - x_kick"""
-    return PolynomCoefficients([magnet["bending_angle"], -1.0], energy_dependent=False)
+    """A bend's own value, its bending angle [rad], from its field error:
+    ``design angle + length * PolynomB[0]``"""
+    return PolynomCoefficients([magnet["bending_angle"], magnet["length"]], energy_dependent=False)
 
 
 def bessytl_lattice(
@@ -167,12 +177,14 @@ def bessytl_lattice(
             elem.update(K=slope(magnet) * currents.get(magnet["pc"], 0.0) / BRHO)
         elif magnet["type"] == "Bend":
             elem = by_name[magnet["name"]]
-            if not np.isclose(elem.BendingAngle, magnet["bending_angle"], rtol=1e-9, atol=0.0):
-                raise ValueError(f"{magnet['name']}: design angle {magnet['bending_angle']} in the device"
-                                 f" database, {elem.BendingAngle} in the lattice")
-            # the field error at the operating current (0 where it gives the design
-            # angle); a bend of the lattice has no kick of its own before
-            elem.update(KickAngle=np.array([bend_kick(magnet, currents[magnet["pc"]]), 0.0]))
+            for key, value in (("bending_angle", elem.BendingAngle), ("length", elem.Length)):
+                if not np.isclose(value, magnet[key], rtol=1e-9, atol=0.0):
+                    raise ValueError(f"{magnet['name']}: {key} {magnet[key]} in the device database,"
+                                     f" {value} in the lattice")
+            # the field error at the operating current (0 where it gives the design angle)
+            polynom_b = np.array(elem.PolynomB, dtype=float)
+            polynom_b[0] = bend_field_error(magnet, currents[magnet["pc"]])
+            elem.update(PolynomB=polynom_b)
     return line
 
 
@@ -201,7 +213,8 @@ def build_lookup_tables(
         elif magnet["type"] == "Steerer":
             lattice_property = kick_plane(magnet["name"])
         elif magnet["type"] == "Bend":
-            lattice_property = "x_kick"
+            # PolynomB[0]
+            lattice_property = "B1"
         else:
             continue
         name, pc = magnet["name"], magnet["pc"]
@@ -248,6 +261,11 @@ def build_managers(setup: Sequence[dict] = None) -> Tuple[LiaisonManager, Transl
     lm = LiaisonManager(forward_lut=fwd, inverse_lut=inv)
     ts = TranslatorService(lut=TranslatorLookupTable(lut=conversions), brho=BRHO)
     return lm, ts
+
+
+#: what the line's BPM structure (``ORBITCC:rdBpm``) serves: its BPMs and its
+#: striplines (beam position monitors of another geometry), in lattice order
+ORBIT_MONITOR_PREFIXES = ("BPMZ", "SLZ")
 
 
 def monitor_names(line: at.Lattice) -> List[str]:

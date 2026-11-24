@@ -33,6 +33,7 @@ from dt4acc.custom_tango.views.view import TangoView
 from dt4acc.custom_tango.ioc.mexec_server_for_physics_engine import (
     _connect_to_mexec_service,
     lattice_properties_for_device,
+    translated_design_view,
 )
 from dt4acc_lib.model.output.result import TranslatedReading, ReadTogetherAndTranslated, SingleReading
 from dt4acc_lib.model.utils.command import ReadCommand, Command
@@ -258,14 +259,20 @@ def get_initial_strength(uuid: str) -> float:
 
 
 def get_initial_values(uuid: str) -> dict:
-    """Called by Tango devices to get cached initial lattice values."""
+    """Called by Tango devices to get cached initial values.
+
+    ``uuid``: the id the device reads by, its command id (see
+    BaseMagnetDevice.command_id): its lattice element, or its own name when
+    the engine translates the commands (the values are then device values).
+    """
     values = _default_lattice_values()
     values.update(_initial_values_cache.get(uuid, {}))
     return values
 
 
 def get_nominal_values(uuid: str) -> dict:
-    """Called by MagnetDevice.RefreshFromCache() after reset."""
+    """Called by MagnetDevice.RefreshFromCache() after reset (``uuid``: as
+    get_initial_values)."""
     values = _default_lattice_values()
     values.update(_nominal_cache.get(uuid, {}))
     return values
@@ -471,7 +478,10 @@ def main_loop(server_name: str, instance_name: str, event=None):
     try:
         sync_proxy, _, _ = _connect_to_mexec_service()
 
-        # Collect UUIDs for magnets belonging to this server/instance
+        # Collect UUIDs for magnets belonging to this server/instance: the ids
+        # their devices read by (BaseMagnetDevice.command_id), the magnets'
+        # names when the engine translates their commands
+        by_name = translated_design_view()
         my_uuids = []
         seen_uuids = set()
         uuid_to_prop = {}
@@ -498,7 +508,7 @@ def main_loop(server_name: str, instance_name: str, event=None):
                     continue
                 if trl.domain == server_name and trl.family == instance_name:
                     _add_cache_element(
-                        uuid=uuid,
+                        uuid=magnet_name if by_name and mtype != "RFCavity" else uuid,
                         props=props,
                         uuids=my_uuids,
                         seen_uuids=seen_uuids,

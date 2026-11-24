@@ -1,5 +1,5 @@
 """Walk through a running BESSY II injection twin: change one thing at a time,
-say what to expect, show what came out
+fire a shot (``INJ:trigger``), say what to expect, show what came out
 
 Run it next to ``live_plot.py`` to watch each step. Every value it changes is
 put back at the end.
@@ -47,11 +47,12 @@ def main():
     def get(name):
         return ctx.get(pv(name), timeout=5).value
 
-    def wait_for_hand_over(before):
+    def shot(before):
+        """fire a shot, wait until it is computed"""
+        ctx.put(pv("INJ:trigger"), 1)
         t0 = time.time()
         while int(get("INJ:count")) <= before and time.time() - t0 < 30:
             time.sleep(0.2)
-        time.sleep(1.0)
 
     originals = {}
     for title, changes, expect in STEPS:
@@ -64,8 +65,8 @@ def main():
             value = originals[name] * 1.01 if value is None else value
             print(f"   {name} = {value:g}")
             ctx.put(pv(name), value)
-        if changes:
-            wait_for_hand_over(count)
+        print("   INJ:trigger = 1 (a shot)")
+        shot(count)
         n_turns = int(get("INJ:n_turns"))
         x = np.asarray(get("INJ:tbt:x"))
         n_bpm = len(get("INJ:tbt:names"))
