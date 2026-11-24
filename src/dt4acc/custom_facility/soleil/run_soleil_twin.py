@@ -28,6 +28,13 @@ Environment variables (all optional, CLI args take precedence)
     DT4ACC_LATTICE_FILE   Path to the SOLEIL AT lattice .m file
     DT4ACC_TANGO_HOST     Tango database host:port  (default: localhost:10000)
     DT4ACC_VIEW           Design or Device view (default: design)
+    DT4ACC_INTEGRATED_STRENGTH  "1" (default): the magnets publish integrated
+                          strengths (see custom_facility.model.at_integrated_strength),
+                          "0": the lattice coefficients
+
+In the design view the command execution engine runs in the device view
+(DT4ACC_ENGINE_VIEW=device): the magnet devices write and read by their
+names, translated by SOLEIL's liaison manager and translation service.
 """
 
 import os
@@ -38,6 +45,7 @@ from pathlib import Path
 
 from dt4acc.custom_facility.soleil.utils.command_line_interface import display_setup_from_args, parse_args
 from dt4acc.core.bl import handle_lattice
+from dt4acc.custom_facility.model import at_integrated_strength
 from dt4acc.custom_tango.ioc import mexec_config, mexec_server_for_physics_engine
 from dt4acc.custom_tango.ioc import server_manager
 
@@ -83,6 +91,13 @@ def main():
     )
     os.environ["DT4ACC_MEXEC_PORT"] = str(args.port)
     os.environ["DT4ACC_VIEW"] = args.view
+    if args.view == "design":
+        # design-view devices, their commands translated by the engine
+        # (see mexec_server_for_physics_engine.translated_design_view)
+        os.environ["DT4ACC_ENGINE_VIEW"] = "device"
+    # SOLEIL's magnets publish integrated strengths (coefficient * L, kick
+    # angles in rad): see dt4acc.custom_facility.model.at_integrated_strength
+    os.environ.setdefault(at_integrated_strength.ENABLE_ENV, "1")
 
 
     handle_lattice.lattice_loader.set_lattice_file(args.lattice)

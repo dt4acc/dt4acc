@@ -6,6 +6,12 @@ Tango devices for horizontal and vertical dipole correctors (steerers).
 HorizontalSteererDevice → magnetic_strength, mapped to B1/PolynomB[0]
 VerticalSteererDevice   → magnetic_strength, mapped to A1/PolynomA[0]
 
+magnetic_strength: the kick angle in rad (-PolynomB[0] * L horizontally,
++PolynomA[0] * L vertically) when the twin publishes integrated strengths
+(DT4ACC_INTEGRATED_STRENGTH=1), else the lattice coefficient PolynomB[0] /
+PolynomA[0] itself, per metre on a thick element (opposite sign to the
+kick angle horizontally). The attribute's unit follows, see _strength_unit.
+
 Steerers can share a UUID in the AT lattice. The lattice_property DB property
 routes horizontal devices to B1/PolynomB[0] and vertical devices to
 A1/PolynomA[0].
@@ -14,10 +20,18 @@ A1/PolynomA[0].
 from tango.server import attribute, command, device_property
 from tango import DevState, AttrWriteType
 
+from dt4acc.custom_facility.model import at_integrated_strength
 from dt4acc.custom_tango.ioc.devices.base_magnet_device import BaseMagnetDevice
 from dt4acc.core.utils.logger import get_logger
 
 logger = get_logger()
+
+
+def _strength_unit() -> str:
+    """Unit of a steerer's magnetic_strength: rad (kick angle) with
+    integrated strengths, else 1/m (PolynomB[0] / PolynomA[0] of a thick
+    element)"""
+    return "rad" if at_integrated_strength.enabled() else "1/m"
 
 
 class HorizontalSteererDevice(BaseMagnetDevice):
@@ -29,8 +43,9 @@ class HorizontalSteererDevice(BaseMagnetDevice):
 
     def init_device(self):
         super().init_device()
+        self._set_unit("magnetic_strength", _strength_unit())
         from dt4acc.custom_tango.ioc.single_server import get_initial_values
-        self._magnetic_strength = get_initial_values(self.lattice_id).get(
+        self._magnetic_strength = get_initial_values(self.command_id).get(
             self.lattice_property,
             0.0,
         )
@@ -57,8 +72,8 @@ class HorizontalSteererDevice(BaseMagnetDevice):
     def RefreshFromCache(self) -> None:
         try:
             from dt4acc.custom_tango.ioc.single_server import refresh_one_from_lattice, get_nominal_values
-            refresh_one_from_lattice(self.lattice_id)
-            vals = get_nominal_values(self.lattice_id)
+            refresh_one_from_lattice(self.command_id)
+            vals = get_nominal_values(self.command_id)
             self._magnetic_strength = vals.get(self.lattice_property, 0.0)
             self._sync_write_value("magnetic_strength", self._magnetic_strength)
             logger.info("%s: RefreshFromCache done — magnetic_strength=%.6f",
@@ -76,8 +91,9 @@ class VerticalSteererDevice(BaseMagnetDevice):
 
     def init_device(self):
         super().init_device()
+        self._set_unit("magnetic_strength", _strength_unit())
         from dt4acc.custom_tango.ioc.single_server import get_initial_values
-        self._magnetic_strength = get_initial_values(self.lattice_id).get(
+        self._magnetic_strength = get_initial_values(self.command_id).get(
             self.lattice_property,
             0.0,
         )
@@ -104,8 +120,8 @@ class VerticalSteererDevice(BaseMagnetDevice):
     def RefreshFromCache(self) -> None:
         try:
             from dt4acc.custom_tango.ioc.single_server import refresh_one_from_lattice, get_nominal_values
-            refresh_one_from_lattice(self.lattice_id)
-            vals = get_nominal_values(self.lattice_id)
+            refresh_one_from_lattice(self.command_id)
+            vals = get_nominal_values(self.command_id)
             self._magnetic_strength = vals.get(self.lattice_property, 0.0)
             self._sync_write_value("magnetic_strength", self._magnetic_strength)
             logger.info("%s: RefreshFromCache done — magnetic_strength=%.6f",

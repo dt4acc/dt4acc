@@ -31,7 +31,7 @@ class MultipoleDevice(BaseMagnetDevice):
     def init_device(self):
         super().init_device()
         from dt4acc.custom_tango.ioc.single_server import get_initial_values
-        vals = get_initial_values(self.lattice_id)
+        vals = get_initial_values(self.command_id)
         self._magnetic_strength = vals.get(self.lattice_property,
                                            vals.get("main_strength", 0.0))
         self._magnetic_strength_readback = self._magnetic_strength
@@ -74,8 +74,8 @@ class MultipoleDevice(BaseMagnetDevice):
         """Read nominal values from process-local cache after system reset."""
         try:
             from dt4acc.custom_tango.ioc.single_server import refresh_one_from_lattice, get_nominal_values
-            refresh_one_from_lattice(self.lattice_id)
-            vals = get_nominal_values(self.lattice_id)
+            refresh_one_from_lattice(self.command_id)
+            vals = get_nominal_values(self.command_id)
             self._magnetic_strength = vals.get(self.lattice_property,
                                                vals.get("main_strength", 0.0))
             self._magnetic_strength_readback = self._magnetic_strength

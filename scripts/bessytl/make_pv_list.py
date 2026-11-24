@@ -44,9 +44,15 @@ STEERER_FIELDS = [("Cm:set", "kick setpoint (rad)", ACTS, NO),
                   ("im:I", "driving current (A)", NONE, NO),
                   ("x:set", "offset: a steerer cannot be moved", NONE, NO),
                   ("y:set", "offset: a steerer cannot be moved", NONE, NO)]
+BEND_FIELDS = [("Cm:set", "bending angle setpoint (rad)", ACTS, NO),
+               ("Cm:rdbk", "bending angle readback (rad), follows its supply", RO, NO),
+               ("im:I", "driving current (A)", NONE, NO),
+               ("x:set", "offset: a bend cannot be moved in the twin", NONE, NO),
+               ("y:set", "offset: a bend cannot be moved in the twin", NONE, NO)]
 TYPES = [("Quadrupole", "Quadrupoles", QUAD_FIELDS),
          ("Steerer:H", "Horizontal steerers", STEERER_FIELDS),
-         ("Steerer:V", "Vertical steerers", STEERER_FIELDS)]
+         ("Steerer:V", "Vertical steerers", STEERER_FIELDS),
+         ("Bend", "Bends", BEND_FIELDS)]
 
 MONITOR_FIELDS = [("x", "horizontal beam position (mm)", RO, NO),
                   ("y", "vertical beam position (mm)", RO, NO)]
@@ -186,8 +192,10 @@ def main(a):
         return out + ["", "```text", *listed, "```", ""]
 
     lines = [HEADER.format(n=len(proto)), "## Power supplies", "",
-             "One supply drives one magnet (the Liaison Manager's tables). These are the PVs",
-             "to set the line with.", ""]
+             "One supply drives one magnet, B1PT the two bends B1M1T and B1M2T (the Liaison",
+             "Manager's tables). These are the PVs to set the line with. A bend's current",
+             "sets its field error (PolynomB[0]): the design angle at the operating current",
+             "(B1PT 232.75 A, B2PT 1.486 A), the beam bent more or less at another current.", ""]
     for key, title, _ in TYPES:
         devs = sorted((d for d, t in supplies.items() if t == key and d in devices_with_pvs), key=number)
         lines += group(title, SUPPLY_FIELDS, devs, "<supply>")
