@@ -3,6 +3,7 @@ import getpass
 import logging
 import os
 from importlib import resources
+from pathlib import Path
 from typing import Any, Dict, Sequence
 
 from softioc import builder, softioc
@@ -27,7 +28,19 @@ from dt4acc.custom_epics.ioc.pv_setup import (
     initialize_calculation_state_pvs,
 )
 from dt4acc.custom_epics.ioc.bpm_pvs import initialize_bpm_pvs
-from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
+from dt4acc.custom_facility.bessyii.provide_lattice import (
+    LATTICE_FILE,
+    bessyii_pyat_lattice,
+    provide_backend,
+    provide_lattice,
+)
+from dt4acc.custom_epics.ioc.lattice_pvs import (
+    LatticeSwitch,
+    after_load_refresh,
+    initialize_lattice_pvs,
+    replacement_check,
+    required_elements,
+)
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
 from dt4acc_lib.model.utils.command import ReadCommand
 from dt4acc.custom_epics.ioc.orbit_pva import OrbitTwinServer
@@ -67,7 +80,8 @@ async def main():
         * handle delayed execution
 
     """
-    backend = provide_backend_encapsulating_lattice()
+    lattice = provide_lattice()
+    backend = provide_backend(lattice)
     _, lm, ts, _ = load_managers()
 
     command_rewriter = CommandRewriter(liaison_manager=lm, translation_service=ts)
@@ -112,6 +126,10 @@ async def main():
     view.update_process_variables(
         await initialise_pvs(builder=builder, controller=controller, bpms=bpms)
     )
+    view.update_process_variables(
+        initialise_lattice_pvs(builder, backend=backend, lattice=lattice, liaison_manager=lm,
+                               controller=controller, view=view, bpms=bpms)
+    )
     # turn by turn data at the BPMs, recomputed after each new closed orbit
     hook_track_updates(view, initialise_turn_by_turn_pvs(builder, backend, bpms))
     # Extra reads at startup
@@ -153,6 +171,32 @@ async def initialise_pvs(
         **initialize_other_pvs(builder),
         **initialize_calculation_state_pvs(builder, controller),
     }
+
+
+def initialise_lattice_pvs(builder, *, backend, lattice, liaison_manager, controller, view, bpms):
+    """``simulator_ring:lattice`` (``:message``): a lattice with small
+    differences (e.g. the wavelength shifters inserted), loaded at run time
+    from :func:`lattice_directory` (#81); after a load the settings' and the
+    model's PVs follow the new lattice"""
+    return initialize_lattice_pvs(builder, LatticeSwitch(
+        backend=backend,
+        lattice_dir=lattice_directory(),
+        load_file=bessyii_pyat_lattice,
+        start_lattice=lattice,
+        check=replacement_check(lattice, required_elements(liaison_manager, lattice, bpms)),
+        after_load=after_load_refresh(
+            controller, view, [ReadCommand("survey", "s")] + list(controller.default_delayed_reads)
+        ),
+    ))
+
+
+def lattice_directory() -> Path:
+    """Where ``simulator_ring:lattice`` loads lattices from: ``DT4ACC_LATTICE_DIR``,
+    else the directory of the bundled lattice"""
+    configured = os.environ.get("DT4ACC_LATTICE_DIR")
+    if configured:
+        return Path(configured)
+    return Path(str(resources.files("dt4acc").joinpath(LATTICE_FILE))).parent
 
 
 def initialise_turn_by_turn_pvs(builder, backend: SimulatorBackend, bpms: Sequence[str]) -> TurnByTurnPVs:
