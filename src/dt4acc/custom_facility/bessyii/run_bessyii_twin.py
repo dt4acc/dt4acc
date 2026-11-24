@@ -49,6 +49,8 @@ from dt4acc.custom_epics.ioc.view import View
 from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_managers
 from dt4acc.core.bl.turn_by_turn import RingTurnByTurn, ring_monitors
 from dt4acc.custom_epics.ioc.turn_by_turn import TurnByTurnPVs, hook_track_updates
+from dt4acc.custom_epics.ioc.pinhole_pvs import PinholePVs, hook_pinholes
+from dt4acc.custom_facility.bessyii.pinholes import ring_pinholes
 from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend
 
 logging.basicConfig(level=logging.WARNING)
@@ -132,6 +134,8 @@ async def main():
     )
     # turn by turn data at the BPMs, recomputed after each new closed orbit
     hook_track_updates(view, initialise_turn_by_turn_pvs(builder, backend, bpms))
+    # pinhole cameras: follow the closed orbit and the optics
+    hook_pinholes(view, initialise_pinhole_pvs(builder, backend))
     # Extra reads at startup
     await read_and_dispatch(
         controller=controller,
@@ -207,6 +211,12 @@ def initialise_turn_by_turn_pvs(builder, backend: SimulatorBackend, bpms: Sequen
     serves the BPMs' turn by turn data of its own hand over.
     """
     return TurnByTurnPVs(RingTurnByTurn(backend, bpms), builder=builder)
+
+
+def initialise_pinhole_pvs(builder, backend: SimulatorBackend) -> PinholePVs:
+    """Pinhole cameras' PVs (``PINH...``) and the stored beam's emittance and
+    energy spread, also served by the injection twin"""
+    return PinholePVs(ring_pinholes(backend), builder=builder)
 
 
 def run():

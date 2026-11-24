@@ -21,6 +21,7 @@ from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encap
 from dt4acc.custom_facility.bessyii.run_bessyii_twin import (
     ACCELERATOR_SETUP,
     initialise_lattice_pvs,
+    initialise_pinhole_pvs,
     initialise_pvs,
     BPM_PREFIX,
     initialise_turn_by_turn_pvs,
@@ -68,6 +69,7 @@ def ring_pvs():
     initialise_lattice_pvs(builder, backend=backend, lattice=backend.acc.acc_orig_store,
                            liaison_manager=load_managers()[1], controller=controller,
                            view=controller.view, bpms=bpms)
+    initialise_pinhole_pvs(builder, backend)
     return builder.names(PREFIX)
 
 
