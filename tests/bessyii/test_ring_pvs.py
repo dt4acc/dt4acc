@@ -20,6 +20,7 @@ from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_manager
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
 from dt4acc.custom_facility.bessyii.run_bessyii_twin import (
     ACCELERATOR_SETUP,
+    initialise_lattice_pvs,
     initialise_pvs,
     BPM_PREFIX,
     initialise_turn_by_turn_pvs,
@@ -40,6 +41,8 @@ BPM_FIELDS = {"signal:sa:X", "signal:sa:Y"}
 TBT_FIELDS = {"signal:tbt:X", "signal:tbt:Y", "signal:tbt:survived"}
 #: served by the ring twin alone, not by the injection twin
 TURN_BY_TURN_SECTION = "Turn by turn (ring twin alone)"
+#: sections of the PVs only the ring twin alone serves
+RING_TWIN_ALONE = "(ring twin alone)"
 
 
 def ring_controller(backend=None) -> Controller:
@@ -59,18 +62,23 @@ def ring_pvs():
     builder = RecordingBuilder()
     builder.SetDeviceName(PREFIX)
     bpms = ring_monitors(backend, BPM_PREFIX)
-    asyncio.run(initialise_pvs(builder=builder, controller=ring_controller(backend), bpms=bpms))
+    controller = ring_controller(backend)
+    asyncio.run(initialise_pvs(builder=builder, controller=controller, bpms=bpms))
     initialise_turn_by_turn_pvs(builder, backend, bpms)
+    initialise_lattice_pvs(builder, backend=backend, lattice=backend.acc.acc_orig_store,
+                           liaison_manager=load_managers()[1], controller=controller,
+                           view=controller.view, bpms=bpms)
     return builder.names(PREFIX)
 
 
-def turn_by_turn_pvs(path: Path):
-    """The PVs of the list's turn by turn section (ring twin alone)"""
+def ring_twin_alone_pvs(path: Path):
+    """The PVs of the list's sections served by the ring twin alone (turn by
+    turn, lattice at run time)"""
     rows, section = [], ""
     for line in path.read_text().splitlines():
         if line.startswith("## "):
             section = line[3:].strip()
-        elif section == TURN_BY_TURN_SECTION:
+        elif section.endswith(RING_TWIN_ALONE):
             m = pv_list_md.ROW.match(line)
             if m and not m.group(1).startswith("<"):
                 rows.append(m.group(1))
@@ -90,8 +98,8 @@ def expected_from_pv_list(path: Path, turn_by_turn: bool = True):
             expected |= {f"{d}:{f}" for d in devices for f in fields[placeholder]}
         elif section == "BPMs":
             expected |= {f"{d}:{f}" for d in devices for f in BPM_FIELDS}
-    tbt = turn_by_turn_pvs(path)
-    return expected | tbt if turn_by_turn else expected - tbt
+    alone = ring_twin_alone_pvs(path)
+    return expected | alone if turn_by_turn else expected - alone
 
 
 def test_every_magnet_has_its_pvs(ring_pvs):

@@ -83,10 +83,16 @@ class SyncMexecProxy:
             self.mexec.trigger_read(rcmds), self.service_loop
         )
         result = fut.result(timeout=30)
+        # the ids read: the requested ones (the device's, when the engine
+        # translates), else the lattice element's
+        requested = {(rcmd.id, rcmd.property) for rcmd in rcmds}
         out = []
         for translated in result.data:
             for reading in translated.readings:
-                out.append((translated.cmd.id, translated.cmd.property, reading.payload))
+                cmd = reading.cmd
+                if cmd is None or (cmd.id, cmd.property) not in requested:
+                    cmd = translated.cmd
+                out.append((cmd.id, cmd.property, reading.payload))
         return out
 
     def sync_reset(self):

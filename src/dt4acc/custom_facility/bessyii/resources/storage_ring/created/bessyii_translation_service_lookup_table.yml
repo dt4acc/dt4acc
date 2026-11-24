@@ -1,5 +1,5 @@
 #
-# BESSY II Translation service table: 2026-10-28 17:10:31.248210
+# BESSY II Translation service table: 2026-11-23 16:12:40.317870
 # WARNING: automatically generated data
 #          please check when it is updated if you edit it by hand!
 lut:
@@ -115,6 +115,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M2D1R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M2D1R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P2D1R
       property: rdbk_current
     lattice_property_id:
@@ -139,6 +150,17 @@ lut:
     device_property_id:
       device_name: HS1MT1R
       property: main_strength
+    lattice_property_id:
+      element_name: S1MT1R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS1MT1R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S1MT1R
       property: x_kick
@@ -181,6 +203,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M1T1R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M1T1R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P1T1R
       property: rdbk_current
     lattice_property_id:
@@ -205,6 +238,17 @@ lut:
     device_property_id:
       device_name: HS4M2T1R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M2T1R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M2T1R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M2T1R
       property: x_kick
@@ -247,6 +291,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS1MD2R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD2R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS1PD2R
       property: rdbk_current
     lattice_property_id:
@@ -271,6 +326,17 @@ lut:
     device_property_id:
       device_name: HS4M1D2R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M1D2R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M1D2R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M1D2R
       property: x_kick
@@ -313,6 +379,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M2D2R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M2D2R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P2D2R
       property: rdbk_current
     lattice_property_id:
@@ -337,6 +414,17 @@ lut:
     device_property_id:
       device_name: HS1MT2R
       property: main_strength
+    lattice_property_id:
+      element_name: S1MT2R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS1MT2R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S1MT2R
       property: x_kick
@@ -379,6 +467,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M1T2R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M1T2R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P1T2R
       property: rdbk_current
     lattice_property_id:
@@ -403,6 +502,17 @@ lut:
     device_property_id:
       device_name: HS4M2T2R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M2T2R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M2T2R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M2T2R
       property: x_kick
@@ -445,6 +555,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS1MD3R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD3R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS1PD3R
       property: rdbk_current
     lattice_property_id:
@@ -469,6 +590,17 @@ lut:
     device_property_id:
       device_name: HS4M1D3R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M1D3R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M1D3R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M1D3R
       property: x_kick
@@ -511,6 +643,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M2D3R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M2D3R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P2D3R
       property: rdbk_current
     lattice_property_id:
@@ -535,6 +678,17 @@ lut:
     device_property_id:
       device_name: HS1MT3R
       property: main_strength
+    lattice_property_id:
+      element_name: S1MT3R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS1MT3R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S1MT3R
       property: x_kick
@@ -577,6 +731,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M1T3R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M1T3R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P1T3R
       property: rdbk_current
     lattice_property_id:
@@ -601,6 +766,17 @@ lut:
     device_property_id:
       device_name: HS4M2T3R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M2T3R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M2T3R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M2T3R
       property: x_kick
@@ -643,6 +819,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS1MD4R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD4R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS1PD4R
       property: rdbk_current
     lattice_property_id:
@@ -667,6 +854,17 @@ lut:
     device_property_id:
       device_name: HS4M1D4R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M1D4R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M1D4R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M1D4R
       property: x_kick
@@ -709,6 +907,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M2D4R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M2D4R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P2D4R
       property: rdbk_current
     lattice_property_id:
@@ -733,6 +942,17 @@ lut:
     device_property_id:
       device_name: HS1MT4R
       property: main_strength
+    lattice_property_id:
+      element_name: S1MT4R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS1MT4R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S1MT4R
       property: x_kick
@@ -775,6 +995,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M1T4R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M1T4R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P1T4R
       property: rdbk_current
     lattice_property_id:
@@ -799,6 +1030,17 @@ lut:
     device_property_id:
       device_name: HS4M2T4R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M2T4R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M2T4R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M2T4R
       property: x_kick
@@ -841,6 +1083,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS1MD5R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD5R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS1PD5R
       property: rdbk_current
     lattice_property_id:
@@ -865,6 +1118,17 @@ lut:
     device_property_id:
       device_name: HS4M1D5R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M1D5R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M1D5R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M1D5R
       property: x_kick
@@ -907,6 +1171,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M2D5R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M2D5R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P2D5R
       property: rdbk_current
     lattice_property_id:
@@ -931,6 +1206,17 @@ lut:
     device_property_id:
       device_name: HS1MT5R
       property: main_strength
+    lattice_property_id:
+      element_name: S1MT5R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS1MT5R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S1MT5R
       property: x_kick
@@ -973,6 +1259,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M1T5R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M1T5R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P1T5R
       property: rdbk_current
     lattice_property_id:
@@ -997,6 +1294,17 @@ lut:
     device_property_id:
       device_name: HS4M2T5R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M2T5R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M2T5R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M2T5R
       property: x_kick
@@ -1039,6 +1347,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS1MD6R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD6R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS1PD6R
       property: rdbk_current
     lattice_property_id:
@@ -1063,6 +1382,17 @@ lut:
     device_property_id:
       device_name: HS4M1D6R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M1D6R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M1D6R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M1D6R
       property: x_kick
@@ -1105,6 +1435,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M2D6R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M2D6R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P2D6R
       property: rdbk_current
     lattice_property_id:
@@ -1129,6 +1470,17 @@ lut:
     device_property_id:
       device_name: HS1MT6R
       property: main_strength
+    lattice_property_id:
+      element_name: S1MT6R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS1MT6R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S1MT6R
       property: x_kick
@@ -1171,6 +1523,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M1T6R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M1T6R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P1T6R
       property: rdbk_current
     lattice_property_id:
@@ -1195,6 +1558,17 @@ lut:
     device_property_id:
       device_name: HS4M2T6R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M2T6R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M2T6R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M2T6R
       property: x_kick
@@ -1237,6 +1611,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS1MD7R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD7R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS1PD7R
       property: rdbk_current
     lattice_property_id:
@@ -1261,6 +1646,17 @@ lut:
     device_property_id:
       device_name: HS4M1D7R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M1D7R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M1D7R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M1D7R
       property: x_kick
@@ -1303,6 +1699,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M2D7R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M2D7R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P2D7R
       property: rdbk_current
     lattice_property_id:
@@ -1327,6 +1734,17 @@ lut:
     device_property_id:
       device_name: HS1MT7R
       property: main_strength
+    lattice_property_id:
+      element_name: S1MT7R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS1MT7R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S1MT7R
       property: x_kick
@@ -1369,6 +1787,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M1T7R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M1T7R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P1T7R
       property: rdbk_current
     lattice_property_id:
@@ -1393,6 +1822,17 @@ lut:
     device_property_id:
       device_name: HS4M2T7R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M2T7R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M2T7R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M2T7R
       property: x_kick
@@ -1435,6 +1875,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS1MD8R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD8R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS1PD8R
       property: rdbk_current
     lattice_property_id:
@@ -1459,6 +1910,17 @@ lut:
     device_property_id:
       device_name: HS4M1D8R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M1D8R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M1D8R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M1D8R
       property: x_kick
@@ -1501,6 +1963,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M2D8R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M2D8R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P2D8R
       property: rdbk_current
     lattice_property_id:
@@ -1525,6 +1998,17 @@ lut:
     device_property_id:
       device_name: HS1MT8R
       property: main_strength
+    lattice_property_id:
+      element_name: S1MT8R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS1MT8R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S1MT8R
       property: x_kick
@@ -1567,6 +2051,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS4M1T8R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S4M1T8R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS4P1T8R
       property: rdbk_current
     lattice_property_id:
@@ -1591,6 +2086,17 @@ lut:
     device_property_id:
       device_name: HS4M2T8R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M2T8R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M2T8R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M2T8R
       property: x_kick
@@ -1633,6 +2139,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: HS1MD1R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD1R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: HS1PD1R
       property: rdbk_current
     lattice_property_id:
@@ -1657,6 +2174,17 @@ lut:
     device_property_id:
       device_name: HS4M1D1R
       property: main_strength
+    lattice_property_id:
+      element_name: S4M1D1R
+      property: x_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: HS4M1D1R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S4M1D1R
       property: x_kick
@@ -1699,6 +2227,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2D1R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2D1R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2D1R
       property: rdbk_current
     lattice_property_id:
@@ -1723,6 +2262,17 @@ lut:
     device_property_id:
       device_name: VS2M2D1R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2D1R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2D1R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2D1R
       property: y_kick
@@ -1765,6 +2315,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1T1R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1T1R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1T1R
       property: rdbk_current
     lattice_property_id:
@@ -1789,6 +2350,17 @@ lut:
     device_property_id:
       device_name: VS3M1T1R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1T1R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1T1R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1T1R
       property: y_kick
@@ -1831,6 +2403,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2T1R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2T1R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2T1R
       property: rdbk_current
     lattice_property_id:
@@ -1855,6 +2438,17 @@ lut:
     device_property_id:
       device_name: VS2M2T1R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2T1R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2T1R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2T1R
       property: y_kick
@@ -1897,6 +2491,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1D2R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1D2R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1D2R
       property: rdbk_current
     lattice_property_id:
@@ -1921,6 +2526,17 @@ lut:
     device_property_id:
       device_name: VS3M1D2R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1D2R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1D2R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1D2R
       property: y_kick
@@ -1963,6 +2579,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2D2R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2D2R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2D2R
       property: rdbk_current
     lattice_property_id:
@@ -1987,6 +2614,17 @@ lut:
     device_property_id:
       device_name: VS2M2D2R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2D2R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2D2R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2D2R
       property: y_kick
@@ -2029,6 +2667,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1T2R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1T2R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1T2R
       property: rdbk_current
     lattice_property_id:
@@ -2053,6 +2702,17 @@ lut:
     device_property_id:
       device_name: VS3M1T2R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1T2R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1T2R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1T2R
       property: y_kick
@@ -2095,6 +2755,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2T2R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2T2R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2T2R
       property: rdbk_current
     lattice_property_id:
@@ -2119,6 +2790,17 @@ lut:
     device_property_id:
       device_name: VS2M2T2R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2T2R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2T2R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2T2R
       property: y_kick
@@ -2161,6 +2843,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1D3R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1D3R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1D3R
       property: rdbk_current
     lattice_property_id:
@@ -2185,6 +2878,17 @@ lut:
     device_property_id:
       device_name: VS3M1D3R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1D3R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1D3R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1D3R
       property: y_kick
@@ -2227,6 +2931,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2D3R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2D3R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2D3R
       property: rdbk_current
     lattice_property_id:
@@ -2251,6 +2966,17 @@ lut:
     device_property_id:
       device_name: VS2M2D3R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2D3R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2D3R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2D3R
       property: y_kick
@@ -2293,6 +3019,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1T3R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1T3R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1T3R
       property: rdbk_current
     lattice_property_id:
@@ -2317,6 +3054,17 @@ lut:
     device_property_id:
       device_name: VS3M1T3R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1T3R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1T3R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1T3R
       property: y_kick
@@ -2359,6 +3107,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2T3R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2T3R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2T3R
       property: rdbk_current
     lattice_property_id:
@@ -2383,6 +3142,17 @@ lut:
     device_property_id:
       device_name: VS2M2T3R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2T3R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2T3R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2T3R
       property: y_kick
@@ -2425,6 +3195,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1D4R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1D4R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1D4R
       property: rdbk_current
     lattice_property_id:
@@ -2449,6 +3230,17 @@ lut:
     device_property_id:
       device_name: VS3M1D4R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1D4R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1D4R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1D4R
       property: y_kick
@@ -2491,6 +3283,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2D4R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2D4R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2D4R
       property: rdbk_current
     lattice_property_id:
@@ -2515,6 +3318,17 @@ lut:
     device_property_id:
       device_name: VS2M2D4R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2D4R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2D4R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2D4R
       property: y_kick
@@ -2557,6 +3371,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1T4R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1T4R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1T4R
       property: rdbk_current
     lattice_property_id:
@@ -2581,6 +3406,17 @@ lut:
     device_property_id:
       device_name: VS3M1T4R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1T4R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1T4R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1T4R
       property: y_kick
@@ -2623,6 +3459,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2T4R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2T4R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2T4R
       property: rdbk_current
     lattice_property_id:
@@ -2647,6 +3494,17 @@ lut:
     device_property_id:
       device_name: VS2M2T4R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2T4R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2T4R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2T4R
       property: y_kick
@@ -2689,6 +3547,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1D5R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1D5R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1D5R
       property: rdbk_current
     lattice_property_id:
@@ -2713,6 +3582,17 @@ lut:
     device_property_id:
       device_name: VS3M1D5R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1D5R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1D5R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1D5R
       property: y_kick
@@ -2755,6 +3635,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2D5R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2D5R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2D5R
       property: rdbk_current
     lattice_property_id:
@@ -2779,6 +3670,17 @@ lut:
     device_property_id:
       device_name: VS2M2D5R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2D5R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2D5R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2D5R
       property: y_kick
@@ -2821,6 +3723,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1T5R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1T5R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1T5R
       property: rdbk_current
     lattice_property_id:
@@ -2845,6 +3758,17 @@ lut:
     device_property_id:
       device_name: VS3M1T5R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1T5R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1T5R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1T5R
       property: y_kick
@@ -2887,6 +3811,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2T5R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2T5R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2T5R
       property: rdbk_current
     lattice_property_id:
@@ -2911,6 +3846,17 @@ lut:
     device_property_id:
       device_name: VS2M2T5R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2T5R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2T5R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2T5R
       property: y_kick
@@ -2953,6 +3899,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1D6R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1D6R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1D6R
       property: rdbk_current
     lattice_property_id:
@@ -2977,6 +3934,17 @@ lut:
     device_property_id:
       device_name: VS3M1D6R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1D6R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1D6R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1D6R
       property: y_kick
@@ -3019,6 +3987,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2D6R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2D6R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2D6R
       property: rdbk_current
     lattice_property_id:
@@ -3043,6 +4022,17 @@ lut:
     device_property_id:
       device_name: VS2M2D6R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2D6R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2D6R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2D6R
       property: y_kick
@@ -3085,6 +4075,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1T6R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1T6R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1T6R
       property: rdbk_current
     lattice_property_id:
@@ -3109,6 +4110,17 @@ lut:
     device_property_id:
       device_name: VS3M1T6R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1T6R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1T6R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1T6R
       property: y_kick
@@ -3151,6 +4163,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2T6R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2T6R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2T6R
       property: rdbk_current
     lattice_property_id:
@@ -3175,6 +4198,17 @@ lut:
     device_property_id:
       device_name: VS2M2T6R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2T6R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2T6R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2T6R
       property: y_kick
@@ -3217,6 +4251,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1D7R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1D7R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1D7R
       property: rdbk_current
     lattice_property_id:
@@ -3241,6 +4286,17 @@ lut:
     device_property_id:
       device_name: VS3M1D7R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1D7R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1D7R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1D7R
       property: y_kick
@@ -3283,6 +4339,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2D7R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2D7R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2D7R
       property: rdbk_current
     lattice_property_id:
@@ -3307,6 +4374,17 @@ lut:
     device_property_id:
       device_name: VS2M2D7R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2D7R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2D7R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2D7R
       property: y_kick
@@ -3349,6 +4427,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1T7R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1T7R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1T7R
       property: rdbk_current
     lattice_property_id:
@@ -3373,6 +4462,17 @@ lut:
     device_property_id:
       device_name: VS3M1T7R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1T7R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1T7R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1T7R
       property: y_kick
@@ -3415,6 +4515,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2T7R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2T7R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2T7R
       property: rdbk_current
     lattice_property_id:
@@ -3439,6 +4550,17 @@ lut:
     device_property_id:
       device_name: VS2M2T7R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2T7R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2T7R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2T7R
       property: y_kick
@@ -3481,6 +4603,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1D8R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1D8R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1D8R
       property: rdbk_current
     lattice_property_id:
@@ -3505,6 +4638,17 @@ lut:
     device_property_id:
       device_name: VS3M1D8R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1D8R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1D8R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1D8R
       property: y_kick
@@ -3547,6 +4691,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2D8R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2D8R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2D8R
       property: rdbk_current
     lattice_property_id:
@@ -3571,6 +4726,17 @@ lut:
     device_property_id:
       device_name: VS2M2D8R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2D8R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2D8R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2D8R
       property: y_kick
@@ -3613,6 +4779,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1T8R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1T8R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1T8R
       property: rdbk_current
     lattice_property_id:
@@ -3637,6 +4814,17 @@ lut:
     device_property_id:
       device_name: VS3M1T8R
       property: main_strength
+    lattice_property_id:
+      element_name: S3M1T8R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS3M1T8R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S3M1T8R
       property: y_kick
@@ -3679,6 +4867,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M2T8R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M2T8R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P2T8R
       property: rdbk_current
     lattice_property_id:
@@ -3703,6 +4902,17 @@ lut:
     device_property_id:
       device_name: VS2M2T8R
       property: main_strength
+    lattice_property_id:
+      element_name: S2M2T8R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: VS2M2T8R
+      property: main_strength_rdbk
     lattice_property_id:
       element_name: S2M2T8R
       property: y_kick
@@ -3745,6 +4955,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS2M1D1R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S2M1D1R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS2P1D1R
       property: rdbk_current
     lattice_property_id:
@@ -3778,6 +4999,17 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: VS3M1D1R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S3M1D1R
+      property: y_kick
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: VS3P1D1R
       property: rdbk_current
     lattice_property_id:
@@ -7683,6 +8915,358 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MD1R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MT1R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MD2R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MT2R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MD3R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MT3R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MD4R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MT4R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MD5R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MT5R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MD6R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MT6R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MD7R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MT7R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MD8R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: set_current
+    lattice_property_id:
+      element_name: S1MT8R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MD1R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MT1R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MD2R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MT2R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MD3R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MT3R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MD4R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MT4R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MD5R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MT5R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MD6R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MT6R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MD7R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MT7R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MD8R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1PR
+      property: rdbk_current
+    lattice_property_id:
+      element_name: S1MT8R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 0.6588111282611169]
+    energy_dependent: true
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: S2PDR
       property: set_current
     lattice_property_id:
@@ -12985,6 +14569,358 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: S1MD1R
+      property: dx
+    lattice_property_id:
+      element_name: S1MD1R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD1R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MD1R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT1R
+      property: dx
+    lattice_property_id:
+      element_name: S1MT1R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT1R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MT1R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD2R
+      property: dx
+    lattice_property_id:
+      element_name: S1MD2R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD2R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MD2R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT2R
+      property: dx
+    lattice_property_id:
+      element_name: S1MT2R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT2R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MT2R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD3R
+      property: dx
+    lattice_property_id:
+      element_name: S1MD3R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD3R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MD3R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT3R
+      property: dx
+    lattice_property_id:
+      element_name: S1MT3R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT3R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MT3R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD4R
+      property: dx
+    lattice_property_id:
+      element_name: S1MD4R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD4R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MD4R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT4R
+      property: dx
+    lattice_property_id:
+      element_name: S1MT4R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT4R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MT4R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD5R
+      property: dx
+    lattice_property_id:
+      element_name: S1MD5R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD5R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MD5R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT5R
+      property: dx
+    lattice_property_id:
+      element_name: S1MT5R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT5R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MT5R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD6R
+      property: dx
+    lattice_property_id:
+      element_name: S1MD6R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD6R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MD6R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT6R
+      property: dx
+    lattice_property_id:
+      element_name: S1MT6R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT6R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MT6R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD7R
+      property: dx
+    lattice_property_id:
+      element_name: S1MD7R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD7R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MD7R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT7R
+      property: dx
+    lattice_property_id:
+      element_name: S1MT7R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT7R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MT7R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD8R
+      property: dx
+    lattice_property_id:
+      element_name: S1MD8R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD8R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MD8R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT8R
+      property: dx
+    lattice_property_id:
+      element_name: S1MT8R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT8R
+      property: dx_rdbk
+    lattice_property_id:
+      element_name: S1MT8R
+      property: dx
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: S2M2D1R
       property: dx
     lattice_property_id:
@@ -18287,6 +20223,358 @@ lut:
     reference_brho: null
 - conversion_id:
     device_property_id:
+      device_name: S1MD1R
+      property: dy
+    lattice_property_id:
+      element_name: S1MD1R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD1R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MD1R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT1R
+      property: dy
+    lattice_property_id:
+      element_name: S1MT1R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT1R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MT1R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD2R
+      property: dy
+    lattice_property_id:
+      element_name: S1MD2R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD2R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MD2R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT2R
+      property: dy
+    lattice_property_id:
+      element_name: S1MT2R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT2R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MT2R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD3R
+      property: dy
+    lattice_property_id:
+      element_name: S1MD3R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD3R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MD3R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT3R
+      property: dy
+    lattice_property_id:
+      element_name: S1MT3R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT3R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MT3R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD4R
+      property: dy
+    lattice_property_id:
+      element_name: S1MD4R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD4R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MD4R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT4R
+      property: dy
+    lattice_property_id:
+      element_name: S1MT4R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT4R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MT4R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD5R
+      property: dy
+    lattice_property_id:
+      element_name: S1MD5R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD5R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MD5R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT5R
+      property: dy
+    lattice_property_id:
+      element_name: S1MT5R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT5R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MT5R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD6R
+      property: dy
+    lattice_property_id:
+      element_name: S1MD6R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD6R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MD6R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT6R
+      property: dy
+    lattice_property_id:
+      element_name: S1MT6R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT6R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MT6R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD7R
+      property: dy
+    lattice_property_id:
+      element_name: S1MD7R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD7R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MD7R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT7R
+      property: dy
+    lattice_property_id:
+      element_name: S1MT7R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT7R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MT7R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD8R
+      property: dy
+    lattice_property_id:
+      element_name: S1MD8R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD8R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MD8R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT8R
+      property: dy
+    lattice_property_id:
+      element_name: S1MT8R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT8R
+      property: dy_rdbk
+    lattice_property_id:
+      element_name: S1MT8R
+      property: dy
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
       device_name: S2M2D1R
       property: dy
     lattice_property_id:
@@ -23582,6 +25870,358 @@ lut:
       property: main_strength_rdbk
     lattice_property_id:
       element_name: QIT6R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD1R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MD1R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD1R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD1R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT1R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MT1R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT1R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MT1R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD2R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MD2R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD2R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD2R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT2R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MT2R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT2R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MT2R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD3R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MD3R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD3R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD3R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT3R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MT3R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT3R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MT3R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD4R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MD4R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD4R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD4R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT4R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MT4R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT4R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MT4R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD5R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MD5R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD5R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD5R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT5R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MT5R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT5R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MT5R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD6R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MD6R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD6R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD6R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT6R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MT6R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT6R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MT6R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD7R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MD7R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD7R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD7R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT7R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MT7R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT7R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MT7R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD8R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MD8R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MD8R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MD8R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT8R
+      property: main_strength
+    lattice_property_id:
+      element_name: S1MT8R
+      property: main_strength
+  conversion_info:
+    coeffs: [0.0, 1.0]
+    energy_dependent: false
+    reference_brho: null
+- conversion_id:
+    device_property_id:
+      device_name: S1MT8R
+      property: main_strength_rdbk
+    lattice_property_id:
+      element_name: S1MT8R
       property: main_strength
   conversion_info:
     coeffs: [0.0, 1.0]
