@@ -9,13 +9,15 @@ import pytest
 from softioc import builder as _softioc_builder  # noqa: F401
 
 from dt4acc.custom_epics.ioc.lattice_pvs import (
-    LatticeSwitch, after_load_refresh, refresh_settings, required_elements, set_unprocessed, takes_process,
+    LatticeSwitch, after_load_refresh, refresh_settings, replacement_check, required_elements,
+    set_unprocessed, takes_process,
 )
 from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_managers
 from dt4acc.custom_facility.bessyii.provide_lattice import bessyii_pyat_lattice, provide_backend, provide_lattice
 from dt4acc.custom_facility.bessyii.run_bessyii_twin import BPM_PREFIX, initialise_pvs
 from dt4acc.core.bl.turn_by_turn import ring_monitors
 from dt4acc_lib.model.utils.command import ReadCommand
+from dt4acc_lib.pyat_simulator.accelerator_simulator import LatticeMismatch
 
 from tests.bessyii.test_ring_pvs import PREFIX, ring_controller
 from tests.recording_builder import RecordingBuilder
@@ -60,7 +62,7 @@ def twin(tmp_path):
         lattice_dir=tmp_path,
         load_file=bessyii_pyat_lattice,
         start_lattice=lattice,
-        required_elements=required_elements(load_managers()[1], lattice, bpms),
+        check=replacement_check(lattice, required_elements(load_managers()[1], lattice, bpms)),
         after_load=after_load_refresh(controller, controller.view, []),
     )
     return switch, backend, builder, lattice, tmp_path
@@ -124,9 +126,28 @@ def test_an_unreadable_file_is_refused(twin):
     assert len(backend.get_element_names()) == len(lattice) + 1
 
 
+def test_the_check_can_be_turned_off_or_replaced(twin):
+    switch, backend, builder, lattice, lattice_dir = twin
+    new = with_insertion(lattice)
+    del new[[e.FamName for e in new].index("BPMZ1D1R")]
+    new.save(lattice_dir / "no_bpm.json")
+    assert asyncio.run(switch.load("no_bpm.json")).startswith("refused")
+
+    def refuse(_):
+        raise LatticeMismatch("not today")
+
+    switch.check = refuse
+    assert asyncio.run(switch.load("no_bpm.json")) == "refused: no_bpm.json: not today"
+    assert len(backend.get_element_names()) == len(lattice) + 1
+
+    switch.check = None
+    assert asyncio.run(switch.load("no_bpm.json")).startswith("loaded no_bpm.json")
+    assert "BPMZ1D1R" not in backend.get_element_names()
+
+
 def test_required_elements_are_the_devices(twin):
-    switch, *_ = twin
-    required = set(switch.required_elements)
+    _, backend, _, lattice, _ = twin
+    required = set(required_elements(load_managers()[1], lattice, ring_monitors(backend, BPM_PREFIX)))
     assert {QUAD, "BPMZ1D1R", "CAVH1T8R"} <= required
     assert "WLS_TEST_K" not in required and "DU_MSEPEXIT" not in required
 

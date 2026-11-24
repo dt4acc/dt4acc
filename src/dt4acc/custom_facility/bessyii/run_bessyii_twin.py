@@ -38,6 +38,7 @@ from dt4acc.custom_epics.ioc.lattice_pvs import (
     LatticeSwitch,
     after_load_refresh,
     initialize_lattice_pvs,
+    replacement_check,
     required_elements,
 )
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
@@ -182,7 +183,7 @@ def initialise_lattice_pvs(builder, *, backend, lattice, liaison_manager, contro
         lattice_dir=lattice_directory(),
         load_file=bessyii_pyat_lattice,
         start_lattice=lattice,
-        required_elements=required_elements(liaison_manager, lattice, bpms),
+        check=replacement_check(lattice, required_elements(liaison_manager, lattice, bpms)),
         after_load=after_load_refresh(
             controller, view, [ReadCommand("survey", "s")] + list(controller.default_delayed_reads)
         ),

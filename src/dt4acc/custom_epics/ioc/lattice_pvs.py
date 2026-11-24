@@ -1,9 +1,9 @@
 """Load a lattice with small differences at run time (#81)
 
 A lattice in a lattice directory replaces the simulated one, e.g. the ring
-with its wavelength shifters inserted. It must hold every element the twin's
-devices refer to, in the same order (dt4acc_lib's
-``SimulatorBackend.load_lattice``); other elements may differ.
+with its wavelength shifters inserted. The twin checks it first
+(``LatticeSwitch``'s ``check``), e.g. that it holds every element the twin's
+devices refer to, in the same order (:func:`replacement_check`).
 
 PVs (without the twin's prefix):
 
@@ -22,13 +22,14 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+from functools import partial
 from pathlib import Path
 from typing import Awaitable, Callable, Dict, Optional, Sequence
 
 import numpy as np
 
 from dt4acc_lib.model.utils.command import ReadCommand
-from dt4acc_lib.pyat_simulator.accelerator_simulator import LatticeMismatch
+from dt4acc_lib.pyat_simulator.accelerator_simulator import LatticeMismatch, check_replacement
 
 from dt4acc.core.bl.controller import read_and_dispatch
 
@@ -113,8 +114,9 @@ class LatticeSwitch:
             names are accepted, no paths
         load_file: reads a lattice file as the twin uses it
         start_lattice: the lattice the twin started with (an empty name)
-        required_elements: element ids the twin refers to (magnets, cavities,
-            monitors): see dt4acc_lib's ``check_replacement``
+        check: called with the new lattice before it is loaded; raises
+            ``LatticeMismatch`` to refuse it (the present lattice is kept),
+            e.g. :func:`replacement_check`. None: any lattice is loaded
         after_load: e.g. refresh the PVs; awaited after a successful load
     """
 
@@ -125,14 +127,14 @@ class LatticeSwitch:
         lattice_dir: Optional[Path],
         load_file: Callable[[Path], object],
         start_lattice,
-        required_elements: Sequence[str],
+        check: Optional[Callable[[object], None]],
         after_load: Callable[[], Awaitable[None]] = None,
     ):
         self.backend = backend
         self.lattice_dir = Path(lattice_dir) if lattice_dir is not None else None
         self.load_file = load_file
         self.start_lattice = start_lattice
-        self.required_elements = list(required_elements)
+        self.check = check
         self.after_load = after_load
 
     async def load(self, name: str) -> str:
@@ -155,9 +157,11 @@ class LatticeSwitch:
                 return f"refused: {name} could not be read: {exc}"
             label = name
         try:
-            await self.backend.load_lattice(lattice, self.required_elements)
+            if self.check is not None:
+                self.check(lattice)
         except LatticeMismatch as exc:
             return f"refused: {name}: {exc}"
+        await self.backend.load_lattice(lattice)
         logger.warning("lattice: loaded %s (%d elements)", label, len(lattice))
         if self.after_load is not None:
             await self.after_load()
@@ -200,6 +204,12 @@ def required_elements(liaison_manager, lattice, monitors: Sequence[str]) -> list
     return list(dict.fromkeys(names))
 
 
+def replacement_check(start_lattice, required: Sequence[str]) -> Callable[[object], None]:
+    """The check that a lattice holds the ``required`` elements in the order of
+    ``start_lattice``, whichever lattice is loaded at the time"""
+    return partial(check_replacement, start_lattice, required_elements=list(required))
+
+
 def after_load_refresh(controller, view, startup_reads: Sequence[ReadCommand]) -> Callable[[], Awaitable[None]]:
     """After a load: the settings PVs from the lattice, then the model PVs as at startup"""
 
@@ -216,6 +226,7 @@ __all__ = [
     "after_load_refresh",
     "initialize_lattice_pvs",
     "refresh_settings",
+    "replacement_check",
     "required_elements",
     "settings_read_commands",
 ]
