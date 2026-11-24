@@ -1,6 +1,5 @@
 import functools
 import logging
-import math
 from collections import defaultdict
 from importlib.resources import files
 from pathlib import Path
@@ -9,11 +8,11 @@ from typing import Tuple
 import jsons
 import yaml
 from pydantic import TypeAdapter
-from scipy.constants import c, electron_mass, electron_volt
 
 from dt4acc.custom_facility.bessyii.provide_lattice import ENERGY
 
 from dt4acc.core.model.view import ProcessVariableCollection
+from dt4acc.core.utils.energy import energy_to_brho
 from dt4acc_lib.bl.liaison_manager import LiaisonManager
 from dt4acc_lib.bl.translator_service import TranslatorService
 from dt4acc_lib.bl.unit_conversion import LinearUnitConversion, EnergyDependentLinearUnitConversion
@@ -27,9 +26,6 @@ from dt4acc_lib.model.utils.translator_manager_lookup_table import TranslatorLoo
 
 logger = logging.getLogger("dt4acc")
 
-#: [eV]
-ELECTRON_REST_ENERGY = electron_mass * c ** 2 / electron_volt
-
 
 def design_brho(energy: float = ENERGY) -> float:
     """Magnetic rigidity [T m] of the electrons at the ring's design energy
@@ -40,7 +36,7 @@ def design_brho(energy: float = ENERGY) -> float:
     (``getbrho(1.7)``: 5.67229 T m, 1.7 GeV kinetic energy); the conversion
     divides by the beam's brho.
     """
-    return math.sqrt(energy ** 2 - ELECTRON_REST_ENERGY ** 2) / c
+    return energy_to_brho(energy)
 
 
 @functools.lru_cache(maxsize=1)
