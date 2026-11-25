@@ -28,7 +28,7 @@ the storage ring; the LINAC -> booster injection line is not modelled.
 
 ## 2. Start it
 
-### Prefix and network (every terminal)
+### Prefix and network (optional)
 
 PVs start with `DT4ACC_PREFIX` (default: the user name). To keep the twin on your own
 machine, on a shared or control room network in particular, put this into a file
@@ -41,7 +41,8 @@ export EPICS_CAS_INTF_ADDR_LIST=127.0.0.1  EPICS_CA_ADDR_LIST=127.0.0.1  EPICS_C
 export EPICS_PVAS_INTF_ADDR_LIST=127.0.0.1 EPICS_PVA_ADDR_LIST=127.0.0.1 EPICS_PVA_AUTO_ADDR_LIST=NO
 ```
 
-`caget`, `caput`, `pvget` come from EPICS base. Examples below use the prefix `BT`.
+`caget`, `caput`, `pvget` come from EPICS base. Examples below use the prefix `BT`;
+without `DT4ACC_PREFIX`, write your user name instead.
 
 ### A. From Python
 
@@ -71,7 +72,7 @@ One image, all three twins, chosen with `TWIN`:
 
 ```bash
 apptainer pull bessyii-injection-twin.sif \
-  oras://registry.hzdr.de/hzb/digital-twins/accelerator/containers/pyat-softioc-digital-twin:bessyii-injection-latest
+  oras://registry.hzdr.de/hzb/digital-twins/accelerator/containers/pyat-softioc-digital-twin:bessyii-injection-v1-1-4-bessyii-injection.3798956
 
 TWIN=bessyii apptainer run bessyii-injection-twin.sif     # ring alone
 TWIN=bessytl apptainer run bessyii-injection-twin.sif     # transfer line alone
