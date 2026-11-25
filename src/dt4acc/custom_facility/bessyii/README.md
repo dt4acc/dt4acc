@@ -130,33 +130,29 @@ All PVs, and which exist on the machine: [pv_list.md](pv_list.md).
 
 ## 4. Plot
 
-Save as `plot.py`, run `python plot.py` (orbit, beta, turn by turn of one BPM, ring twin):
+Run the scripts in `scripts/bessyii_injection` (from a clone), with the **injection**
+twin: it has the ring too.
 
-```python
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-from p4p.client.thread import Context
-
-P = os.environ["DT4ACC_PREFIX"]
-ctx = Context("pva", nt=False)
-get = lambda name: np.asarray(ctx.get(f"{P}:{name}", timeout=5).value)
-
-x, y, s = get("beam:orbit:x"), get("beam:orbit:y"), get("survey:s")
-s = np.append(s, s[-1])[:len(x)]           # one point per element, then the end
-fig, (a, b, c) = plt.subplots(3, 1, figsize=(11, 10))
-a.plot(s, x * 1e3, label="x"); a.plot(s, y * 1e3, label="y")
-a.set(xlabel="s [m]", ylabel="closed orbit [mm]"); a.legend()
-b.plot(s, get("beam:twiss:x:beta"), label="x"); b.plot(s, get("beam:twiss:y:beta"), label="y")
-b.set(xlabel="s [m]", ylabel="beta [m]"); b.legend()
-c.plot(get("BPMZ1D1R:signal:tbt:X"), ".-", label="x"); c.plot(get("BPMZ1D1R:signal:tbt:Y"), ".-", label="y")
-c.set(xlabel="turn", ylabel="BPMZ1D1R [mm]"); c.legend()
-fig.tight_layout(); plt.show()
+```bash
+dt4acc_bessyii_injection                         # terminal 1: the twin
+python scripts/bessyii_injection/live_plot.py    # terminal 2: the plot
+python scripts/bessyii_injection/demo.py         # terminal 3: moves PVs step by step
 ```
 
-Run it, move a PV of section 3, run it again. The steerer distorts the orbit, the
-quadrupole changes beta, both change the turn by turn signal. For the injection twin
-use `scripts/bessyii_injection/live_plot.py` (section 7).
+`demo.py` says at each step what it changes and what to expect, fires a shot, prints the
+result and puts everything back at the end (Enter between steps, `--no-wait` without).
+`live_plot.py` shows the trajectory in the transfer line, the injected beam at the ring
+BPMs turn after turn (x and y) with the ring's closed orbit, and the hand over.
+
+To plot your own change, move a PV of section 3 or 7, then fire a shot: the plot
+redraws at shots only.
+
+```bash
+caput BT:HS4P1D1R:set 0.1
+caput BT:INJ:trigger 1
+```
+
+Both scripts use `DT4ACC_PREFIX`. They do not work with the ring twin alone.
 
 ## 5. Turn by turn data
 
@@ -182,13 +178,7 @@ caget -# 5 BT:BPMZ1D1R:signal:tbt:X # first 5 turns [mm]
 | `<bpm>:signal:tbt:survived` | particles left per turn (1 or 0: one particle) |
 
 1024 turns take about 0.2 s. With an offset of 2 mm instead of 1 mm, the first three
-turns at `BPMZ1D1R` go from -0.763, 0.195, 0.848 to -1.433, 0.402, 1.745 mm. The peak
-of the FFT of `tbt:X` is the fractional tune:
-
-```python
-v = get("BPMZ1D1R:signal:tbt:X")
-f = np.fft.rfftfreq(len(v)); print(f[np.argmax(abs(np.fft.rfft(v - v.mean())))])   # ~0.152 = 1 - 0.848
-```
+turns at `BPMZ1D1R` go from -0.763, 0.195, 0.848 to -1.433, 0.402, 1.745 mm.
 
 ### Injection twin
 
@@ -360,12 +350,7 @@ dt4acc_bessyii_injection_mockup --shots 10 --rate 1
 
 ### Watch it
 
-From a clone, second and third terminal:
-
-```bash
-python scripts/bessyii_injection/live_plot.py    # redraws at every shot
-python scripts/bessyii_injection/demo.py         # guided tour, Enter between steps, puts everything back
-```
+With `live_plot.py` and `demo.py`, section 4. What `demo.py` gives:
 
 | step | injected beam | ring BPMs, x rms per turn [mm] |
 |---|---|---|
@@ -402,7 +387,7 @@ apertures. A shot does not change the stored beam or its current.
 
    - [ ] ring twin up: `Q1PDR:set` 218.458, tunes 17.8481 and 6.7268
    - [ ] the four moves of section 3, each put back
-   - [ ] `TBT:n_turns 1024`: `TBT:count` goes up, 1024 values, FFT peak near 0.152
+   - [ ] `TBT:n_turns 1024`: `TBT:count` goes up, 1024 values
    - [ ] wavelength shifters loaded (1255 elements), back with `""` (1137)
    - [ ] a wrong file name is refused, the lattice stays
    - [ ] your own lattice from `DT4ACC_LATTICE_DIR`

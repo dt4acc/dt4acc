@@ -93,14 +93,16 @@ def draw(fig, axes, snap):
     ax_tl.set(title="transfer line: trajectory", xlabel="s [m]", ylabel="[mm]")
     ax_tl.legend(loc="upper left")
 
-    nt, nb, c = snap["n_turns"], snap["n_bpm"], snap["circumference"]
-    s_turns = np.concatenate([snap["bpm_s"] + k * c for k in range(nt)])
+    nb, c = snap["n_bpm"], snap["circumference"]
+    # turns of the last shot (0 before the first one); n_turns is the next shot's
+    nt = len(snap["tbt_x"]) // nb
+    s_turns = np.concatenate([snap["bpm_s"] + k * c for k in range(nt)]) if nt else np.array([])
     ring = snap["ring"]
     m = min(len(ring["s"]), len(ring["x"]))
     for ax, plane, label in ((ax_x, "tbt_x", "x"), (ax_y, "tbt_y", "y")):
         values = snap[plane][: nt * nb] * 1e3
         ax.plot(s_turns, values, ".-", ms=3, lw=0.8, label=f"injected beam, {nt} turn(s)")
-        for k in range(nt):
+        for k in range(max(nt, 1)):
             ax.plot(ring["s"][:m] + k * c, ring[label][:m] * 1e3, "k--", lw=0.6,
                     label="closed orbit" if k == 0 else None)
         for k in range(1, nt):
