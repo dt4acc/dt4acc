@@ -102,9 +102,9 @@ Typical workflow:
 Further Documentation
 ---------------------
 
-BESSY II user guide (start, use and test the twin):
+Start, use and test the BESSY II twin:
 
-- src/dt4acc/custom_facility/bessyii/README.md
+- `BESSY II user guide <src/dt4acc/custom_facility/bessyii/README.md>`__
 
 The full architecture, patterns, and scientific background are documented in:
 
