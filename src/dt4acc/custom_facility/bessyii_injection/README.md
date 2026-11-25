@@ -1,5 +1,7 @@
 # BESSY II injection twin: transfer line and storage ring together
 
+To start, use and test the BESSY II twins: [user guide](../bessyii/README.md).
+
 The transfer line twin (`../bessytl`) and the storage ring twin (`../bessyii`)
 in one IOC, with the beam handed from the line to the ring.
 

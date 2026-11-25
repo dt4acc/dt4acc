@@ -1,5 +1,7 @@
 # BESSY II storage ring: input data
 
+To start, use and test the BESSY II twins: [user guide](../../../README.md).
+
 ## Lattice: `bessy2_storage_ring.json`
 
 The lattice the twin loads (`provide_lattice.py`), in pyAT's own JSON format.
@@ -63,7 +65,7 @@ With a running ring twin, its PVs below `<prefix>`:
 | --- | --- | --- |
 | `simulator_ring:lattice:message` after loading | `loaded the start lattice: 1137 elements` | `loaded bessy2_storage_ring_wls.json: 1255 elements` |
 | `Q3M1D1R:Cm:set` | -2.02592 | -2.02286 |
-| `Q3PD1R:set` (A) | 172.473 | 172.212 |
+| `Q3PD1R:set` (A) | 183.087 | 182.810 |
 
 A name with a path (`../pv_list.md`) or a file that is not there is refused
 (`refused: ...`) and the lattice kept. A monitor on a settings PV is updated
