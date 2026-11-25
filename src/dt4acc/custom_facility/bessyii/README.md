@@ -72,18 +72,20 @@ One image, all three twins, chosen with `TWIN`:
 
 ```bash
 apptainer pull bessyii-injection-twin.sif \
-  oras://registry.hzdr.de/hzb/digital-twins/accelerator/containers/pyat-softioc-digital-twin:bessyii-injection-v1-1-4-bessyii-injection.3798956
+  oras://registry.hzdr.de/hzb/digital-twins/accelerator/containers/pyat-softioc-digital-twin:bessyii-injection-latest
 
 TWIN=bessyii apptainer run bessyii-injection-twin.sif     # ring alone
 TWIN=bessytl apptainer run bessyii-injection-twin.sif     # transfer line alone
 apptainer run bessyii-injection-twin.sif                  # injection twin (default)
 ```
 
-> **The container is behind this guide.** Its repository still builds dt4acc `0978ec0`
-> (as of 2026-11-25): no `simulator_ring:lattice` (section 6), no screen images, no
-> `dt4acc_bessyii_injection_mockup`, and supply currents from before the brho fix
-> (`Q1PDR:set` 205.795 A instead of 218.458 A). Use Python (A) until a newer image is
-> published.
+`bessyii-injection-latest` is the newest published image; pull again (`apptainer pull -F`)
+to update. It is version 1.1.5 as of 2026-11-25: dt4acc `67dc55d`, dt4acc-lib `aaa9363`.
+
+The scripts of sections 4, 7 and 8 are in the image, e.g.
+`apptainer exec bessyii-injection-twin.sif python /twin/scripts/bessyii_injection/demo.py`.
+For your own lattices (section 6), `DT4ACC_LATTICE_DIR` has to be a directory the
+container sees: your home usually is, otherwise add `--bind <directory>`.
 
 The image has no EPICS command line tools: use your own. Build and publishing:
 [container repository](https://codebase.helmholtz.cloud/hzb/digital-twins/accelerator/containers/pyat-softioc-digital-twin).
