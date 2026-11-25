@@ -102,6 +102,10 @@ Typical workflow:
 Further Documentation
 ---------------------
 
+BESSY II user guide (start, use and test the twin):
+
+- src/dt4acc/custom_facility/bessyii/README.md
+
 The full architecture, patterns, and scientific background are documented in:
 
 - README_details.rst

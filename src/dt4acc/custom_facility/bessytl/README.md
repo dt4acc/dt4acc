@@ -1,5 +1,7 @@
 # BESSY II transfer line twin
 
+To start, use and test the BESSY II twins: [user guide](../bessyii/README.md).
+
 The transfer line brings the beam from the booster (extraction septum
 `SEK1S12B`) to the storage ring (injection septa `SEK1D1R`, `SEK2D1R`, kickers
 `KIK3D1R`, `KIK4D1R`). This directory holds its twin, and describes how it
