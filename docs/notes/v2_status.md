@@ -67,7 +67,7 @@ commits (see *Pull requests in review*). `lib` is dt4acc-lib.
 |---|---|---|---|
 | `beam:orbit:found` never set back to False | in review | dt4acc#71 `369255f` | |
 | `simulator_ring:reset` / `reinit` do not refresh the model PVs | in review | dt4acc#71 `369255f` | |
-| BESSY II: steerer `<magnet>:Cm:set` raises `KeyError` (no `main_strength_rdbk`); sextupole magnets have no `main_strength` lookup entry | open | | #83 |
+| BESSY II: steerer `<magnet>:Cm:set` raises `KeyError` (no `main_strength_rdbk`); sextupole magnets have no `main_strength` lookup entry (the S1 family and its supply S1PR were missing in the inputs) | in review | branch `dev/feature/issue-83-steerer-sextupole-lookups` | #83 |
 | unstable ring (pyAT `AtError`) not handled as failed optics | in review | lib#35 `d0efe75` | |
 
 ## Log

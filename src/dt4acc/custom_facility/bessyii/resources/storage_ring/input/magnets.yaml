@@ -1448,6 +1448,166 @@
     slope: -0.0928
     conversion_type: linear  
 
+- elem_id: S1MD1R
+  dev_id: S1MD1R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MT1R
+  dev_id: S1MT1R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MD2R
+  dev_id: S1MD2R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MT2R
+  dev_id: S1MT2R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MD3R
+  dev_id: S1MD3R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MT3R
+  dev_id: S1MT3R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MD4R
+  dev_id: S1MD4R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MT4R
+  dev_id: S1MT4R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MD5R
+  dev_id: S1MD5R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MT5R
+  dev_id: S1MT5R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MD6R
+  dev_id: S1MD6R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MT6R
+  dev_id: S1MT6R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MD7R
+  dev_id: S1MD7R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MT7R
+  dev_id: S1MT7R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MD8R
+  dev_id: S1MD8R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
+- elem_id: S1MT8R
+  dev_id: S1MT8R
+  type: sextupole
+  family_member: [ tune_correction ]
+  power_converter_id: S1PR
+  conversion:
+    intercept: 0.0
+    slope: 1.51788571428571
+    conversion_type: linear  
+
 - elem_id: S2M2D1R
   dev_id: S2M2D1R
   type: sextupole

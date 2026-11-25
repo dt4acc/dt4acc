@@ -1,5 +1,7 @@
 # BESSY II storage ring: input data
 
+To start, use and test the BESSY II twins: [user guide](../../../README.md).
+
 ## Lattice: `bessy2_storage_ring.json`
 
 The lattice the twin loads (`provide_lattice.py`), in pyAT's own JSON format.
@@ -30,6 +32,44 @@ unchanged. The differences come from bessy2reflat:
 * new markers and drifts: diagnostic striplines (`DIAG_STRIPLINE_*`), the
   diagnostic kicker, the wavelength shifters' start/end markers
 * removed: the markers `MBAMWLS1`, `MBAMWLS2`
+
+## Lattice with the wavelength shifters: `bessy2_storage_ring_wls.json`
+
+Not loaded at start: the ring twin loads it at run time (#81),
+`caput <prefix>:simulator_ring:lattice bessy2_storage_ring_wls.json`, and
+goes back with an empty string (`pv_list.md`, *Lattice at run time*).
+Exported by `scripts/bessyii/export_lattice.py --wavelength-shifters` from
+the same bessy2reflat commit: `add_wavelength_shifters()` with its defaults,
+both wavelength shifters, 20 slices per pole, tunes and RF re-matched.
+
+| | start lattice | with the wavelength shifters |
+| --- | --- | --- |
+| elements | 1137 | 1255 (+124 pole slices and edges; 6 drifts and markers replaced) |
+| tunes | 0.84807, 0.72678 | 0.84807, 0.72678 (re-matched) |
+| RF (Hz) | 499 636 630.203 | 499 636 629.871 |
+| changed | | K of the 64 Q3 quadrupoles, the 4 main cavities' frequency |
+
+### How to test
+
+Needs a dt4acc-lib with `SimulatorBackend.load_lattice`. Automated:
+
+    python -m pytest tests/bessyii/test_runtime_lattice.py
+
+With a running ring twin, its PVs below `<prefix>`:
+
+    caput -S <prefix>:simulator_ring:lattice bessy2_storage_ring_wls.json
+    caget -S <prefix>:simulator_ring:lattice:message
+    caput -S <prefix>:simulator_ring:lattice ""
+
+| | start lattice | with the wavelength shifters |
+| --- | --- | --- |
+| `simulator_ring:lattice:message` after loading | `loaded the start lattice: 1137 elements` | `loaded bessy2_storage_ring_wls.json: 1255 elements` |
+| `Q3M1D1R:Cm:set` | -2.02592 | -2.02286 |
+| `Q3PD1R:set` (A) | 183.087 | 182.810 |
+
+A name with a path (`../pv_list.md`) or a file that is not there is refused
+(`refused: ...`) and the lattice kept. A monitor on a settings PV is updated
+once the lattice is replaced.
 
 ## Other files
 

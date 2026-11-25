@@ -1,9 +1,16 @@
 # BESSY II transfer line twin
 
+To start, use and test the BESSY II twins: [user guide](../bessyii/README.md).
+
 The transfer line brings the beam from the booster (extraction septum
 `SEK1S12B`) to the storage ring (injection septa `SEK1D1R`, `SEK2D1R`, kickers
 `KIK3D1R`, `KIK4D1R`). This directory holds its twin, and describes how it
 relates to the storage ring twin.
+
+It is not the injection line: at BESSY II that is the line from the LINAC to
+the booster, which dt4acc does not model. "Injection" in the injection twin
+(`../bessyii_injection`) is the injection into the storage ring, at the end
+of this line.
 
 ## 1. The transfer line alone
 
@@ -81,28 +88,57 @@ python src/dt4acc/custom_facility/bessytl/run_bessytl_twin.py
 ```
 
 All PVs, with what a write does and the protocol: [pv_list.md](pv_list.md)
-(`scripts/bessyii/dump_twin_pvs.sh` + `scripts/bessytl/make_pv_list.py` from a running twin).
-In short, prefixed with `DT4ACC_PREFIX` (default: the user name):
+(`scripts/bessyii/dump_twin_pvs.sh` + `scripts/bessytl/make_pv_list.py` from a running twin;
+`tests/bessytl/test_bessytl_pvs.py` checks that the twin serves exactly these).
+In short, prefixed with `DT4ACC_PREFIX` (default: the user name). Devices keep their
+machine names; the line's model is under `TL:`. These are the same names as in the
+injection twin, where the ring serves `beam:*` and `ORBITCC:*` without `TL:`.
 
 | PV | what |
 |---|---|
 | `<supply>:set`, `<supply>:rdbk` | supply current [A]: `Q1PT` ... `Q12PT`, `H1PT` ... `H7PT`, `V1PT` ... `V8PT` |
-| `<monitor>:x`, `<monitor>:y` | trajectory at the monitor [mm]: `FOMZ*` (FOMs, screens), `BPMZ*` (BPMs), `SLZ*` (striplines) |
-| `beam:orbit:{x,y,names,uids}` | trajectory along the line, at every element and the exit |
-| `beam:twiss:{x,y}:{beta,alpha,nu}`, `beam:twiss:{names,uids}` | optics along the line |
-| `survey:s` | position along the line [m] |
-| PVA `ORBITCC:rdBpm`, `ORBITCC:rdModel` | `rdBpm`: BPMZ* and striplines SLZ*, in lattice order (BPMZ1T, SLZ1T, SLZ2T, BPMZ2T ... BPMZ5T, SLZ3T), nm; as the ring twin |
+| `<bpm>:signal:sa:X`, `<bpm>:signal:sa:Y` | trajectory at the BPMs `BPMZ*` and striplines `SLZ*` [mm] |
+| `<screen>:image`, `<screen>:image:{width,height,pixel}` | screens `FOMZ*`: image of the beam spot (see below) |
+| `<screen>:x`, `<screen>:y`, `<screen>:sigma:x`, `<screen>:sigma:y` | beam centre and size at the screen [mm] |
+| `TL:beam:orbit:{x,y,names,uids}` | trajectory along the line, at every element and the exit |
+| `TL:beam:twiss:{x,y}:{beta,alpha,nu}`, `TL:beam:twiss:{names,uids}` | optics along the line |
+| `TL:beam:emittance:{x,y}` | emittance of the beam [m rad], writable: the screens' beam size (placeholder) |
+| `TL:survey:s` | position along the line [m] |
+| PVA `TL:ORBITCC:rdBpm`, `TL:ORBITCC:rdModel` | `rdBpm`: BPMZ* and striplines SLZ*, in lattice order (BPMZ1T, SLZ1T, SLZ2T, BPMZ2T ... BPMZ5T, SLZ3T), nm; as the ring twin's `ORBITCC:*` |
+
+### Screens
+
+A fluorescent screen (`FOMZ*`) is no BPM: the beam hits a fluorescent plate
+(and, at the machine, stops there) and a camera records the light, an image of
+the beam spot. The twin computes it (`screens.py`) from
+
+* the beam centre: the trajectory at the screen (`<screen>:x` / `y`),
+* the beam size: `sigma = sqrt(emittance * beta)` (`<screen>:sigma:x` / `y`),
+  the emittance (`TL:beam:emittance:x` / `y`) and beta at the screen. The
+  beam's phase space ellipse (from the Twiss parameters) projected on the
+  screen: alpha tilts the ellipse in (x, x'), which the screen does not see.
+
+`<screen>:image`: a Gaussian spot, `image:height` rows of `image:width` pixels of
+`image:pixel` mm (placeholder: 100 x 100 of 0.2 mm), centred on the line's axis, row 0
+at the top (+y). A pixel holds the fraction of the beam that hits it: the image sums to
+1 when the whole beam is on the screen. No trajectory (the calculation failed): a dark
+image.
+
+Not yet: the energy spread (dispersion), the screens stopping the beam (the
+twin's screens are transparent), the cameras' real geometry and the booster's
+emittance (placeholder 100 nm rad / 10 nm rad, `twin_setup.EMITTANCE`).
 
 ### Check
 
 ```bash
-pytest tests/bessytl                        # supplies -> magnets -> trajectory, no EPICS
+pytest tests/bessytl                        # supplies -> magnets -> trajectory, PVs, screens; no EPICS
 DT4ACC_PREFIX=<prefix> python scripts/bessytl/check_twin.py   # against a running twin
 ```
 
 The check sets steerer and quadrupole supplies over EPICS and compares every
 monitor and the optics with plain pyAT on the same lattice, currents and
-entering beam.
+entering beam, and the screens' beam size and image centre with pyAT's beta
+and trajectory.
 
 `<magnet>:Cm:set` / `:Cm:rdbk` read back in lattice units: K [1/m^2] for
 quadrupoles, kick [rad] for steerers, bending angle [rad] for bends.

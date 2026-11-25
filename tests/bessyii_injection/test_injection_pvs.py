@@ -3,8 +3,8 @@
 The twin's own set up (``assemble``, ``initialise_pvs``) with a recording
 builder: the storage ring serves exactly its PVs as the ring twin
 (``bessyii/pv_list.md``), the transfer line its supplies, magnets and monitors
-up to the septum exit under machine names (``bessytl/pv_list.md``) and its
-model PVs under ``TL:``, the hand over its PVs (``bessyii_injection/pv_list.md``).
+up to the septum exit with the names of the transfer line twin (devices:
+machine names, model: ``TL:``, ``bessytl/pv_list.md``), the hand over its PVs (``bessyii_injection/pv_list.md``).
 Every magnet of ring and line has ``Cm:set``, ``Cm:rdbk``, ``im:I``,
 ``x:set`` and ``y:set``.
 """
@@ -56,7 +56,7 @@ def line_device_pvs(monitors):
         if section.startswith("Magnets"):
             placeholder = "magnet"
         if section == "Monitors":
-            # screens <screen>:x / y, BPMs and striplines <bpm>:signal:sa:X / Y
+            # screens <screen>:image, ..., BPMs and striplines <bpm>:signal:sa:X / Y
             placeholder = "screen" if group.split(" / ")[1].startswith("FOM") else "bpm"
             devices = [d for d in devices if d in monitors]
         if placeholder:
@@ -65,9 +65,10 @@ def line_device_pvs(monitors):
 
 
 def line_model_pvs():
-    """the transfer line twin's soft IOC model PVs, under TL:"""
+    """the transfer line twin's soft IOC model PVs: the same names (TL:...)"""
     _, named, _ = pv_list_md.read(pv_list("bessytl"))
-    return {f"TL:{pv}" for pv in named}
+    assert named and all(pv.startswith("TL:") for pv in named), sorted(named)[:5]
+    return named
 
 
 def handover_pvs():

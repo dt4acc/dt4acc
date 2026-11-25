@@ -20,12 +20,15 @@ from p4p.client.thread import Context
 from dt4acc.custom_epics.ioc.bpm_pvs import M2MM
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_lattice
 from dt4acc.custom_facility.bessyii_injection.handover import INJECTION_ELEMENT, no_offset, to_ring
+from dt4acc.custom_facility.bessyii_injection.mockup import InjectionMockup
 from dt4acc_lib.model.output.track import ParticleState
 from dt4acc.custom_facility.bessytl.twin_setup import bessytl_lattice, load_accelerator_setup, load_twiss_in, monitor_names
 
 P = os.environ.get("DT4ACC_PREFIX", "")
 SEPTUM = "SEK2D1R"
 ctx = Context("pva", nt=False)
+#: fires the shots, as the injection timing (a client of the twin)
+injection = InjectionMockup(prefix=P, ctx=ctx)
 failures = []
 RING = provide_lattice()
 BPMS = [e.FamName for e in RING if isinstance(e, at.Monitor) and e.FamName.startswith("BPMZ")]
@@ -48,17 +51,13 @@ def check(ok, what):
         failures.append(what)
 
 
-def shot(previous, timeout=30.0):
+def shot(previous):
     """fire a shot (INJ:trigger), wait until it is computed: the new INJ:count"""
-    ctx.put(pv("INJ:trigger"), 1)
-    t0 = time.time()
-    while time.time() - t0 < timeout:
-        n = int(get("INJ:count"))
-        if n > previous:
-            return n
-        time.sleep(0.2)
-    check(False, f"shot after INJ:count {previous} computed within {timeout} s")
-    return int(get("INJ:count"))
+    try:
+        return injection.shot()
+    except TimeoutError as exc:
+        check(False, str(exc))
+        return int(get("INJ:count"))
 
 
 def line_bpms_x():
@@ -101,13 +100,14 @@ def compare(label, steerers, geometry, n_turns):
 
 
 def main():
-    for name in ("Q1PT:set", "FOMZ1T:x", "TL:beam:orbit:x", "Q1PDR:set", "beam:orbit:x", "INJ:tbt:names"):
+    for name in ("Q1PT:set", "FOMZ1T:image", "TL:beam:orbit:x", "TL:beam:emittance:x", "Q1PDR:set",
+                 "beam:orbit:x", "INJ:tbt:names"):
         try:
             get(name)
             check(True, f"{name} served")
         except Exception as exc:
             check(False, f"{name} served ({exc})")
-    for name in ("TL:Q1PT:set", "TL:FOMZ1T:x"):
+    for name in ("TL:Q1PT:set", "TL:FOMZ1T:image"):
         try:
             ctx.get(pv(name), timeout=2)
             check(False, f"{name} not served (machine name without TL:)")

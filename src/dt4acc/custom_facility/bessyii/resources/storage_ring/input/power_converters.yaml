@@ -712,6 +712,13 @@
   response:
     settle_time: 0.5
     timeout: 2.0
+- id: S1PR
+  interface:
+    setpoint: S1PR:set
+    readback: S1PR:rdbk
+  response:
+    settle_time: 0.5
+    timeout: 2.0
 - id: S2PDR
   interface:
     setpoint: S2PDR:set

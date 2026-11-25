@@ -1,5 +1,8 @@
 """EPICS side of the injection: PVs of the hand over and what fires it
 
+The injection into the storage ring (transfer line -> ring), not the
+injection line (LINAC -> booster).
+
 An injection is a shot, fired on demand (``INJ:trigger``), as at the
 machine: the beam passes the transfer line only during a shot, so its
 monitors and the ring's turn by turn buffers (triggered by the injection
@@ -9,21 +12,24 @@ settings below act at the next shot. The models (transfer line trajectory and
 optics, the ring's closed orbit) still follow every change: the ring's stored
 beam is measured continuously.
 
-* ``INJ:trigger``: write 1 to fire a shot (back at 0 once accepted)
+* ``INJ:trigger``: write 1 to fire a shot (back at 0 once accepted); to
+  fire shots repeatedly, from a client: :mod:`.mockup`
 * ``INJ:geometry:{x,xp,y,yp,delta,ct}``: the line's reference against the
   ring's at the septum exit, a difference state (ring = line + geometry)
-* ``INJ:n_turns``: turns tracked in the ring
+* ``INJ:n_turns``: how many turns in the ring each shot tracks the injected
+  beam, i.e. the length of the turn by turn buffers. Not a number of shots:
+  one trigger is one shot, ``INJ:count`` counts them
 * ``INJ:stops``: ring elements the beam ends at (:mod:`dt4acc.custom_epics.ioc.stops`)
 * ``INJ:line_exit:{x,xp,y,yp,delta,ct}``: centroid leaving the line (line frame)
 * ``INJ:injected:{x,xp,y,yp,delta,ct}``: the same in the ring frame
 * ``INJ:tbt:{x,y}``: position at the ring's BPMs, turn after turn
   (turn 1 at all BPMs, then turn 2, ...), ``INJ:tbt:names``: the BPMs
 * ``INJ:survived``: particles still there after each turn
-* ``INJ:count``: number of shots computed
+* ``INJ:count``: number of shots computed (triggers that arrive while a shot
+  is computed are merged into one more shot)
 * ``<bpm>:signal:tbt:X``, ``<bpm>:signal:tbt:Y``: one BPM, turn after turn [mm]
   (:mod:`dt4acc.custom_epics.ioc.bpm_pvs`)
 """
-import asyncio
 import logging
 import math
 from typing import Awaitable, Callable, List, Optional, Sequence
@@ -110,11 +116,20 @@ class InjectionPVs:
 
     # --- shots: one that arrives while one is computed is fired after it
     def fire(self):
-        """Fire a shot (from any thread)"""
+        """Fire a shot (from any thread, e.g. the IOC's)
+
+        The request is handed to the shared event loop: ``_pending`` and
+        ``_running`` are only touched there, so a trigger that arrives just as
+        a shot ends is not lost.
+        """
+        get_shared_event_loop().call_soon_threadsafe(self._request)
+
+    def _request(self):
+        """on the shared event loop"""
         self._pending = True
         if not self._running:
             self._running = True
-            asyncio.run_coroutine_threadsafe(self._run(), get_shared_event_loop())
+            get_shared_event_loop().create_task(self._run())
 
     async def _run(self):
         try:
