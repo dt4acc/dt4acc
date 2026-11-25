@@ -81,7 +81,7 @@ Install dependencies:
 .. code-block:: bash
 
     python3 -m pip install \
-      "dt4acc-lib @ git+https://github.com/dt4acc/dt4acc/dt4acc.git" \
+      "dt4acc-lib @ git+https://github.com/dt4acc/dt4acc-lib.git" \
       "dt4acc[epics,bessyii] @ git+https://github.com/dt4acc/dt4acc.git"
 
 
@@ -111,7 +111,7 @@ The full architecture, patterns, and scientific background are documented in:
 - README_details.rst
 
 Direct link:
-https://github.com/dt4acc/dt4acc/blob/main/README_details.rst
+https://github.com/dt4acc/dt4acc/blob/dev/main/README_details.rst
 
 This includes:
 
