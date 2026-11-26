@@ -19,13 +19,20 @@ names SOLEIL's MML reads), in mm:
                      ring simulator's latest result at this BPM
     DDBufferSize   — turns; the twin tracks one beam for all BPMs, so a
                      write sets it for all of them (ring simulator's tbt_n_turns)
+
+Noise (#82, :mod:`dt4acc.custom_tango.ioc.devices.bpm_noise`): the ring
+simulator's ``bpm_noise_*`` settings, followed by change events. When on, the
+XPos / ZPos attributes get a new sample with each new orbit or turn by turn
+result; x and y (the model) stay exact.
 """
 import numpy as np
 from tango import AttrWriteType, AttrDataFormat, DevState, DevDouble, EventType
 from tango.server import Device, attribute, device_property
 from tango import DeviceProxy
 
+from dt4acc.core.bl.noise import BpmNoise
 from dt4acc.core.utils.logger import get_logger
+from dt4acc.custom_tango.ioc.devices.bpm_noise import NOISE_ATTRIBUTES, apply_setting
 from dt4acc.custom_tango.ioc.devices.virtual_devices import RING_SIM_DEV
 from dt4acc.custom_tango.ioc.turn_by_turn import M2MM, MAX_TURNS
 
@@ -69,6 +76,12 @@ class BPMDevice(Device):
         super().init_device()
         self._x = 0.0
         self._y = 0.0
+        #: what the BPM measures of x / y [mm]: with noise when it is on
+        self._sa_x = 0.0
+        self._sa_y = 0.0
+        #: a copy of the ring simulator's noise settings, followed by events
+        self._noise = BpmNoise()
+        self._noise_subscribed = False
         #: turn by turn data of the ring simulator's result tbt_count [mm]
         self._tbt_count = None
         self._tbt_x = np.zeros(0)
@@ -81,12 +94,42 @@ class BPMDevice(Device):
         logger.info("Initializing BPMDevice: %s lattice_id=%s orbit_index=%d",
                     self.get_name(), self.lattice_id, self.orbit_index)
         self._subscribe_orbit_events()
+        self._subscribe_noise_events()
 
     def always_executed_hook(self):
         """Retry subscription if not yet connected — ringsimulator may not
         have been running when init_device was called."""
         if not self._subscribed:
             self._subscribe_orbit_events()
+        if not self._noise_subscribed:
+            self._subscribe_noise_events()
+
+    def _subscribe_noise_events(self):
+        """Follow the ring simulator's bpm_noise_* settings; retried as the orbit's.
+        A ring simulator without them: no noise"""
+        try:
+            # a proxy of its own: kept only once subscribed, as the orbit's
+            ringsim = DeviceProxy(RING_SIM_DEV)
+            ringsim.set_timeout_millis(3000)
+            ids = [
+                ringsim.subscribe_event(
+                    name, EventType.CHANGE_EVENT, lambda event, name=name: self._on_noise(name, event)
+                )
+                for name in NOISE_ATTRIBUTES
+            ]
+            self._noise_event_ids = ids
+            self._noise_proxy = ringsim
+            self._noise_subscribed = True
+        except Exception as exc:
+            logger.debug("BPMDevice %s: noise subscription failed (will retry): %s", self.get_name(), exc)
+
+    def _on_noise(self, name: str, event):
+        if event.err or event.attr_value is None:
+            return
+        try:
+            apply_setting(self._noise, name, event.attr_value.value)
+        except Exception as exc:
+            logger.info("BPMDevice %s: noise setting %s not taken: %s", self.get_name(), name, exc)
 
     def _subscribe_orbit_events(self):
         """Subscribe to orbit_x / orbit_y change events on RingSimulatorDevice.
@@ -102,7 +145,7 @@ class BPMDevice(Device):
             eid_y = ringsim.subscribe_event(
                 "orbit_y", EventType.CHANGE_EVENT, self._on_orbit_y
             )
-            self._event_ids = [eid_x, eid_y]
+            self._event_ids += [eid_x, eid_y]
             self._ringsim = ringsim  # keep reference alive
             self._subscribed = True
             logger.info("BPMDevice %s: subscribed OK (eid_x=%s eid_y=%s)",
@@ -129,6 +172,7 @@ class BPMDevice(Device):
                          self.get_name(), len(arr), self.orbit_index)
             if self.orbit_index < len(arr):
                 self._x = float(arr[self.orbit_index])
+                self._sa_x = self._noise.sa.apply(self._x * M2MM)
             else:
                 logger.info("BPMDevice %s: orbit_index=%d >= orbit_x len=%d",
                                self.get_name(), self.orbit_index, len(arr))
@@ -144,16 +188,19 @@ class BPMDevice(Device):
             arr = event.attr_value.value
             if arr is not None and self.orbit_index < len(arr):
                 self._y = float(arr[self.orbit_index])
+                self._sa_y = self._noise.sa.apply(self._y * M2MM)
         except Exception as exc:
             logger.info("BPMDevice %s: _on_orbit_y failed: %s", self.get_name(), exc)
 
     def delete_device(self):
-        try:
-            if hasattr(self, "_ringsim") and self._event_ids:
-                for eid in self._event_ids:
-                    self._ringsim.unsubscribe_event(eid)
-        except Exception:
-            pass
+        for proxy, ids in ((getattr(self, "_ringsim", None), getattr(self, "_event_ids", [])),
+                           (getattr(self, "_noise_proxy", None), getattr(self, "_noise_event_ids", []))):
+            try:
+                if proxy is not None:
+                    for eid in ids:
+                        proxy.unsubscribe_event(eid)
+            except Exception:
+                pass
 
     @attribute(dtype=DevDouble, label="Horizontal position", unit="m",
                polling_period=1000)
@@ -170,13 +217,13 @@ class BPMDevice(Device):
                description="Slow Acquisition: X (closed orbit)")
     def XPosSA(self) -> float:
         self._check_units("XPosSA")
-        return self._x * M2MM
+        return self._sa_x
 
     @attribute(dtype=DevDouble, label="Z.Pos.SA", unit="mm", format="%8.4f",
                description="Slow Acquisition: Z (closed orbit)")
     def ZPosSA(self) -> float:
         self._check_units("ZPosSA")
-        return self._y * M2MM
+        return self._sa_y
 
     @attribute(dtype=DevDouble, dformat=AttrDataFormat.SPECTRUM, max_dim_x=MAX_TURNS,
                label="DD X Pos.", unit="mm", format="%8.4f", description="Turn by turn data: X Pos.")
@@ -234,5 +281,5 @@ class BPMDevice(Device):
             return
         xy = np.asarray(ringsim.command_inout("TurnByTurnAt", self.lattice_id), dtype=np.float64)
         n = len(xy) // 2
-        self._tbt_x, self._tbt_y = xy[:n] * M2MM, xy[n:] * M2MM
+        self._tbt_x, self._tbt_y = (self._noise.tbt.apply(v * M2MM) for v in (xy[:n], xy[n:]))
         self._tbt_count = count

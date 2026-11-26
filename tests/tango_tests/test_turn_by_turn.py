@@ -146,16 +146,19 @@ tango = pytest.importorskip("tango")
 from tango.server import Device, attribute, command  # noqa: E402
 from tango.test_context import MultiDeviceTestContext  # noqa: E402
 
+from dt4acc.custom_tango.ioc.devices.bpm_noise import BpmNoiseSettings  # noqa: E402
+
 N_TURNS = 8
 #: x, then y [m]
 XY = np.concatenate([np.arange(N_TURNS) * 1e-4, -np.arange(N_TURNS) * 1e-4])
 
 
-class RingSimulatorStandIn(Device):
-    """the ring simulator's turn by turn interface, with a fixed result"""
+class RingSimulatorStandIn(BpmNoiseSettings):
+    """the ring simulator's turn by turn interface, with a fixed result, and its BPM noise settings"""
 
     def init_device(self):
         super().init_device()
+        self._bpm_noise()
         self._n_turns = N_TURNS
         self._count = 1
 
@@ -250,3 +253,59 @@ def test_bpm_slow_acquisition_in_mm(bpm_device):
     # no ring simulator orbit events here: the closed orbit is still 0
     assert bpm.XPosSA == 0.0 and bpm.ZPosSA == 0.0
     assert bpm.get_attribute_config("ZPosSA").unit == "mm"
+
+
+
+# --- noise on the BPMs' readings (#82)
+def new_turn_by_turn(bpm, ring_sim):
+    """a new result of the ring simulator (its count goes up), read at the BPM"""
+    bpm.DDBufferSize = N_TURNS
+    return np.asarray(bpm.XPosDD)
+
+
+def test_bpm_turn_by_turn_noise_follows_the_ring_simulators_settings(bpm_device):
+    import time
+
+    bpm, ring_sim = bpm_device
+    exact = XY[:N_TURNS] * M2MM
+    sim = tango.DeviceProxy(ring_sim)
+    assert not sim.bpm_noise_tbt_enable and not sim.bpm_noise_sa_enable, "off by default"
+    np.testing.assert_array_equal(new_turn_by_turn(bpm, ring_sim), exact)
+
+    sim.bpm_noise_tbt_sigma = 0.05
+    sim.bpm_noise_tbt_enable = True
+    try:
+        # the BPM follows by a change event: a new result after it arrived is noisy
+        end = time.time() + 10
+        while np.array_equal(got := new_turn_by_turn(bpm, ring_sim), exact) and time.time() < end:
+            time.sleep(0.1)
+        assert not np.allclose(got, exact, rtol=0, atol=1e-12)
+        np.testing.assert_allclose(got, exact, atol=6 * 0.05)
+        assert bpm.x == 0.0, "the model (x, m) stays exact"
+    finally:
+        sim.bpm_noise_tbt_enable = False
+    end = time.time() + 10
+    while not np.array_equal(got := new_turn_by_turn(bpm, ring_sim), exact) and time.time() < end:
+        time.sleep(0.1)
+    np.testing.assert_array_equal(got, exact)
+
+
+def test_bpm_noise_sigma_not_negative(bpm_device):
+    _, ring_sim = bpm_device
+    sim = tango.DeviceProxy(ring_sim)
+    with pytest.raises(tango.DevFailed):
+        sim.bpm_noise_sa_sigma = -1.0
+    assert sim.bpm_noise_sa_sigma == 0.001
+
+
+def test_apply_setting():
+    from dt4acc.core.bl.noise import BpmNoise
+    from dt4acc.custom_tango.ioc.devices.bpm_noise import NOISE_ATTRIBUTES, apply_setting
+
+    noise = BpmNoise()
+    assert set(NOISE_ATTRIBUTES) == {f"bpm_noise_{k}_{s}" for k in ("sa", "tbt") for s in ("enable", "sigma")}
+    apply_setting(noise, "bpm_noise_sa_enable", True)
+    apply_setting(noise, "bpm_noise_tbt_sigma", 0.2)
+    assert noise.sa.enabled and noise.tbt.sigma == 0.2 and not noise.tbt.enabled
+    with pytest.raises(ValueError):
+        apply_setting(noise, "bpm_noise_sa_sigma", float("nan"))

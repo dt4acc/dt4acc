@@ -24,6 +24,7 @@ from dt4acc_lib.interfaces.backend.calculation_states import CalculationStates
 from dt4acc_lib.model.utils.command import Command, BehaviourOnError, ReadCommand
 from dt4acc.core.utils.logger import get_logger
 from dt4acc.custom_tango.ioc.controller_registry import get_controller
+from dt4acc.custom_tango.ioc.devices.bpm_noise import BpmNoiseSettings
 from dt4acc.custom_tango.ioc.devices.write_value_sync import sync_write_value
 from dt4acc.custom_tango.ioc.turn_by_turn import COORDINATES, MAX_TURNS, TurnByTurnFollower
 
@@ -71,7 +72,7 @@ class AsyncMixin:
             raise DevFailed(str(exc))
 
 
-class RingSimulatorDevice(Device, AsyncMixin):
+class RingSimulatorDevice(BpmNoiseSettings, AsyncMixin):
     """
     Single Tango device exposing all digital twin physics results.
     Device name: simulator/ringsimulator/ringsimulator
@@ -102,6 +103,8 @@ class RingSimulatorDevice(Device, AsyncMixin):
                           "beta_x", "beta_y", "alpha_x", "alpha_y", "nu_x", "nu_y",
                           "bpm_x_attr", "bpm_y_attr", "hor", "vert", "tbt_count"):
             self.set_change_event(attr_name, True, False)
+        # BPM noise settings (bpm_noise_*): kept over Init, as the turn by turn settings
+        self._bpm_noise()
         if getattr(self, "_tbt", None) is None:  # one follower (and its thread), also after Init
             self._tbt = TurnByTurnFollower(proxy=_physics_engine_proxy, on_new=self._on_new_turn_by_turn)
         self.set_state(DevState.ON)
