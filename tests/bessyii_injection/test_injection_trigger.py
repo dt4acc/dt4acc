@@ -93,6 +93,8 @@ class FakeHandover:
         self.calls = calls
         self.geometry = no_offset()
         self.n_turns = 2
+        self.stop_at = None
+        self.ring = SimpleNamespace(acc=SimpleNamespace(acc=self.monitors), get_element_uids=lambda: self.monitors)
 
     async def compute(self):
         self.calls.append(("handover", self.n_turns, self.geometry.x))

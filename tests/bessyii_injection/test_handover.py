@@ -95,3 +95,22 @@ def test_line_steering_moves_the_injected_beam(ring_lattice) -> None:
     assert straight.line_exit.x == pytest.approx(0.0, abs=1e-15)
     assert abs(steered.line_exit.x) > 1e-4
     assert not np.allclose(steered.x()[0], straight.x()[0])
+
+
+def test_injected_beam_ends_at_a_stop(ring_lattice) -> None:
+    h, _ = handover(ring_lattice)
+    free = asyncio.run(h.compute())
+    # the BPMs in the order the beam passes them from the septum exit
+    order = [e.uid for e in free.turns.per_element]
+    h.stop_at = order[5]
+    stopped = asyncio.run(h.compute())
+    at_bpm = {name: k for k, name in enumerate(stopped.monitors)}
+    for i, name in enumerate(order):
+        x = stopped.x()[:, at_bpm[name]]
+        if i <= 5:
+            assert x[0] == free.x()[0, at_bpm[name]], name
+        else:
+            assert np.isnan(x[0]), name
+        assert np.isnan(x[1:]).all(), name
+    h.stop_at = None
+    np.testing.assert_array_equal(asyncio.run(h.compute()).x(), free.x())
