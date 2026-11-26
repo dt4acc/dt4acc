@@ -205,6 +205,33 @@ This is useful after a measurement campaign to confirm the current lattice state
 
 ---
 
+## BPM readings with noise
+
+The BPM devices read the model exactly. To make them read more like real BPMs, switch on
+noise on the ring simulator: a random value (Gaussian) is added to each reading. Off at
+start.
+
+```python
+import tango
+sim = tango.DeviceProxy("simulator/ringsimulator/ringsimulator")
+sim.bpm_noise_sa_sigma = 0.05     # size of the noise [mm]: 50 um (default 0.001)
+sim.bpm_noise_sa_enable = True    # on: every BPM's XPosSA / ZPosSA
+sim.bpm_noise_tbt_enable = True   # on: XPosDD / ZPosDD (default 0.01 mm)
+sim.bpm_noise_sa_enable = False   # off: exact again
+```
+
+| attribute of `simulator/ringsimulator/ringsimulator` | what |
+|---|---|
+| `bpm_noise_sa_enable`, `bpm_noise_sa_sigma` | slow acquisition (`XPosSA` / `ZPosSA`): on / off, size [mm] |
+| `bpm_noise_tbt_enable`, `bpm_noise_tbt_sigma` | turn by turn (`XPosDD` / `ZPosDD`): on / off, size [mm] |
+
+One setting for all BPMs. A BPM gets new noise with each new orbit (each heartbeat) or turn
+by turn result; `x` / `y` (m) and the ring simulator's `orbit_x` / `orbit_y` stay exact.
+The default sizes are placeholders, not the Libera electronics' resolution. The EPICS
+twins have the same (`noise:bpm:...` PVs).
+
+---
+
 ## Environment variables
 
 | Variable | Default | Description |
