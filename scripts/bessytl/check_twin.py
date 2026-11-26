@@ -114,7 +114,7 @@ def main() -> int:
     got = wait_for_waveform_end("TL:beam:twiss:x:beta", len(ed.beta), beta_x_end)
     check(np.isclose(got, beta_x_end, rtol=1e-9), f"beta_x at the end after Q12PT=70 A: {got:.4f} m (pyAT {beta_x_end:.4f})")
     # magnets read back in lattice units: K [1/m^2], kick [rad]
-    brho = bessytl_lattice().energy / 299792458.0
+    brho = bessytl_lattice().BRho
     k_start = setup["Q1MT"]["magnetic_strength"] * currents["Q1PT"] / brho
     k = get("Q1MT:Cm:rdbk")
     check(np.isclose(k, k_start, rtol=1e-9), f"Q1MT:Cm:rdbk K = {k:.5f} 1/m^2 (expected {k_start:.5f})")

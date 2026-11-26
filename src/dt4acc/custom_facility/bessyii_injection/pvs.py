@@ -19,6 +19,7 @@ beam is measured continuously.
 * ``INJ:n_turns``: how many turns in the ring each shot tracks the injected
   beam, i.e. the length of the turn by turn buffers. Not a number of shots:
   one trigger is one shot, ``INJ:count`` counts them
+* ``INJ:stop_at``: the ring element the beam ends at (:mod:`dt4acc.custom_epics.ioc.stop_at`)
 * ``INJ:line_exit:{x,xp,y,yp,delta,ct}``: centroid leaving the line (line frame)
 * ``INJ:injected:{x,xp,y,yp,delta,ct}``: the same in the ring frame
 * ``INJ:tbt:{x,y}``: position at the ring's BPMs, turn after turn
@@ -38,6 +39,7 @@ from softioc import builder as softioc_builder
 
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
 from dt4acc.custom_epics.ioc.bpm_pvs import M2MM, TBT_FIELDS
+from dt4acc.custom_epics.ioc.stop_at import stop_at_record
 from .handover import InjectionHandover, InjectionResult
 
 logger = logging.getLogger("dt4acc-bessyii-injection")
@@ -82,6 +84,7 @@ class InjectionPVs:
         self.rec["n_turns"] = builder.longOut(
             "INJ:n_turns", initial_value=handover.n_turns, DRVL=1, DRVH=MAX_TURNS, on_update=self._set_n_turns
         )
+        self.rec["stop_at"] = stop_at_record("INJ:stop_at", handover.ring, self._set_stop_at, builder=builder)
         for plane, field in TBT_FIELDS:
             self.rec[f"tbt:{plane}"] = builder.WaveformIn(
                 f"INJ:tbt:{plane}", initial_value=np.zeros(1), length=MAX_TURNS * n_mon, EGU="m"
@@ -100,6 +103,9 @@ class InjectionPVs:
 
     def _set_n_turns(self, value: int):
         self.handover.n_turns = int(value)
+
+    def _set_stop_at(self, element: Optional[str]):
+        self.handover.stop_at = element
 
     def _on_trigger(self, value):
         if not value:

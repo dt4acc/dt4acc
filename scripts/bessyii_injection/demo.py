@@ -8,6 +8,7 @@ put back at the end.
     DT4ACC_PREFIX=<P> python scripts/bessyii_injection/demo.py --no-wait
 """
 import argparse
+import getpass
 import os
 
 import numpy as np
@@ -39,7 +40,8 @@ STEPS = [
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--prefix", default=os.environ.get("DT4ACC_PREFIX", ""))
+    p.add_argument("--prefix", default=os.environ.get("DT4ACC_PREFIX", getpass.getuser()),
+                   help="PV prefix of the twin, as the twin: DT4ACC_PREFIX, else the user name")
     p.add_argument("--no-wait", action="store_true", help="do not wait for Enter between steps")
     a = p.parse_args()
     ctx = Context("pva", nt=False)

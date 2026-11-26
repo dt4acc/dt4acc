@@ -37,8 +37,8 @@ from typing import Dict, List, Sequence, Tuple
 import at
 import numpy as np
 import yaml
-from scipy.constants import c
 
+from dt4acc.core.utils.energy import energy_to_brho
 from dt4acc_lib.bl.liaison_manager import LiaisonManager
 from dt4acc_lib.bl.translator_service import TranslatorService
 from dt4acc_lib.model.input.twiss_in import TwissIn
@@ -60,9 +60,9 @@ logger = logging.getLogger("dt4acc-bessytl")
 
 #: BESSY II injects at full energy
 ENERGY = 1.7185e9
-#: magnetic rigidity [T m] (ultra relativistic electrons); the steerers'
+#: magnetic rigidity [T m], as the lattice's; the steerers'
 #: kick per current is given at this energy (the design energy)
-BRHO = ENERGY / c
+BRHO = energy_to_brho(ENERGY)
 
 ACCELERATOR_SETUP = ("custom_epics", "data", "transfer_line", "accelerator_setup.json")
 INPUT_DIR = ("custom_facility", "bessytl", "resources", "input")
