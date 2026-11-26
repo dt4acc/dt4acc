@@ -130,6 +130,28 @@ What else to read:
 Magnets (`<magnet>:Cm:set`, `x:set`, `y:set`) exist only in the twin, for debugging.
 All PVs, and which exist on the machine: [pv_list.md](pv_list.md).
 
+### BPM readings with noise
+
+The BPMs read the model exactly. To make them read more like real BPMs, switch on noise:
+a random value (Gaussian) is added to each reading. The model PVs (`beam:orbit:*`) stay
+exact. Off at start.
+
+```bash
+caput BT:noise:bpm:sa:sigma 0.05    # size of the noise [mm]: here 50 um (default 0.001)
+caput BT:noise:bpm:sa:enable 1      # on: <bpm>:signal:sa:X / Y and ORBITCC:rdBpm
+caput BT:noise:bpm:tbt:enable 1     # on: turn by turn, <bpm>:signal:tbt:X / Y (default 0.01 mm)
+caput BT:noise:bpm:sa:enable 0      # off: exact again
+```
+
+| PV | what |
+|---|---|
+| `noise:bpm:sa:enable`, `noise:bpm:sa:sigma` | slow acquisition (closed orbit): on / off, size [mm] |
+| `noise:bpm:tbt:enable`, `noise:bpm:tbt:sigma` | turn by turn: on / off, size [mm] |
+
+A reading gets new noise when the twin recalculates (a changed setting), not on its own
+as a real BPM does. The default sizes are placeholders, not the BPMs' real resolution.
+The MLS, transfer line and injection twins have the same PVs (the line: `sa` only).
+
 ## 4. Plot
 
 Run the scripts in `scripts/bessyii_injection` (from a clone), with the **injection**
