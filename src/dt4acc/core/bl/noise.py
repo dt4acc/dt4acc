@@ -23,19 +23,21 @@ from typing import Optional
 import numpy as np
 from scipy import stats
 
+from . import random_numbers
+
 
 @dataclass
 class Noise:
     """``sigma``: standard deviation, in the units of the values; ``enabled``:
-    applied or not; ``seed``: of the random numbers (None: not reproducible)"""
+    applied or not. The samples come from the twin's one generator
+    (:mod:`dt4acc.core.bl.random_numbers`); ``rng``: a generator of its own,
+    the exception (e.g. a test)"""
     sigma: float = 0.0
     enabled: bool = False
-    seed: Optional[int] = None
-    _rng: np.random.Generator = field(init=False, repr=False)
+    rng: Optional[np.random.Generator] = field(default=None, repr=False)
 
     def __post_init__(self):
         self.set_sigma(self.sigma)
-        self._rng = np.random.default_rng(self.seed)
 
     def set_sigma(self, value: float) -> None:
         """ValueError unless finite and >= 0"""
@@ -58,7 +60,7 @@ class Noise:
         arr = np.asarray(values, dtype=float)
         if not self.active:
             return float(arr) if arr.ndim == 0 else arr
-        noisy = arr + self.random_variable().rvs(size=arr.shape, random_state=self._rng)
+        noisy = arr + random_numbers.sample(self.random_variable(), arr.shape, rng=self.rng)
         return float(noisy) if arr.ndim == 0 else noisy
 
 
