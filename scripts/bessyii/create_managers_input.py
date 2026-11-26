@@ -16,6 +16,7 @@ from pydantic import TypeAdapter
 
 from dt4acc.core.model.view import Monitor, Setpoint, ProcessVariableCollection
 from dt4acc.custom_facility.model.config.magnet import MagneticObject
+from dt4acc.custom_facility.bessyii.pinholes import PINHOLES
 from dt4acc.custom_facility.model.config.power_converter import PowerConverter
 from dt4acc_lib.bl.yellow_pages import YellowPages
 from dt4acc_lib.interfaces.utils.yellow_pages import YellowPagesBase
@@ -874,6 +875,8 @@ def create_yellow_pages_lut_from_config(
         quadrupoles=[m.elem_id for m in magnet_info if m.type == "quadrupole"],
         sextupoles=sextupoles,
         cavities=[f"CAVH{cnt:01d}T8R" for cnt in range(1, 4 + 1)],
+        # diagnostics: the pinhole cameras (custom_facility/bessyii/pinholes.py)
+        pinhole_cameras=[camera.name for camera in PINHOLES],
     )
     return r
 

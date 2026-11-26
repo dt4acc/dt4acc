@@ -4,7 +4,7 @@ import logging
 import os
 from importlib import resources
 from pathlib import Path
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, List, Sequence
 
 from softioc import builder, softioc
 
@@ -49,6 +49,8 @@ from dt4acc.custom_epics.ioc.view import View
 from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_managers
 from dt4acc.core.bl.turn_by_turn import RingTurnByTurn, ring_monitors
 from dt4acc.custom_epics.ioc.turn_by_turn import TurnByTurnPVs, hook_track_updates
+from dt4acc.custom_epics.ioc.pinhole_pvs import BeamEmittance, RingEmittancePVs, hook_emittance, initialize_pinhole_pvs
+from dt4acc.custom_facility.bessyii.pinholes import PINHOLE_FAMILY, pinholes
 from dt4acc_lib.pyat_simulator.simulator_backend import SimulatorBackend
 
 logging.basicConfig(level=logging.WARNING)
@@ -132,6 +134,9 @@ async def main():
     )
     # turn by turn data at the BPMs, recomputed after each new closed orbit
     hook_track_updates(view, initialise_turn_by_turn_pvs(builder, backend, bpms))
+    # pinhole cameras: views of their elements, the view hands them the orbit and optics there;
+    # the emittance is calculated after each new closed orbit
+    initialise_pinhole_pvs(builder, view, backend)
     # Extra reads at startup
     await read_and_dispatch(
         controller=controller,
@@ -207,6 +212,20 @@ def initialise_turn_by_turn_pvs(builder, backend: SimulatorBackend, bpms: Sequen
     serves the BPMs' turn by turn data of its own hand over.
     """
     return TurnByTurnPVs(RingTurnByTurn(backend, bpms), builder=builder)
+
+
+def initialise_pinhole_pvs(builder, view, backend: SimulatorBackend) -> RingEmittancePVs:
+    """The pinhole cameras (``PINH...``: the yellow pages' family
+    ``pinhole_cameras``), views of their elements handed to ``view``, and the
+    stored beam's emittance (``beam:emittance:x`` / ``y``), calculated from
+    ``backend``'s lattice after each new closed orbit; also served by the
+    injection twin"""
+    yellow_pages = load_managers()[0]
+    emittance = RingEmittancePVs(lambda: backend.acc.acc, BeamEmittance(), builder=builder)
+    cameras = pinholes(yellow_pages.get(PINHOLE_FAMILY))
+    view.add_element_views(initialize_pinhole_pvs(cameras, emittance.emittance, builder=builder))
+    hook_emittance(view, emittance)
+    return emittance
 
 
 def run():

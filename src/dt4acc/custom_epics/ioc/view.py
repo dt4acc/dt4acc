@@ -53,6 +53,27 @@ class View(ViewInterface):
         self.bpms = set(bpms)
         # used for creating invalid data
         self.last_data_cache = dict()
+        #: views of single elements (e.g. pinhole cameras): get their share of each new orbit and optics
+        self.element_views = []
+        #: the latest orbit and optics as published (NaN after a failed calculation): {element name: value}
+        self._orbit_at: Dict[str, object] = {}
+        self._twiss_at: Dict[str, object] = {}
+
+    def add_element_views(self, views) -> None:
+        """``views``: each has ``elements`` (lattice element names) and
+        ``update(orbit, twiss)``, called with ``{name: position}`` and
+        ``{name: twiss}`` of its elements after each new orbit or optics
+        (positions with ``x``, ``y`` [m]; twiss with ``x`` / ``y`` ``.beta``,
+        ``.alpha``; NaN without a closed orbit)"""
+        self.element_views.extend(views)
+        self.update_element_views()
+
+    def update_element_views(self) -> None:
+        for view in self.element_views:
+            view.update(
+                {name: self._orbit_at[name] for name in view.elements if name in self._orbit_at},
+                {name: self._twiss_at[name] for name in view.elements if name in self._twiss_at},
+            )
 
     def update_process_variables(
         self, variables: Dict[ReadCommand, pythonSoftIoc.RecordWrapper]
@@ -181,6 +202,8 @@ class View(ViewInterface):
                 rw_found.set(True)
 
             self.update_monitors(value.track)
+            self._orbit_at = {pos.fam_name: pos for pos in value.track}
+            self.update_element_views()
         else:
             raise AssertionError(f"Don't know track property {var.property}")
 
@@ -362,6 +385,9 @@ class View(ViewInterface):
         twiss_uids = [pos.uid for pos in value.twiss]
         assert_epics_string_lengths(twiss_uids, context="twiss uids")
         rw_names.set(twiss_uids)
+
+        self._twiss_at = {pos.fam_name: pos for pos in value.twiss}
+        self.update_element_views()
 
         pi2 = 2 * math.pi
 

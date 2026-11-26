@@ -101,6 +101,7 @@ horizontal_steerers_host:
 - S4M2T8R
 - S1MD1R
 - S4M1D1R
+pinhole_cameras: [PINH3FD2L, PINH9FD5L]
 quadrupoles:
 - Q1M2D1R
 - Q1M1T1R
