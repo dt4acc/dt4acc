@@ -1,156 +1,157 @@
-"""Pinhole cameras: beam centre, size and image at the source points (#79)"""
+"""Pinhole cameras (#79): views of their element, the ring's view hands them
+the orbit and optics there; beam centre, size sqrt(emittance beta) and image"""
 import asyncio
 import math
+from types import SimpleNamespace
 
-import at
 import numpy as np
 import pytest
 # loads the EPICS record types, before any module that imports softioc's records
 from softioc import builder as _softioc_builder  # noqa: F401
 
-from dt4acc.core.bl.pinhole import PinholeCamera, RingPinholes, _map_to
-from dt4acc.custom_epics.ioc.pinhole_pvs import PinholePVs, hook_pinholes
-from dt4acc.custom_facility.bessyii.pinholes import EMITTANCE, ENERGY_SPREAD, PINHOLES, ring_pinholes
-from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
+from dt4acc.core.bl.beam_spot import CameraGeometry
+from dt4acc.core.bl.pinhole import NO_BEAM, PinholeCamera, beam_spot
+from dt4acc.custom_epics.ioc.pinhole_pvs import BeamEmittance, initialize_pinhole_pvs
+from dt4acc.custom_epics.ioc.view import View
+from dt4acc.custom_facility.bessyii.pinholes import EMITTANCE, PINHOLES
+from dt4acc_lib.model.output.result import SingleReading, TranslatedReading
+from dt4acc_lib.model.utils.command import ReadCommand
+
 from tests.recording_builder import RecordingBuilder
+
+GEOMETRY = CameraGeometry(width=50, height=40, pixel=0.05)
+CAMERA = PinholeCamera("CAM1", element="B1", geometry=GEOMETRY)
+NAMES = ["Q1", "B1", "Q2"]
+
+
+# --- the spot
+def test_beam_spot():
+    spot = beam_spot(1e-4, -2e-4, {"x": 0.5, "y": 20.0}, {"x": 8e-9, "y": 2e-11})
+    assert (spot.x, spot.y) == (1e-4, -2e-4)
+    assert spot.sigma_x == pytest.approx(math.sqrt(8e-9 * 0.5))
+    assert spot.sigma_y == pytest.approx(math.sqrt(2e-11 * 20.0))
+
+
+def test_beam_spot_no_beam():
+    spot = beam_spot(math.nan, math.nan, {"x": math.nan, "y": math.nan}, {"x": 8e-9, "y": 2e-11})
+    assert all(math.isnan(v) for v in (spot.x, spot.y, spot.sigma_x, spot.sigma_y))
+
+
+# --- a ring view hands the cameras their share
+def reading(rcmd, payload):
+    return TranslatedReading(rcmd, [SingleReading(cmd=rcmd, name="test", payload=payload)])
+
+
+def orbit(x_at_b1):
+    track = [SimpleNamespace(fam_name=n, uid=n, x=x_at_b1 if n == "B1" else 9.0, y=-x_at_b1 if n == "B1" else 9.0)
+             for n in NAMES]
+    return reading(ReadCommand("track", "pos"), SimpleNamespace(track=track))
+
+
+def optics(beta_x_at_b1):
+    def at(n):
+        bx = beta_x_at_b1 if n == "B1" else 99.0
+        return SimpleNamespace(fam_name=n, uid=n, x=SimpleNamespace(beta=bx, alpha=0.0, nu=0.0),
+                               y=SimpleNamespace(beta=10.0, alpha=0.0, nu=0.0))
+    return reading(ReadCommand("twiss", "parameters"), SimpleNamespace(twiss=[at(n) for n in NAMES]))
+
+
+class Record:
+    def __init__(self):
+        self.value = None
+
+    def set(self, value, *args, **kwargs):
+        self.value = value
+
+    def get(self):
+        return self.value
 
 
 @pytest.fixture
-def backend():
-    return provide_backend_encapsulating_lattice()
+def ring():
+    """a ring view with the records it fills, and one camera at B1"""
+    view = View()
+    view.update_process_variables({ReadCommand("beam", p): Record() for p in ("x", "y", "found", "names", "uids")})
+    view.update_process_variables(
+        {ReadCommand("twiss", f"{pl}:{p}"): Record() for pl in "xy" for p in ("beta", "alpha", "nu")}
+    )
+    view.update_process_variables({ReadCommand("twiss", p): Record() for p in ("names", "uids")})
+    view.update_tune = lambda *args: None
+    builder = RecordingBuilder()
+    (camera,) = initialize_pinhole_pvs([CAMERA], {"x": 1e-8, "y": 1e-10}, builder=builder)
+    view.add_element_views([camera])
+    return view, camera, builder.records
 
 
-def optics_in_split_lattice(lattice, camera):
-    """reference: pyAT's optics of the ring with the dipole split at the source point"""
-    ring = lattice.deepcopy()
-    (i,) = ring.get_uint32_index(camera.element)
-    f = camera.offset / ring[i].Length
-    ring[i:i + 1] = ring[i].divide([f, 1 - f])
-    _, _, data = ring.get_optics(at.All)
-    return data[i + 1]
+def value(records, name):
+    return records[f"CAM1:{name}"].get()
 
 
-def kick(backend, name, kx, ky):
-    async def both():
-        for plane, value in (("x_kick", kx), ("y_kick", ky)):
-            await backend.set(name, plane, value)
-    asyncio.run(both())
+def test_no_data_yet_no_beam(ring):
+    _, camera, records = ring
+    assert camera.spot == NO_BEAM and math.isnan(value(records, "rdSigmaX"))
 
 
-def assert_as_split_lattice(backend, pinholes):
-    spots = pinholes.compute()
-    for camera in PINHOLES:
-        d, spot = optics_in_split_lattice(backend.acc.acc, camera), spots[camera.name]
-        # the split changes the dipole's integration steps, and so the ring's
-        # closed orbit itself (some 10 nm); the propagation: the next test
-        assert spot.x == pytest.approx(d["closed_orbit"][0], abs=1e-7)
-        assert spot.y == pytest.approx(d["closed_orbit"][2], abs=1e-7)
-        for k, (plane, sigma) in enumerate((("x", spot.sigma_x), ("y", spot.sigma_y))):
-            expected = math.sqrt(EMITTANCE[plane] * d["beta"][k] + (d["dispersion"][2 * k] * ENERGY_SPREAD) ** 2)
-            assert sigma == pytest.approx(expected, rel=1e-3), (camera.name, plane)
+def test_the_camera_shows_the_orbit_and_optics_at_its_element(ring):
+    view, camera, records = ring
+    asyncio.run(view.dispatch(ReadCommand("track", "pos"), orbit(2e-4)))
+    asyncio.run(view.dispatch(ReadCommand("twiss", "parameters"), optics(0.4)))
+    assert value(records, "rdCenterX") == pytest.approx(0.2) and value(records, "rdCenterY") == pytest.approx(-0.2)
+    assert value(records, "rdSigmaX") == pytest.approx(math.sqrt(1e-8 * 0.4) * 1e3)
+    assert value(records, "rdSigmaY") == pytest.approx(math.sqrt(1e-10 * 10.0) * 1e3)
+    image = np.asarray(value(records, "image")).reshape(GEOMETRY.height, GEOMETRY.width)
+    assert image.sum() == pytest.approx(1.0, abs=1e-6)
+    # a new orbit: the camera follows, with the optics it has
+    asyncio.run(view.dispatch(ReadCommand("track", "pos"), orbit(-1e-4)))
+    assert value(records, "rdCenterX") == pytest.approx(-0.1)
+    assert value(records, "rdSigmaX") == pytest.approx(math.sqrt(1e-8 * 0.4) * 1e3)
 
 
-def test_spot_is_that_of_the_lattice_split_at_the_source_point(backend):
-    assert_as_split_lattice(backend, ring_pinholes(backend))
+def test_emittance_acts_at_once(ring):
+    view, camera, records = ring
+    asyncio.run(view.dispatch(ReadCommand("track", "pos"), orbit(0.0)))
+    asyncio.run(view.dispatch(ReadCommand("twiss", "parameters"), optics(0.4)))
+    assert "beam:emittance:x" in records
+    camera.emittance.set("x", 4e-8)
+    assert value(records, "rdSigmaX") == pytest.approx(math.sqrt(4e-8 * 0.4) * 1e3)
 
 
-@pytest.mark.parametrize("camera", PINHOLES, ids=lambda c: c.name)
-def test_orbit_propagates_exactly_to_the_source_point(backend, camera):
-    """from the split ring's own closed orbit at the dipole's entrance"""
-    ring = backend.acc.acc.deepcopy()
-    (i,) = ring.get_uint32_index(camera.element)
-    dipole = ring[i]
-    f = camera.offset / dipole.Length
-    ring[i:i + 1] = dipole.divide([f, 1 - f])
-    _, _, data = ring.get_optics(at.All)
-    orbit, _ = _map_to(dipole, camera.offset, np.array(data.closed_orbit[i]), ring.energy)
-    assert orbit[:4] == pytest.approx(data.closed_orbit[i + 1][:4], abs=1e-11)
+def test_no_closed_orbit_nan_and_dark_image(ring):
+    view, camera, records = ring
+    asyncio.run(view.dispatch(ReadCommand("track", "pos"), orbit(2e-4)))
+    asyncio.run(view.dispatch(ReadCommand("twiss", "parameters"), optics(0.4)))
+    # the calculation fails: the view publishes NaN
+    asyncio.run(view.push_invalid())
+    assert math.isnan(value(records, "rdCenterX")) and math.isnan(value(records, "rdSigmaX"))
+    assert not np.asarray(value(records, "image")).any()
 
 
-def test_spot_follows_the_closed_orbit_and_optics(backend):
-    pinholes = ring_pinholes(backend)
-    before = pinholes.compute()
-    kick(backend, "S4M2D1R", 1e-4, 5e-5)
-    assert_as_split_lattice(backend, pinholes)
-    after = pinholes.compute()
-    assert abs(after["PINH3FD2L"].x - before["PINH3FD2L"].x) > 1e-6
-    assert abs(after["PINH3FD2L"].y - before["PINH3FD2L"].y) > 1e-6
-
-
-def test_emittance_and_energy_spread_are_those_of_the_lattice(backend):
-    p = backend.acc.acc.radiation_parameters()
-    assert EMITTANCE["x"] == pytest.approx(p.emittances[0], rel=2e-3)
-    assert ENERGY_SPREAD == pytest.approx(p.sigma_e, rel=2e-3)
-
-
-def test_set_emittance_and_energy_spread(backend):
-    pinholes = ring_pinholes(backend)
-    pinholes.energy_spread = 0.0
-    before = pinholes.compute()["PINH3FD2L"]
-    pinholes.set_emittance("y", 4 * EMITTANCE["y"])
-    after = pinholes.compute()["PINH3FD2L"]
-    assert after.sigma_y == pytest.approx(2 * before.sigma_y, rel=1e-9)
-    assert after.sigma_x == before.sigma_x
+def test_emittance_finite_and_not_negative():
+    beam = BeamEmittance({"x": 1e-8, "y": 1e-10})
     for bad in (-1e-9, math.nan):
         with pytest.raises(ValueError):
-            pinholes.set_emittance("x", bad)
-        with pytest.raises(ValueError):
-            pinholes.energy_spread = bad
+            beam.set("x", bad)
+    assert beam.value["x"] == 1e-8
 
 
-@pytest.mark.parametrize("camera", [PinholeCamera("P", "NOT_THERE", 0.0), PinholeCamera("P", "BM2D2R", 1.0)])
-def test_source_point_has_to_be_in_the_lattice(backend, camera):
-    with pytest.raises(ValueError):
-        RingPinholes(backend, [camera], emittance=EMITTANCE, energy_spread=0.0)
+# --- BESSY II
+def test_bessyii_cameras_at_the_dipoles_entrance_until_the_lattice_has_their_source_points():
+    assert {(c.name, c.element) for c in PINHOLES} == {("PINH3FD2L", "BM2D2R"), ("PINH9FD5L", "BM2D5R")}
 
 
-def test_source_point_at_the_ends_of_the_element(backend):
-    cameras = [PinholeCamera("start", "BM2D2R", 0.0), PinholeCamera("end", "BM2D2R", 0.855)]
-    spots = RingPinholes(backend, cameras, emittance=EMITTANCE, energy_spread=0.0).compute()
-    (i,) = backend.acc.acc.get_uint32_index("BM2D2R")
-    _, _, data = backend.acc.acc.get_optics(at.All)
-    for name, k in (("start", i), ("end", i + 1)):
-        assert spots[name].sigma_x == pytest.approx(math.sqrt(EMITTANCE["x"] * data.beta[k, 0]), rel=1e-3)
+def test_bessyii_horizontal_emittance_is_that_of_the_lattice():
+    from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
+
+    p = provide_backend_encapsulating_lattice().acc.acc.radiation_parameters()
+    assert EMITTANCE["x"] == pytest.approx(p.emittances[0], rel=2e-3)
 
 
-def test_pvs(backend):
+def test_bessyii_pvs():
     builder = RecordingBuilder()
-    pvs = PinholePVs(ring_pinholes(backend), builder=builder)
-    pvs.update()
-    spot = pvs.pinholes.compute()["PINH9FD5L"]
-    value = lambda name: builder.records[name].get()  # noqa: E731
-    assert value("PINH9FD5L:rdCenterX") == pytest.approx(spot.x * 1e3)
-    assert value("PINH9FD5L:rdSigmaX") == pytest.approx(spot.sigma_x * 1e3)
-    assert value("PINH9FD5L:rdSigmaY") == pytest.approx(spot.sigma_y * 1e3)
-    image = np.asarray(value("PINH9FD5L:image"))
-    assert image.size == value("PINH9FD5L:image:width") * value("PINH9FD5L:image:height")
-    assert image.sum() == pytest.approx(1.0, abs=1e-9), "the whole beam in view"
-
-
-def test_no_closed_orbit_nan_and_dark_image(backend, monkeypatch):
-    builder = RecordingBuilder()
-    pvs = PinholePVs(ring_pinholes(backend), builder=builder)
-    monkeypatch.setattr(backend, "get_optics", lambda: ([], [], None))
-    pvs.update()
-    assert math.isnan(builder.records["PINH3FD2L:rdSigmaX"].get())
-    assert not np.asarray(builder.records["PINH3FD2L:image"].get()).any()
-
-
-def test_view_updates_trigger_the_cameras():
-    class View:
-        def __init__(self):
-            self.tracks = []
-
-        def update_track(self, var, pkg):
-            self.tracks.append(pkg)
-
-    class Pinholes:
-        n = 0
-
-        def trigger(self):
-            self.n += 1
-
-    view, pinholes = View(), Pinholes()
-    hook_pinholes(view, pinholes)
-    view.update_track("track", "data")
-    assert view.tracks == ["data"] and pinholes.n == 1
+    cameras = initialize_pinhole_pvs(PINHOLES, EMITTANCE, builder=builder)
+    assert [c.elements for c in cameras] == [["BM2D2R"], ["BM2D5R"]]
+    names = set(builder.records)
+    for camera in ("PINH3FD2L", "PINH9FD5L"):
+        assert {f"{camera}:{f}" for f in ("rdCenterX", "rdCenterY", "rdSigmaX", "rdSigmaY", "image",
+                                           "image:width", "image:height", "image:pixel")} <= names
+    assert {"beam:emittance:x", "beam:emittance:y"} <= names and "beam:energy_spread" not in names

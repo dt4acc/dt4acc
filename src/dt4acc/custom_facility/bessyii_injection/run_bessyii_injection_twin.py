@@ -47,7 +47,6 @@ from dt4acc.custom_epics.ioc.view import View
 from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_managers
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
 from dt4acc.custom_facility.bessyii.run_bessyii_twin import initialise_pvs as ring_pvs, initialise_pinhole_pvs
-from dt4acc.custom_epics.ioc.pinhole_pvs import hook_pinholes
 from dt4acc.custom_facility.bessyii_injection.handover import InjectionHandover
 from dt4acc.custom_facility.bessyii_injection.pvs import InjectionPVs
 from dt4acc.custom_epics.ioc.pv_setup import initialize_power_converter_pvs
@@ -172,7 +171,7 @@ async def initialise_pvs(builder, prefix: str, twin: InjectionTwin) -> Injection
     # machine names: ring, hand over, transfer line devices
     builder.SetDeviceName(prefix)
     twin.ring_view.update_process_variables(await ring_pvs(builder=builder, controller=twin.ring, bpms=twin.handover.monitors))
-    hook_pinholes(twin.ring_view, initialise_pinhole_pvs(builder, twin.ring_backend))
+    twin.ring_view.add_element_views(initialise_pinhole_pvs(builder))
     injection = InjectionPVs(twin.handover, builder=builder, before_shot=line_shot(twin))
     # the line's supplies and magnets come from its own device database
     configure_data_file(resources.files("dt4acc").joinpath(*ACCELERATOR_SETUP))

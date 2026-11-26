@@ -130,6 +130,29 @@ What else to read:
 Magnets (`<magnet>:Cm:set`, `x:set`, `y:set`) exist only in the twin, for debugging.
 All PVs, and which exist on the machine: [pv_list.md](pv_list.md).
 
+### Pinhole cameras
+
+The two pinhole cameras, `PINH3FD2L` and `PINH9FD5L`, show the beam centre, the beam size
+and an image of the beam spot. They follow the closed orbit and the optics by themselves.
+
+```bash
+caget BT:PINH3FD2L:rdCenterX BT:PINH3FD2L:rdSigmaX   # centre and size [mm]
+caput BT:beam:emittance:y 3e-10                      # vertical emittance [m rad]: the size follows
+caget BT:PINH3FD2L:rdSigmaY
+```
+
+| PV | what |
+|---|---|
+| `<camera>:rdCenterX` / `Y` | beam centre [mm] |
+| `<camera>:rdSigmaX` / `Y` | beam size [mm]: sqrt(emittance x beta) |
+| `<camera>:image` (`:width`, `:height`, `:pixel`) | image of the beam spot, row 0 at the top |
+| `beam:emittance:x` / `y` | emittance of the stored beam [m rad], writable; y is a placeholder (1 % of x) |
+
+Good to know: the cameras' source points are not in the lattice yet, so for now they show
+the beam at the **entrance** of their dipole (BM2D2R, BM2D5R), not at the source point
+inside it. The size has no energy spread part yet (no dispersion), so the horizontal size
+is too small. The pixels are placeholders. Without a closed orbit: NaN and a dark image.
+
 ## 4. Plot
 
 Run the scripts in `scripts/bessyii_injection` (from a clone), with the **injection**
