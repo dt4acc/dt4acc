@@ -278,3 +278,32 @@ def test_twin_screens_show_the_beam_only_at_a_shot(twin_and_injection):
     sigma = view.process_variables[ReadCommand(screen, "sigma_x")].get()
     assert image.sum() > 0.9 and sigma > 0, f"{screen}: the beam spot after a shot"
     assert math.isfinite(view.process_variables[ReadCommand(screen, "x")].get())
+
+
+def test_twin_a_line_screen_that_stops_the_beam(twin_and_injection):
+    """#76: a stopping screen in the line: it sees the beam, the line's BPMs
+    after it and the ring do not; set back to observe, the next shot injects"""
+    from dt4acc.custom_facility.bessytl.view import ScreenMode
+
+    twin, injection = twin_and_injection
+    view = twin.line_view
+    order = [m for m in twin.line_monitors]
+    screen = "FOMZ1T"
+    after = [m for m in order[order.index(screen) + 1:] if not m.startswith("FOMZ")]
+    assert after, "BPMs after the screen"
+
+    def x(m):
+        return view.process_variables[ReadCommand(m, "x")].get()
+
+    try:
+        view.set_screen_mode(screen, ScreenMode.STOP)
+        asyncio.run(injection.shot())
+        assert math.isfinite(x(screen)), "the screen sees the beam"
+        assert all(math.isnan(x(m)) for m in after), "the BPMs after it do not"
+        assert np.isnan(injection.rec["tbt:x"].get()).all(), "nothing reaches the ring"
+        assert math.isnan(injection.rec["injected:x"].get())
+    finally:
+        view.set_screen_mode(screen, ScreenMode.OBSERVE)
+    asyncio.run(injection.shot())
+    assert all(math.isfinite(x(m)) for m in after)
+    assert np.isfinite(injection.rec["tbt:x"].get()).any()

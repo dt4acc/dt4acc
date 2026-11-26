@@ -64,7 +64,9 @@ SCREEN_FIELDS = [("image", "image of the beam spot: image:height rows of image:w
                  ("x", "beam centre, horizontal (mm)", RO, NO),
                  ("y", "beam centre, vertical (mm)", RO, NO),
                  ("sigma:x", "beam size, horizontal (mm): sqrt(emittance beta)", RO, NO),
-                 ("sigma:y", "beam size, vertical (mm): sqrt(emittance beta)", RO, NO)]
+                 ("sigma:y", "beam size, vertical (mm): sqrt(emittance beta)", RO, NO),
+                 ("mode", "what the screen does with the beam: Out (retracted, no image), Observe (default: shows it,"
+                          " the beam passes), Stop (shows it, the monitors after it see no beam)", ACTS, NO)]
 #: BPMs and striplines: named as the BPM system (dt4acc.custom_epics.ioc.bpm_pvs)
 BPM_FIELDS = [("signal:sa:X", "horizontal beam position (mm)", RO, SIMILAR),
               ("signal:sa:Y", "vertical beam position (mm)", RO, SIMILAR)]

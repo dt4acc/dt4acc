@@ -47,6 +47,7 @@ from dt4acc.custom_facility.bessytl.view import (
     TransferLineView,
     initialize_model_pvs,
     initialize_monitor_pvs,
+    initialize_screen_mode_pvs,
     model_device,
 )
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
@@ -128,6 +129,7 @@ async def initialise_pvs(builder, prefix: str, twin: TransferLineTwin) -> None:
     twin.view.update_process_variables({
         **await initialize_power_converter_pvs(builder, controller=twin.controller),
         **initialize_monitor_pvs(twin.monitors, builder=builder),
+        **initialize_screen_mode_pvs(twin.view, builder=builder),
     })
     builder.SetDeviceName(model_device(prefix))
     twin.view.update_process_variables(initialize_model_pvs(builder, twin.view, n_elements=len(twin.line) + 1))

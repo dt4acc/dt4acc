@@ -64,6 +64,7 @@ from dt4acc.custom_facility.bessytl.view import (
     TransferLineView,
     initialize_model_pvs,
     initialize_monitor_pvs,
+    initialize_screen_mode_pvs,
     model_device,
 )
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
@@ -135,7 +136,9 @@ def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
                     default_delayed_reads=DELAYED)
 
     # hand over
-    handover = InjectionHandover(line=line_backend, ring=ring_backend, monitors=ring_bpms)
+    # a line screen that stops the beam: nothing is injected
+    handover = InjectionHandover(line=line_backend, ring=ring_backend, monitors=ring_bpms,
+                                 line_blocked=line_view.beam_stopped)
     return InjectionTwin(ring_backend=ring_backend, ring=ring, ring_view=ring_view, line=line,
                          line_backend=line_backend, line_monitors=line_monitors, tl=tl, line_view=line_view,
                          handover=handover)
@@ -177,6 +180,7 @@ async def initialise_pvs(builder, prefix: str, twin: InjectionTwin) -> Injection
     twin.line_view.update_process_variables({
         **await initialize_power_converter_pvs(builder, controller=twin.tl),
         **initialize_monitor_pvs(twin.line_monitors, builder=builder),
+        **initialize_screen_mode_pvs(twin.line_view, builder=builder),
     })
     # model PVs of the transfer line, under TL as in the transfer line twin
     # (the ring serves beam:*, ORBITCC:*)

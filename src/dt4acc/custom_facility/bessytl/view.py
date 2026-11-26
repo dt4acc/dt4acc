@@ -7,6 +7,9 @@ striplines as the BPM system (``<bpm>:signal:sa:X`` / ``Y``,
 image of the beam spot (:mod:`.screens`), ``<screen>:image``, from the beam
 centre (``<screen>:x`` / ``y``) and size (``<screen>:sigma:x`` / ``y``: the
 emittance, ``TL:beam:emittance:x`` / ``y``, and the optics at the screen).
+A screen's mode (``<screen>:mode``, :class:`ScreenMode`, #76): Out (no image),
+Observe (default: the beam passes) or Stop (the monitors after it see no beam,
+nothing leaves the line).
 
 PV names: the line's devices keep their machine names (``<P>:Q1PT:set``,
 ``<P>:BPMZ1T:signal:sa:X``, ``<P>:FOMZ1T:image``); its model is under
@@ -24,6 +27,9 @@ follows every change, but the monitors (``<bpm>:signal:sa:*``, the screens,
 (:meth:`TransferLineView.fire`). Without it (the transfer line twin on its
 own) the monitors follow every change.
 """
+import enum
+import math
+from copy import copy as _copy
 from typing import Dict, Mapping, Optional, Sequence
 
 import numpy as np
@@ -53,6 +59,23 @@ def model_device(prefix: str) -> str:
 def is_screen(name: str) -> bool:
     """a fluorescent screen (``FOMZ...``), not a BPM"""
     return name.startswith("FOMZ")
+
+
+class ScreenMode(enum.IntEnum):
+    """What a screen does with the beam (``<screen>:mode``)
+
+    * ``OUT``: retracted: no image, the beam passes
+    * ``OBSERVE``: in the beam, shows its image, the beam passes (transparent)
+    * ``STOP``: in the beam, shows its image and stops it: the monitors after
+      it see no beam, nothing leaves the line
+    """
+    OUT = 0
+    OBSERVE = 1
+    STOP = 2
+
+
+#: as the twin's screens did before they had a mode
+DEFAULT_SCREEN_MODE = ScreenMode.OBSERVE
 
 
 def initialize_monitor_pvs(
@@ -95,6 +118,20 @@ def initialize_monitor_pvs(
     return d
 
 
+def initialize_screen_mode_pvs(view: "TransferLineView", builder=softioc_builder) -> Dict[ReadCommand, RecordWrapper]:
+    """``<screen>:mode``: Out, Observe or Stop (:class:`ScreenMode`), one per
+    screen of ``view``; the line on its own follows at once, the injection
+    twin's line at the next shot"""
+    return {
+        ReadCommand(id=name, property="mode"): builder.mbbOut(
+            f"{name}:mode", *[mode.name.capitalize() for mode in ScreenMode],
+            initial_value=int(view.screen_mode[name]),
+            on_update=lambda value, name=name: view.set_screen_mode(name, value),
+        )
+        for name in view.screens
+    }
+
+
 def initialize_model_pvs(builder, view: "TransferLineView", *, n_elements: int) -> Dict[ReadCommand, RecordWrapper]:
     """The line's model: trajectory, optics, survey, and the beam's emittance
     (writable: the screens' images); under :data:`MODEL_DEVICE`, which the
@@ -126,6 +163,7 @@ class TransferLineView(View):
         super().__init__(bpms=[m for m in monitors if not is_screen(m)], **kwargs)
         self.monitors = set(monitors)
         self.screens = [m for m in monitors if is_screen(m)]
+        self.screen_mode: Dict[str, ScreenMode] = {name: DEFAULT_SCREEN_MODE for name in self.screens}
         self.screen = screen
         self.emittance = dict(EMITTANCE if emittance is None else emittance)
         self.single_pass = single_pass
@@ -137,8 +175,32 @@ class TransferLineView(View):
         if self.single_pass:
             self.trajectory = track
             return
+        track = self.stopped(track)
         super().update_monitors(track)
         self.update_screens(track)
+
+    def stopped(self, track):
+        """``track`` as far as the beam gets: after the first screen that
+        stops it (``ScreenMode.STOP``) no beam (NaN); the screen itself sees it"""
+        out, lost = [], False
+        for pos in track:
+            if lost:
+                pos = _copy(pos)
+                pos.x = pos.y = math.nan
+            out.append(pos)
+            lost = lost or self.screen_mode.get(pos.fam_name) == ScreenMode.STOP
+        return out
+
+    def beam_stopped(self) -> bool:
+        """a screen stops the beam: nothing leaves the line"""
+        return any(mode == ScreenMode.STOP for mode in self.screen_mode.values())
+
+    def set_screen_mode(self, name: str, mode) -> None:
+        """ValueError for a name that is no screen of this line or an unknown mode"""
+        if name not in self.screen_mode:
+            raise ValueError(f"{name}: no screen of this line")
+        self.screen_mode[name] = ScreenMode(int(mode))
+        self._refresh_monitors()
 
     def fire(self) -> bool:
         """A shot passes the line: the monitors show the latest trajectory
@@ -147,8 +209,9 @@ class TransferLineView(View):
         """
         if self.trajectory is None:
             return False
-        super().update_monitors(self.trajectory)
-        self.update_screens(self.trajectory)
+        trajectory = self.stopped(self.trajectory)
+        super().update_monitors(trajectory)
+        self.update_screens(trajectory)
         return True
 
     def update_screens(self, track) -> None:
@@ -167,6 +230,9 @@ class TransferLineView(View):
                 beam_size(self.emittance[plane], b) * M2MM if b is not None else float("nan")
                 for plane, b in zip(PLANES, beta.get(name, (None, None)))
             ]
+            if self.screen_mode[name] == ScreenMode.OUT or not all(math.isfinite(v) for v in xy):
+                # retracted, or no beam reaches it: no spot, a dark image
+                xy = sigma = [math.nan, math.nan]
             for plane, c, s in zip(PLANES, xy, sigma):
                 self._set(name, plane, c)
                 self._set(name, f"sigma_{plane}", s)
@@ -176,6 +242,15 @@ class TransferLineView(View):
         rec = self.process_variables.get(ReadCommand(id=name, property=prop))
         if rec is not None:
             rec.set(value)
+
+    def _refresh_monitors(self) -> None:
+        """The line on its own: monitors and screens follow a screen's mode at
+        once; single pass: at the next shot"""
+        if self.single_pass:
+            return
+        track = self.last_data_cache.get(TRACK)
+        if track is not None:
+            self.update_monitors(track.track)
 
     def _refresh_screens(self) -> None:
         """The line on its own: the screens follow the optics and the emittance
