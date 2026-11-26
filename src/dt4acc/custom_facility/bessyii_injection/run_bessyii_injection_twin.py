@@ -129,7 +129,7 @@ def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
     line_monitors = monitor_names(line)
     # the line carries beam only during a shot (InjectionPVs, INJ:trigger)
     line_view = TransferLineView(
-        monitors=line_monitors, single_pass=True,
+        monitors=line_monitors, single_pass=True, elements=[e.FamName for e in line],
         orbit_server=orbit_server(model_device(prefix), monitor_prefixes=ORBIT_MONITOR_PREFIXES),
     )
     tl = Controller(name="transfer-line", mexec=engine(line_backend, line_lm, line_ts), view=line_view,

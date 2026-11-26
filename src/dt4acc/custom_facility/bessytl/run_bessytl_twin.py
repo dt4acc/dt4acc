@@ -89,7 +89,7 @@ def assemble(prefix: str, *, orbit_server: bool = True) -> TransferLineTwin:
     server = OrbitTwinServer(f"{model}:ORBITCC:rdBpm", f"{model}:ORBITCC:rdModel",
                              monitor_prefixes=ORBIT_MONITOR_PREFIXES) if orbit_server else None
     monitors = monitor_names(line)
-    view = TransferLineView(monitors=monitors, orbit_server=server)
+    view = TransferLineView(monitors=monitors, orbit_server=server, elements=[e.FamName for e in line])
     controller = Controller(
         name="epics-bessytl-ctrller",
         mexec=mexec,

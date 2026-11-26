@@ -182,6 +182,21 @@ caget -# 5 BT:BPMZ1D1R:signal:tbt:X # first 5 turns [mm]
 1024 turns take about 0.2 s. With an offset of 2 mm instead of 1 mm, the first three
 turns at `BPMZ1D1R` go from -0.763, 0.195, 0.848 to -1.433, 0.402, 1.745 mm.
 
+### End the beam at an element
+
+Write an element's name to `TBT:stop_at` and the beam ends there: the BPMs up to that
+element still see it in turn 1, the BPMs after it and all later turns show NaN. Empty: no
+stop. A name the lattice does not have is refused (the PV keeps its old value).
+
+```bash
+caput BT:TBT:stop_at Q3M1D1R        # the beam ends at Q3M1D1R
+caget -# 3 BT:BPMZ1D1R:signal:tbt:X # a BPM before it: turn 1 only, then NaN
+caput BT:TBT:stop_at ""             # no stop again
+```
+
+One element at a time. In the injection twin the same is `INJ:stop_at`, used at the next
+shot.
+
 ### Injection twin
 
 There the data are the injected beam's: `INJ:n_turns` (1 ... 256, default 2), updated
@@ -348,7 +363,39 @@ dt4acc_bessyii_injection_mockup --shots 10 --rate 1
 | `INJ:tbt:x` / `y` / `names` | all BPMs: turn 1, then turn 2, ... [m] |
 | `<bpm>:signal:tbt:X` / `Y` | one BPM, turn after turn [mm] |
 | `INJ:survived` | particles left after each turn (1 or 0) |
+| `INJ:stop_at` | the ring element the injected beam ends at (section 5), empty: none |
 | `BPMZ1T:signal:sa:X`, `FOMZ3T:x`, `FOMZ3T:image` | line BPM [mm], screen centre [mm] and image |
+
+### Screens: out, observe or stop the beam
+
+The line's fluorescent screens (`FOMZ1T` ... `FOMZ8T`) each have a mode, `<screen>:mode`:
+
+| mode | the screen | the beam |
+|---|---|---|
+| `Observe` (default) | shows the beam: `x`, `y`, `sigma:x`, `sigma:y`, `image` | passes |
+| `Out` | retracted: dark image, NaN | passes |
+| `Stop` | shows the beam | ends there: the BPMs and screens after it show NaN, nothing reaches the ring |
+
+```bash
+caput BT:FOMZ3T:mode Stop           # the beam ends at FOMZ3T
+caput BT:INJ:trigger 1              # shot: FOMZ3T shows the beam, BPMZ4T ... and the ring NaN
+caput BT:FOMZ3T:mode Observe        # back to normal (acts at the next shot)
+```
+
+**A screen anywhere: the artificial screen.** `TL:screen:element` puts a screen at any
+element of the line (empty: nowhere). It works as a real one, with `TL:screen:mode` (`Out`
+at the start, `Observe`, `Stop`) and the same readings under `TL:screen:...`. A name the
+line does not have is refused.
+
+```bash
+caput BT:TL:screen:element Q4MT     # a screen at Q4MT
+caput BT:TL:screen:mode Observe
+caput BT:INJ:trigger 1
+caget BT:TL:screen:x BT:TL:screen:sigma:x   # beam centre and size there [mm]
+```
+
+In the injection twin the modes act at the next shot, as every setting. The transfer line
+twin on its own (`dt4acc_bessytl`) shows a change at once, without a trigger.
 
 ### Watch it
 
@@ -366,7 +413,8 @@ With `live_plot.py` and `demo.py`, section 4. What `demo.py` gives:
 
 Geometry and entering beam are placeholders, not measured. The kickers `KIK1D1R` ...
 `KIK4D1R` do not fire, there is no injection bump. One particle, no bunch, no
-apertures. A shot does not change the stored beam or its current.
+apertures. A shot does not change the stored beam or its current. A screen that observes does not
+scatter the beam (at the machine the beam grows a little behind it).
 
 ## 8. Test the twin thoroughly
 

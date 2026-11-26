@@ -102,6 +102,18 @@ VIRTUAL = [
         ("TL:beam:emittance:x", "horizontal emittance of the beam (m rad), for the screens' images; placeholder", ACTS, NO),
         ("TL:beam:emittance:y", "vertical emittance of the beam (m rad), for the screens' images; placeholder", ACTS, NO),
     ]),
+    ("Artificial screen (#76)", [
+        ("TL:screen:element", "artificial screen: the element it is at, a name of the line (empty: nowhere, the start); a name the line does not have rejects the write", ACTS, NO),
+        ("TL:screen:mode", "artificial screen: Out (the start), Observe or Stop, as <screen>:mode", ACTS, NO),
+        ("TL:screen:x", "artificial screen: beam centre, horizontal (mm)", RO, NO),
+        ("TL:screen:y", "artificial screen: beam centre, vertical (mm)", RO, NO),
+        ("TL:screen:sigma:x", "artificial screen: beam size, horizontal (mm)", RO, NO),
+        ("TL:screen:sigma:y", "artificial screen: beam size, vertical (mm)", RO, NO),
+        ("TL:screen:image", "artificial screen: image of the beam spot, as <screen>:image", RO, NO),
+        ("TL:screen:image:width", "pixels per row", RO, NO),
+        ("TL:screen:image:height", "rows", RO, NO),
+        ("TL:screen:image:pixel", "pixel size (mm)", RO, NO),
+    ]),
     ("Survey", [
         ("TL:survey:s", "position along the line (m)", RO, NO),
         ("TL:survey:names", "element names", RO, NO),
