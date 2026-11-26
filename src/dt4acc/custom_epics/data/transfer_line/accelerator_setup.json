@@ -235,7 +235,7 @@
 },{
   "type": "Bend",
   "name": "B1M1T",
-  "magnetic_strength": 0.0053187237702246965,
+  "magnetic_strength": 0.005318723535089091,
   "reference_current": 232.75,
   "bending_angle": 0.3839724354387525,
   "length": 1.778,
@@ -244,7 +244,7 @@
 },{
   "type": "Bend",
   "name": "B1M2T",
-  "magnetic_strength": 0.0053187237702246965,
+  "magnetic_strength": 0.005318723535089091,
   "reference_current": 232.75,
   "bending_angle": 0.3839724354387525,
   "length": 1.778,
@@ -253,7 +253,7 @@
 },{
   "type": "Bend",
   "name": "B2MT",
-  "magnetic_strength": 0.5113126577154942,
+  "magnetic_strength": 0.5113126351108589,
   "reference_current": 1.486,
   "bending_angle": 0.1352,
   "length": 1.02,

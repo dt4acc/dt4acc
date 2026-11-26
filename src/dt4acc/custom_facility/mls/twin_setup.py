@@ -26,8 +26,8 @@ from typing import List, Sequence, Tuple
 
 import at
 import numpy as np
-from scipy.constants import c
 
+from dt4acc.core.utils.energy import energy_to_brho
 from dt4acc_lib.bl.liaison_manager import LiaisonManager
 from dt4acc_lib.bl.translator_service import TranslatorService
 from dt4acc_lib.model.utils.identifiers import ConversionID, DevicePropertyID, LatticeElementPropertyID
@@ -47,11 +47,9 @@ from dt4acc_lib.model.utils.translator_manager_lookup_table import (
 
 #: MLS runs at 629 MeV
 ENERGY = 629e6
-#: magnetic rigidity [T m] (ultra relativistic electrons)
-#: Todo: clear up brho / energy: ENERGY / c ignores the rest mass, dt4acc-lib's
-#:       calculate_brho does not; MML's getbrho for the MLS to be checked.
-#:       Needs to be done for the MLS
-BRHO = ENERGY / c
+#: magnetic rigidity [T m] at the lattice's (total) energy, as the lattice's
+#: Todo: MML's getbrho for the MLS to be checked (kinetic or total energy)
+BRHO = energy_to_brho(ENERGY)
 #: RF buckets (harmonic number)
 HARMONIC_NUMBER = 80
 
