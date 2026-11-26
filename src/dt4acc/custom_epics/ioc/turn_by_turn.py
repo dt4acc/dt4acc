@@ -9,7 +9,7 @@ the beam comes from the transfer line instead (``custom_facility/bessyii_injecti
 * ``TBT:offset:{x,px,y,py,delta,ct}``: start offset from the closed orbit
   (without a closed orbit: the start itself)
 * ``TBT:n_turns``: turns tracked (up to ``MAX_TURNS``, as the BPM electronics)
-* ``TBT:stops``: elements the beam ends at (:mod:`dt4acc.custom_epics.ioc.stops`)
+* ``TBT:stop_at``: the element the beam ends at (:mod:`dt4acc.custom_epics.ioc.stop_at`)
 * ``TBT:start:{x,px,y,py,delta,ct}``: the start state tracked
 * ``TBT:count``: number of computations
 * ``<bpm>:signal:tbt:X``, ``<bpm>:signal:tbt:Y``: one BPM, turn after turn [mm]
@@ -27,7 +27,7 @@ Todo: revisit the conversion of the turn by turn data (m -> mm by a fixed
 """
 import asyncio
 import logging
-from typing import List, Sequence
+from typing import Optional, Sequence
 
 import numpy as np
 from softioc import builder as softioc_builder
@@ -35,7 +35,7 @@ from softioc import builder as softioc_builder
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
 from dt4acc.core.bl.turn_by_turn import COORDINATES, MAX_TURNS, UNITS, RingTurnByTurn, TurnByTurnResult
 from dt4acc.custom_epics.ioc.bpm_pvs import M2MM, TBT_FIELDS, TBT_SURVIVED_FIELD
-from dt4acc.custom_epics.ioc.stops import stops_record
+from dt4acc.custom_epics.ioc.stop_at import stop_at_record
 
 logger = logging.getLogger("dt4acc")
 
@@ -58,7 +58,7 @@ class TurnByTurnPVs:
         self.rec["n_turns"] = builder.longOut(
             "TBT:n_turns", initial_value=tbt.n_turns, DRVL=1, DRVH=MAX_TURNS, on_update=self._set_n_turns
         )
-        self.rec["stops"] = stops_record("TBT:stops", tbt.backend, self._set_stops, builder=builder)
+        self.rec["stop_at"] = stop_at_record("TBT:stop_at", tbt.backend, self._set_stop_at, builder=builder)
         for bpm in tbt.monitors:
             for plane, field in TBT_FIELDS:
                 self.rec[f"{bpm}:{plane}"] = builder.WaveformIn(
@@ -78,8 +78,8 @@ class TurnByTurnPVs:
         self.tbt.n_turns = value
         self.trigger()
 
-    def _set_stops(self, value: List[str]):
-        self.tbt.stops = value
+    def _set_stop_at(self, element: Optional[str]):
+        self.tbt.set_stop_at(element)
         self.trigger()
 
     # --- recompute, coalescing requests that arrive while it runs

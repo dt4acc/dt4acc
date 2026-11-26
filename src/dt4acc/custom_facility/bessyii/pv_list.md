@@ -305,7 +305,7 @@ transfer line). The computation is shared by the twins, EPICS and Tango:
 | `TBT:offset:delta` | start offset from the closed orbit, momentum deviation | acts | CA + PVA | no |
 | `TBT:offset:ct` | start offset from the closed orbit, path length (m) | acts | CA + PVA | no |
 | `TBT:n_turns` | turns tracked (1 ... 65536, as the BPM electronics) | acts | CA + PVA | no |
-| `TBT:stops` | elements the beam ends at: the first one it reaches (names separated by commas; a long string: caput -S; empty: none) | acts | CA + PVA | no |
+| `TBT:stop_at` | element the beam ends at (one name; empty: none) | acts | CA + PVA | no |
 | `TBT:start:x` | start state tracked: closed orbit + offset, horizontal (m) |  | CA + PVA | no |
 | `TBT:start:px` | start state tracked, horizontal angle (rad) |  | CA + PVA | no |
 | `TBT:start:y` | start state tracked, vertical (m) |  | CA + PVA | no |

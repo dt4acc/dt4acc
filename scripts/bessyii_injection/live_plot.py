@@ -16,6 +16,7 @@ The EPICS environment (EPICS_PVA_ADDR_LIST, ...) must reach the twin. Nothing
 is written to a PV.
 """
 import argparse
+import getpass
 import os
 import threading
 
@@ -25,7 +26,8 @@ from p4p.client.thread import Context
 
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--prefix", default=os.environ.get("DT4ACC_PREFIX", ""))
+    p.add_argument("--prefix", default=os.environ.get("DT4ACC_PREFIX", getpass.getuser()),
+                   help="PV prefix of the twin, as the twin: DT4ACC_PREFIX, else the user name")
     p.add_argument("--save", default=None, help="write the figure to this file on each update instead of a window")
     p.add_argument("--updates", type=int, default=0, help="stop after this many updates (0: never)")
     return p.parse_args()

@@ -102,7 +102,7 @@ def test_injected_beam_ends_at_a_stop(ring_lattice) -> None:
     free = asyncio.run(h.compute())
     # the BPMs in the order the beam passes them from the septum exit
     order = [e.uid for e in free.turns.per_element]
-    h.stops = [order[5]]
+    h.stop_at = order[5]
     stopped = asyncio.run(h.compute())
     at_bpm = {name: k for k, name in enumerate(stopped.monitors)}
     for i, name in enumerate(order):
@@ -112,5 +112,5 @@ def test_injected_beam_ends_at_a_stop(ring_lattice) -> None:
         else:
             assert np.isnan(x[0]), name
         assert np.isnan(x[1:]).all(), name
-    h.stops = []
+    h.stop_at = None
     np.testing.assert_array_equal(asyncio.run(h.compute()).x(), free.x())

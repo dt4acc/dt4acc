@@ -41,7 +41,7 @@ INJECTION = [
      [(f"INJ:injected:{p}", d, RO, NO) for p, d in PLANES]),
     ("Tracking in the ring", [
         ("INJ:n_turns", "turns in the ring each shot tracks the injected beam (1 ... 256): the length of the turn by turn data, not a number of shots", ACTS, NO),
-        ("INJ:stops", "ring elements the beam ends at: the first one it reaches (names separated by commas; a long string: caput -S; empty: none)", ACTS, NO),
+        ("INJ:stop_at", "ring element the beam ends at (one name; empty: none)", ACTS, NO),
         ("INJ:tbt:x", "horizontal position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... (m)", RO, NO),
         ("INJ:tbt:y", "vertical position at the ring BPMs, as INJ:tbt:x (m)", RO, NO),
         ("INJ:tbt:names", "the ring BPMs, in the order of INJ:tbt:x / y", RO, NO),

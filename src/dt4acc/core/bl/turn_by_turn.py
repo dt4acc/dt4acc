@@ -87,26 +87,29 @@ def ring_monitors(backend: SimulatorBackend, name_prefix: Optional[str] = None) 
     ]
 
 
-def parse_stops(text: str) -> List[str]:
-    """element ids separated by commas or blanks, e.g. ``"Q1M2D1R, BPMZ3D1R"``; empty: none"""
-    return text.replace(",", " ").split()
+def parse_stop_at(text: str) -> Optional[str]:
+    """an element id, e.g. ``"Q1M2D1R"``; empty (or blanks): None, no stop"""
+    return text.strip() or None
 
 
-def check_stops(backend: SimulatorBackend, stops: Sequence[str]) -> None:
-    """ValueError if a stop is no element of the lattice"""
+def check_stop_at(backend: SimulatorBackend, element: Optional[str]) -> None:
+    """ValueError unless ``element`` is None or the id of exactly one lattice
+    element (as dt4acc-lib's ``stop_at`` and ``start_at``)"""
+    if element is None:
+        return
     uids = backend.get_element_uids()[: len(backend.acc.acc)]
-    unknown = [stop for stop in stops if stop not in uids]
-    if unknown:
-        raise ValueError(f"stops: no element {', '.join(unknown)} in the lattice")
+    found = uids.count(element)
+    if found != 1:
+        raise ValueError(f"stop_at {element!r}: expected one element of that id in the lattice, found {found}")
 
 
 class RingTurnByTurn:
     """Tracks the ring from its first element: closed orbit + ``offset``, ``n_turns``,
     read at ``monitors`` (lattice element ids, e.g. from :func:`ring_monitors`).
 
-    ``stops`` (lattice element ids): the beam ends at the first one it
-    reaches. A BPM that is the stop still sees the beam, the later ones and
-    all later turns do not (NaN, none survived)."""
+    ``stop_at`` (a lattice element id, :meth:`set_stop_at`): the beam ends
+    there. A BPM that is the stop still sees the beam, the later ones and all
+    later turns do not (NaN, none survived)."""
 
     def __init__(self, backend: SimulatorBackend, monitors: Sequence[str],
                  offset: Sequence[float] = DEFAULT_OFFSET, n_turns: int = DEFAULT_TURNS):
@@ -116,17 +119,16 @@ class RingTurnByTurn:
         self.monitors = list(monitors)
         self.offset = ParticleState.from_sequence(offset)
         self.n_turns = n_turns
-        self._stops: List[str] = []
+        self._stop_at: Optional[str] = None
 
-    @property
-    def stops(self) -> List[str]:
-        return list(self._stops)
+    def get_stop_at(self) -> Optional[str]:
+        return self._stop_at
 
-    @stops.setter
-    def stops(self, value: Sequence[str]):
-        value = list(value)
-        check_stops(self.backend, value)
-        self._stops = value
+    def set_stop_at(self, element: Optional[str]) -> None:
+        """the element the beam ends at; None: no stop. ValueError if the
+        lattice has not exactly one element of that id (nothing changed then)"""
+        check_stop_at(self.backend, element)
+        self._stop_at = element
 
     @property
     def n_turns(self) -> int:
@@ -156,7 +158,7 @@ class RingTurnByTurn:
     def compute(self) -> TurnByTurnResult:
         """tracks now"""
         start = ParticleState.from_sequence(self.closed_orbit() + self.offset.as_array())
-        turns = self.backend.compute_track([start], self.n_turns, self.monitors, stops=self.stops)
+        turns = self.backend.compute_track([start], self.n_turns, self.monitors, stop_at=self.get_stop_at())
         return TurnByTurnResult.from_turns(start, self.n_turns, self.monitors, turns)
 
 
@@ -172,7 +174,7 @@ class LatestTurnByTurn:
     def _state(self):
         # the backend computes new optics after each lattice change: compared as the object
         _, __, optics = self.tbt.backend.get_optics()
-        return optics, tuple(self.tbt.offset.as_array()), self.tbt.n_turns, tuple(self.tbt.monitors), tuple(self.tbt.stops)
+        return optics, tuple(self.tbt.offset.as_array()), self.tbt.n_turns, tuple(self.tbt.monitors), self.tbt.get_stop_at()
 
     def _is_current(self, state) -> bool:
         if self._computed_for is None:
@@ -191,5 +193,5 @@ class LatestTurnByTurn:
 
 __all__: Sequence[str] = [
     "COORDINATES", "DEFAULT_OFFSET", "DEFAULT_TURNS", "MAX_TURNS", "UNITS",
-    "LatestTurnByTurn", "RingTurnByTurn", "TurnByTurnResult", "check_stops", "parse_stops", "ring_monitors",
+    "LatestTurnByTurn", "RingTurnByTurn", "TurnByTurnResult", "check_stop_at", "parse_stop_at", "ring_monitors",
 ]
