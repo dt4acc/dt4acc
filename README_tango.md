@@ -228,7 +228,10 @@ sim.bpm_noise_sa_enable = False   # off: exact again
 One setting for all BPMs. A BPM gets new noise with each new orbit (each heartbeat) or turn
 by turn result; `x` / `y` (m) and the ring simulator's `orbit_x` / `orbit_y` stay exact.
 The default sizes are placeholders, not the Libera electronics' resolution. The EPICS
-twins have the same (`noise:bpm:...` PVs).
+twins have the same (`noise:bpm:...` PVs). All random numbers of a process come from one
+generator, seeded once (`dt4acc.core.bl.random_numbers`). Here each device server is a
+process of its own: leave `DT4ACC_SEED` unset for the Tango twin for now, with it every
+process would draw the same numbers (todo: a stream per process).
 
 ---
 
