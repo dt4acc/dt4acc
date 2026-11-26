@@ -5,6 +5,7 @@ from typing import Dict, Optional, Sequence
 import numpy as np
 from softioc import pythonSoftIoc
 
+from dt4acc.core.bl.noise import Noise
 from dt4acc.core.interfaces.view_interface import ViewInterface
 from dt4acc.core.utils.logger import get_logger
 from dt4acc_lib.model.output.result import TranslatedReading, SingleReading
@@ -46,11 +47,19 @@ class View(ViewInterface):
     :class:`OrbitTwinServer` when one is registered.
     """
 
-    def __init__(self, *, orbit_server: Optional[OrbitTwinServer] = None, bpms: Sequence[str] = ()):
-        """``bpms``: their slow acquisition records (``bpm_pvs``) follow the track"""
+    def __init__(
+        self,
+        *,
+        orbit_server: Optional[OrbitTwinServer] = None,
+        bpms: Sequence[str] = (),
+        bpm_noise: Optional[Noise] = None,
+    ):
+        """``bpms``: their slow acquisition records (``bpm_pvs``) follow the track;
+        ``bpm_noise`` [mm]: on what the monitors measure of it (``BpmNoise.sa``)"""
         self.process_variables: Dict[ReadCommand, pythonSoftIoc.RecordWrapper] = dict()
         self.orbit_server = orbit_server
         self.bpms = set(bpms)
+        self.bpm_noise = bpm_noise
         # used for creating invalid data
         self.last_data_cache = dict()
 
@@ -191,6 +200,7 @@ class View(ViewInterface):
         A view whose monitors see the beam only when it passes (single pass,
         e.g. a transfer line fired on demand) overrides this.
         """
+        track = self.measured(track)
         self.update_bpms(track)
         # PVA NTTable
         if self.orbit_server is not None:
@@ -203,6 +213,18 @@ class View(ViewInterface):
                 )
             except Exception as exc:
                 logger.error("OrbitTwinServer.push failed: %s", exc)
+
+    def measured(self, track):
+        """``track`` as the monitors measure it: with ``bpm_noise`` (one sample
+        per position and plane), the model's ``track`` itself without"""
+        if self.bpm_noise is None or not self.bpm_noise.active:
+            return track
+        measured = []
+        for pos in track:
+            pos = _copy(pos)
+            pos.x, pos.y = (self.bpm_noise.apply(v * M2MM) / M2MM for v in (pos.x, pos.y))
+            measured.append(pos)
+        return measured
 
     def update_bpms(self, track) -> None:
         """``<bpm>:signal:sa:X`` / ``Y`` [mm] of the BPMs in the track"""

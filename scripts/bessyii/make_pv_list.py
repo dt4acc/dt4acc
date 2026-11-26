@@ -104,6 +104,12 @@ VIRTUAL = [
         ("simulator_ring:reset", "a write clears the stored results and recalculates", ACTS, NO),
         ("simulator_ring:reinit", "a write puts the lattice back to its start values, then recalculates", ACTS, NO),
     ]),
+    ("Noise on the BPMs' readings (#82)", [
+        ("noise:bpm:sa:enable", "noise on the BPMs' slow acquisition (<bpm>:signal:sa:X / Y, ORBITCC:rdBpm): On / Off (default)", ACTS, NO),
+        ("noise:bpm:sa:sigma", "its standard deviation (mm), Gaussian; placeholder 0.001", ACTS, NO),
+        ("noise:bpm:tbt:enable", "noise on the BPMs' turn by turn data (<bpm>:signal:tbt:X / Y): On / Off (default)", ACTS, NO),
+        ("noise:bpm:tbt:sigma", "its standard deviation (mm), Gaussian; placeholder 0.01", ACTS, NO),
+    ]),
 ]
 
 HEADER = """\

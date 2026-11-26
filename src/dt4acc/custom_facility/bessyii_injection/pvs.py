@@ -37,6 +37,7 @@ from typing import Awaitable, Callable, Optional, Sequence
 import numpy as np
 from softioc import builder as softioc_builder
 
+from dt4acc.core.bl.noise import Noise
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
 from dt4acc.custom_epics.ioc.bpm_pvs import M2MM, TBT_FIELDS
 from dt4acc.custom_epics.ioc.stop_at import stop_at_record
@@ -62,8 +63,11 @@ class InjectionPVs:
         handover: InjectionHandover,
         builder=softioc_builder,
         before_shot: Optional[Callable[[], Awaitable[None]]] = None,
+        noise: Optional[Noise] = None,
     ):
+        """``noise`` [mm]: on the ring BPMs' turn by turn readings (``BpmNoise.tbt``)"""
         self.handover = handover
+        self.noise = noise
         self.before_shot = before_shot
         self._pending = False
         self._running = False
@@ -156,6 +160,9 @@ class InjectionPVs:
             self.rec[f"line_exit:{name}"].set(getattr(r.line_exit, field))
             self.rec[f"injected:{name}"].set(getattr(r.injected, field))
         x, y = r.x(), r.y()
+        if self.noise is not None and self.noise.active:
+            # as the BPMs measure them [mm]: INJ:tbt and the BPMs' PVs show the same sample
+            x, y = (self.noise.apply(v * M2MM) / M2MM for v in (x, y))
         self.rec["tbt:x"].set(x.ravel())
         self.rec["tbt:y"].set(y.ravel())
         for k, bpm in enumerate(r.monitors):

@@ -25,7 +25,9 @@ from dt4acc.custom_facility.bessyii.run_bessyii_twin import (
     BPM_PREFIX,
     initialise_turn_by_turn_pvs,
 )
+from dt4acc.core.bl.noise import BpmNoise
 from dt4acc.core.bl.turn_by_turn import ring_monitors
+from dt4acc.custom_epics.ioc.noise_pvs import initialize_bpm_noise_pvs
 from dt4acc.core.bl.translating_command_execution_engine import TranslatingCommandExecutionEngine
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
 
@@ -65,6 +67,8 @@ def ring_pvs():
     controller = ring_controller(backend)
     asyncio.run(initialise_pvs(builder=builder, controller=controller, bpms=bpms))
     initialise_turn_by_turn_pvs(builder, backend, bpms)
+    # as main(): noise on the BPMs' readings
+    initialize_bpm_noise_pvs(BpmNoise(), builder=builder)
     initialise_lattice_pvs(builder, backend=backend, lattice=backend.acc.acc_orig_store,
                            liaison_manager=load_managers()[1], controller=controller,
                            view=controller.view, bpms=bpms)

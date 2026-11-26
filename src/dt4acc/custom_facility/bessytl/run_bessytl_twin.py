@@ -21,7 +21,7 @@ import asyncio
 import getpass
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib import resources
 from typing import List
 
@@ -31,8 +31,10 @@ from softioc import builder, softioc
 
 from dt4acc.config.data.querries import configure_data_file
 from dt4acc.core.bl.controller import Controller, read_and_dispatch
+from dt4acc.core.bl.noise import BpmNoise
 from dt4acc.core.bl.translating_command_execution_engine import TranslatingCommandExecutionEngine
 from dt4acc.custom_epics.ioc.controller import dispatcher
+from dt4acc.custom_epics.ioc.noise_pvs import initialize_bpm_noise_pvs
 from dt4acc.custom_epics.ioc.orbit_pva import OrbitTwinServer
 from dt4acc.custom_epics.ioc.pv_setup import initialize_power_converter_pvs
 from dt4acc.custom_facility.bessytl.twin_setup import (
@@ -65,6 +67,8 @@ class TransferLineTwin:
     controller: Controller
     view: TransferLineView
     monitors: List[str]
+    #: on the BPMs' readings (noise:bpm:sa:...), off at start
+    noise: BpmNoise = field(default_factory=BpmNoise)
 
 
 def assemble(prefix: str, *, orbit_server: bool = True) -> TransferLineTwin:
@@ -88,14 +92,15 @@ def assemble(prefix: str, *, orbit_server: bool = True) -> TransferLineTwin:
     server = OrbitTwinServer(f"{model}:ORBITCC:rdBpm", f"{model}:ORBITCC:rdModel",
                              monitor_prefixes=ORBIT_MONITOR_PREFIXES) if orbit_server else None
     monitors = monitor_names(line)
-    view = TransferLineView(monitors=monitors, orbit_server=server)
+    noise = BpmNoise()
+    view = TransferLineView(monitors=monitors, orbit_server=server, bpm_noise=noise.sa)
     controller = Controller(
         name="epics-bessytl-ctrller",
         mexec=mexec,
         view=view,
         default_delayed_reads=[ReadCommand("track", "pos"), ReadCommand("twiss", "parameters")],
     )
-    return TransferLineTwin(line=line, controller=controller, view=view, monitors=monitors)
+    return TransferLineTwin(line=line, controller=controller, view=view, monitors=monitors, noise=noise)
 
 
 async def main():
@@ -129,6 +134,8 @@ async def initialise_pvs(builder, prefix: str, twin: TransferLineTwin) -> None:
         **await initialize_power_converter_pvs(builder, controller=twin.controller),
         **initialize_monitor_pvs(twin.monitors, builder=builder),
     })
+    # a line: no turn by turn, the trajectory is the BPMs' slow acquisition
+    initialize_bpm_noise_pvs(twin.noise, builder=builder, kinds=("sa",))
     builder.SetDeviceName(model_device(prefix))
     twin.view.update_process_variables(initialize_model_pvs(builder, twin.view, n_elements=len(twin.line) + 1))
 
