@@ -9,6 +9,7 @@ import pytest
 # loads the EPICS record types, before any module that imports softioc's records
 from softioc import builder as _softioc_builder  # noqa: F401
 
+from dt4acc.core.bl import random_numbers
 from dt4acc.core.bl.noise import BpmNoise, Noise
 from dt4acc.core.bl.turn_by_turn import COORDINATES
 from dt4acc.custom_epics.ioc.bpm_pvs import M2MM
@@ -25,8 +26,15 @@ from tests.recording_builder import RecordingBuilder
 SIGMA = 0.05  # mm
 
 
-def on(sigma=SIGMA, seed=1):
-    return Noise(sigma=sigma, enabled=True, seed=seed)
+@pytest.fixture(autouse=True)
+def fresh_generator(monkeypatch):
+    """each test: the twin's generator not made yet, no DT4ACC_SEED"""
+    monkeypatch.setattr(random_numbers, "_generator", None)
+    monkeypatch.delenv(random_numbers.SEED_ENV, raising=False)
+
+
+def on(sigma=SIGMA):
+    return Noise(sigma=sigma, enabled=True)
 
 
 # --- the noise itself
@@ -39,7 +47,7 @@ def test_off_by_default_and_unchanged():
 
 
 def test_zero_mean_and_sigma():
-    sample = on(seed=7).apply(np.zeros(200_000))
+    sample = on().apply(np.zeros(200_000))
     assert abs(sample.mean()) < 5 * SIGMA / math.sqrt(len(sample))
     assert sample.std() == pytest.approx(SIGMA, rel=0.01)
 
@@ -50,9 +58,42 @@ def test_no_beam_stays_no_beam_and_float_stays_float():
     assert isinstance(noise.apply(1.0), float) and noise.apply(1.0) != 1.0
 
 
-def test_seed_reproduces():
-    np.testing.assert_array_equal(on(seed=3).apply(np.zeros(5)), on(seed=3).apply(np.zeros(5)))
-    assert not np.array_equal(on(seed=3).apply(np.zeros(5)), on(seed=4).apply(np.zeros(5)))
+def draws(seed):
+    """slow acquisition and turn by turn, one after the other, from a freshly seeded twin"""
+    random_numbers._generator = None
+    random_numbers.seed(seed)
+    noise = BpmNoise(sa=on(), tbt=on())
+    return np.concatenate([noise.sa.apply(np.zeros(3)), noise.tbt.apply(np.zeros(3)), noise.sa.apply(np.zeros(2))])
+
+
+def test_one_generator_seeded_once_reproduces_the_whole_run():
+    first = draws(3)
+    np.testing.assert_array_equal(draws(3), first)
+    assert not np.array_equal(draws(4), first)
+    # all noise sources draw from the one generator: one stream, not one per source
+    random_numbers._generator = None
+    random_numbers.seed(3)
+    np.testing.assert_array_equal(on().apply(np.zeros(8)), first)
+
+
+def test_seeded_once():
+    on().apply(np.zeros(1))
+    with pytest.raises(RuntimeError, match="once"):
+        random_numbers.seed(1)
+
+
+def test_seed_from_the_environment(monkeypatch):
+    monkeypatch.setenv(random_numbers.SEED_ENV, "3")
+    first = on().apply(np.zeros(8))
+    random_numbers._generator = None
+    np.testing.assert_array_equal(on().apply(np.zeros(8)), first)
+
+
+def test_a_generator_of_its_own_is_the_exception():
+    own = Noise(sigma=SIGMA, enabled=True, rng=np.random.default_rng(5))
+    expected = Noise(sigma=SIGMA, enabled=True, rng=np.random.default_rng(5)).apply(np.zeros(4))
+    np.testing.assert_array_equal(own.apply(np.zeros(4)), expected)
+    assert random_numbers._generator is None, "the twin's generator untouched"
 
 
 @pytest.mark.parametrize("sigma", [-1e-3, math.nan, math.inf])
