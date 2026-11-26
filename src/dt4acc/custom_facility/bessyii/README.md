@@ -137,8 +137,7 @@ and an image of the beam spot. They follow the closed orbit and the optics by th
 
 ```bash
 caget BT:PINH3FD2L:rdCenterX BT:PINH3FD2L:rdSigmaX   # centre and size [mm]
-caput BT:beam:emittance:y 3e-10                      # vertical emittance [m rad]: the size follows
-caget BT:PINH3FD2L:rdSigmaY
+caget BT:beam:emittance:x BT:beam:emittance:y        # the emittance they use [m rad]
 ```
 
 | PV | what |
@@ -146,7 +145,12 @@ caget BT:PINH3FD2L:rdSigmaY
 | `<camera>:rdCenterX` / `Y` | beam centre [mm] |
 | `<camera>:rdSigmaX` / `Y` | beam size [mm]: sqrt(emittance x beta) |
 | `<camera>:image` (`:width`, `:height`, `:pixel`) | image of the beam spot, row 0 at the top |
-| `beam:emittance:x` / `y` | emittance of the stored beam [m rad], writable; y is a placeholder (1 % of x) |
+| `beam:emittance:x` / `y` | emittance of the stored beam [m rad], calculated from the lattice (read only) |
+
+The emittance is calculated from the lattice after each change, as the orbit: x is about
+7.7 nm rad. y comes only from coupling: the twin's lattice has none until you set a skew
+quadrupole (`CQS...`), so y is about 0 and the vertical size about 0 too. On the machine
+errors couple the planes; the twin does not model them yet.
 
 Good to know: the cameras' source points are not in the lattice yet, so for now they show
 the beam at the **entrance** of their dipole (BM2D2R, BM2D5R), not at the source point

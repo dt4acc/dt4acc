@@ -69,7 +69,7 @@ def ring_pvs():
     initialise_lattice_pvs(builder, backend=backend, lattice=backend.acc.acc_orig_store,
                            liaison_manager=load_managers()[1], controller=controller,
                            view=controller.view, bpms=bpms)
-    initialise_pinhole_pvs(builder)
+    initialise_pinhole_pvs(builder, controller.view, backend)
     return builder.names(PREFIX)
 
 

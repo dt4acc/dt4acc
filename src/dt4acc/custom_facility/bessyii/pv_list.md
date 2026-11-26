@@ -298,8 +298,8 @@ Computed by the twin from the lattice; some mirror machine PVs (see *machine*).
 | `PINH9FD5L:image:width` | pixels per row |  | CA + PVA | no |
 | `PINH9FD5L:image:height` | rows |  | CA + PVA | no |
 | `PINH9FD5L:image:pixel` | pixel size (mm); placeholder |  | CA + PVA | no |
-| `beam:emittance:x` | horizontal emittance of the stored beam (m rad), for the pinhole cameras | acts | CA + PVA | no |
-| `beam:emittance:y` | vertical emittance of the stored beam (m rad), for the pinhole cameras; placeholder | acts | CA + PVA | no |
+| `beam:emittance:x` | horizontal emittance of the stored beam (m rad), calculated from the lattice; the pinhole cameras' size |  | CA + PVA | no |
+| `beam:emittance:y` | vertical emittance of the stored beam (m rad), calculated from the lattice: from coupling (skew quadrupoles), else about 0 |  | CA + PVA | no |
 
 #### Simulation
 

@@ -171,7 +171,7 @@ async def initialise_pvs(builder, prefix: str, twin: InjectionTwin) -> Injection
     # machine names: ring, hand over, transfer line devices
     builder.SetDeviceName(prefix)
     twin.ring_view.update_process_variables(await ring_pvs(builder=builder, controller=twin.ring, bpms=twin.handover.monitors))
-    twin.ring_view.add_element_views(initialise_pinhole_pvs(builder))
+    initialise_pinhole_pvs(builder, twin.ring_view, twin.ring_backend)
     injection = InjectionPVs(twin.handover, builder=builder, before_shot=line_shot(twin))
     # the line's supplies and magnets come from its own device database
     configure_data_file(resources.files("dt4acc").joinpath(*ACCELERATOR_SETUP))

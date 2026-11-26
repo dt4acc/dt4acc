@@ -4,43 +4,106 @@
 * ``<camera>:rdSigmaX`` / ``rdSigmaY``: beam size [mm]
 * ``<camera>:image``: ``image:height`` rows of ``image:width`` pixels of
   ``image:pixel`` mm, row 0 at the top (:mod:`dt4acc.core.bl.beam_spot`)
-* ``beam:emittance:x`` / ``y`` [m rad]: of the stored beam, writable
+* ``beam:emittance:x`` / ``y`` [m rad]: of the stored beam, calculated from
+  the ring's lattice after each new closed orbit
+  (:mod:`dt4acc.core.bl.emittance`); read only
 
 Each camera is a view of its lattice element (:class:`PinholeCameraView`):
 the ring's view hands it the orbit and optics there after each new
 calculation (:meth:`View.add_element_views`). Without a closed orbit: NaN and
 a dark image.
 """
+import asyncio
+import logging
 from typing import Callable, Dict, List, Mapping, Sequence
 
 import numpy as np
 from softioc import builder as softioc_builder
+
+from dt4acc.core.bl.emittance import ring_emittance
+from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
 
 from dt4acc.core.bl.beam_spot import spot_image
 from dt4acc.core.bl.pinhole import NO_BEAM, PLANES, BeamSpot, PinholeCamera, beam_spot
 from dt4acc.custom_epics.ioc.bpm_pvs import M2MM
 
 
-class BeamEmittance:
-    """the stored beam's emittance [m rad] per plane; ``listeners`` follow a change"""
+logger = logging.getLogger("dt4acc")
 
-    def __init__(self, emittance: Mapping[str, float]):
-        self.value: Dict[str, float] = {}
+
+class BeamEmittance:
+    """the stored beam's emittance [m rad] per plane (NaN: not known); ``listeners`` follow a change"""
+
+    def __init__(self, emittance: Mapping[str, float] = None):
+        self.value: Dict[str, float] = {plane: float("nan") for plane in PLANES}
         self.listeners: List[Callable[[], None]] = []
-        for plane in PLANES:
-            self._check(emittance[plane])
-            self.value[plane] = float(emittance[plane])
+        if emittance is not None:
+            self.update(emittance)
 
     @staticmethod
     def _check(value: float) -> None:
-        if not (np.isfinite(value) and value >= 0.0):
-            raise ValueError(f"emittance: expected finite and >= 0, got {value}")
+        if not (np.isnan(value) or (np.isfinite(value) and value >= 0.0)):
+            raise ValueError(f"emittance: expected finite and >= 0 (or NaN), got {value}")
 
-    def set(self, plane: str, value: float) -> None:
-        self._check(value)
-        self.value[plane] = float(value)
+    def update(self, emittance: Mapping[str, float]) -> None:
+        for plane in PLANES:
+            self._check(emittance[plane])
+        self.value.update({plane: float(emittance[plane]) for plane in PLANES})
         for listener in self.listeners:
             listener()
+
+
+class RingEmittancePVs:
+    """``beam:emittance:x`` / ``y``: calculated from ``lattice()`` (the ring
+    backend's lattice) after each new closed orbit (:func:`hook_emittance`);
+    requests that arrive while it runs are coalesced"""
+
+    def __init__(self, lattice: Callable[[], object], emittance: BeamEmittance, builder=softioc_builder):
+        self.lattice = lattice
+        self.emittance = emittance
+        self._dirty = False
+        self._running = False
+        self.rec = {
+            plane: builder.aIn(f"beam:emittance:{plane}", initial_value=0.0, PREC=12, EGU="m rad")
+            for plane in PLANES
+        }
+
+    def trigger(self) -> None:
+        self._dirty = True
+        if not self._running:
+            self._running = True
+            asyncio.run_coroutine_threadsafe(self._run(), get_shared_event_loop())
+
+    async def _run(self):
+        try:
+            while self._dirty:
+                self._dirty = False
+                self.update()
+        finally:
+            self._running = False
+
+    def update(self) -> None:
+        """calculate now"""
+        try:
+            value = ring_emittance(self.lattice())
+        except Exception as exc:
+            logger.error("emittance: calculation failed: %s", exc)
+            value = {plane: float("nan") for plane in PLANES}
+        for plane in PLANES:
+            self.rec[plane].set(value[plane])
+        self.emittance.update(value)
+
+
+def hook_emittance(view, emittance: RingEmittancePVs):
+    """After the view publishes a new closed orbit (or none), calculate the emittance again"""
+    update_track = view.update_track
+
+    def update_track_and_emittance(var, pkg):
+        update_track(var, pkg)
+        emittance.trigger()
+
+    view.update_track = update_track_and_emittance
+    return view
 
 
 class PinholeCameraView:
@@ -90,17 +153,14 @@ class PinholeCameraView:
 
 
 def initialize_pinhole_pvs(
-    cameras: Sequence[PinholeCamera], emittance: Mapping[str, float], builder=softioc_builder
+    cameras: Sequence[PinholeCamera], emittance: BeamEmittance, builder=softioc_builder
 ) -> List[PinholeCameraView]:
-    """the cameras' views and records, and ``beam:emittance:x`` / ``y``; hand
-    the views to the ring's view (:meth:`View.add_element_views`)"""
-    beam = BeamEmittance(emittance)
-    for plane in PLANES:
-        builder.aOut(
-            f"beam:emittance:{plane}", initial_value=beam.value[plane], PREC=12, EGU="m rad", DRVL=0.0, DRVH=1.0,
-            on_update=lambda value, plane=plane: beam.set(plane, value),
-        )
-    return [PinholeCameraView(camera, beam, builder=builder) for camera in cameras]
+    """the cameras' views and records; hand them to the ring's view
+    (:meth:`View.add_element_views`). ``emittance``: e.g. that of
+    :class:`RingEmittancePVs`"""
+    return [PinholeCameraView(camera, emittance, builder=builder) for camera in cameras]
 
 
-__all__: Sequence[str] = ["BeamEmittance", "PinholeCameraView", "initialize_pinhole_pvs"]
+__all__: Sequence[str] = [
+    "BeamEmittance", "PinholeCameraView", "RingEmittancePVs", "hook_emittance", "initialize_pinhole_pvs",
+]

@@ -117,8 +117,8 @@ VIRTUAL = [
         ("PINH9FD5L:image:width", "pixels per row", RO, NO),
         ("PINH9FD5L:image:height", "rows", RO, NO),
         ("PINH9FD5L:image:pixel", "pixel size (mm); placeholder", RO, NO),
-        ("beam:emittance:x", "horizontal emittance of the stored beam (m rad), for the pinhole cameras", ACTS, NO),
-        ("beam:emittance:y", "vertical emittance of the stored beam (m rad), for the pinhole cameras; placeholder", ACTS, NO),
+        ("beam:emittance:x", "horizontal emittance of the stored beam (m rad), calculated from the lattice; the pinhole cameras' size", RO, NO),
+        ("beam:emittance:y", "vertical emittance of the stored beam (m rad), calculated from the lattice: from coupling (skew quadrupoles), else about 0", RO, NO),
     ]),
     ("Simulation", [
         ("simulator_ring:reset", "a write clears the stored results and recalculates", ACTS, NO),
