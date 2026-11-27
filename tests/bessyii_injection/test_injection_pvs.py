@@ -65,10 +65,12 @@ def line_device_pvs(monitors):
 
 
 def line_model_pvs():
-    """the transfer line twin's soft IOC model PVs: the same names (TL:...)"""
+    """the transfer line twin's soft IOC model PVs: the same names (TL:...);
+    its BPM noise (noise:bpm:sa:...) is the ring's here, one for both"""
     _, named, _ = pv_list_md.read(pv_list("bessytl"))
-    assert named and all(pv.startswith("TL:") for pv in named), sorted(named)[:5]
-    return named
+    model = {pv for pv in named if pv.startswith("TL:")}
+    assert model and all(pv.startswith("noise:bpm:sa:") for pv in named - model), sorted(named - model)[:5]
+    return model
 
 
 def handover_pvs():

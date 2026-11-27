@@ -23,7 +23,8 @@ beam is measured continuously.
 * ``INJ:line_exit:{x,xp,y,yp,delta,ct}``: centroid leaving the line (line frame)
 * ``INJ:injected:{x,xp,y,yp,delta,ct}``: the same in the ring frame
 * ``INJ:tbt:{x,y}``: position at the ring's BPMs, turn after turn
-  (turn 1 at all BPMs, then turn 2, ...), ``INJ:tbt:names``: the BPMs
+  (turn 1 at all BPMs, then turn 2, ...), ``INJ:tbt:names``: the BPMs; as
+  the BPMs measure it: with their noise when ``noise:bpm:tbt:enable`` is on
 * ``INJ:survived``: particles still there after each turn
 * ``INJ:count``: number of shots computed (triggers that arrive while a shot
   is computed are merged into one more shot)
@@ -37,6 +38,7 @@ from typing import Awaitable, Callable, Optional, Sequence
 import numpy as np
 from softioc import builder as softioc_builder
 
+from dt4acc.core.bl.noise import GaussianAdditiveNoise
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
 from dt4acc.custom_epics.ioc.bpm_pvs import M2MM, TBT_FIELDS
 from dt4acc.custom_epics.ioc.stop_at import stop_at_record
@@ -62,8 +64,11 @@ class InjectionPVs:
         handover: InjectionHandover,
         builder=softioc_builder,
         before_shot: Optional[Callable[[], Awaitable[None]]] = None,
+        noise: Optional[GaussianAdditiveNoise] = None,
     ):
+        """``noise`` [m]: on the ring BPMs' turn by turn readings (``BpmNoise.tbt``)"""
         self.handover = handover
+        self.noise = noise
         self.before_shot = before_shot
         self._pending = False
         self._running = False
@@ -156,6 +161,9 @@ class InjectionPVs:
             self.rec[f"line_exit:{name}"].set(getattr(r.line_exit, field))
             self.rec[f"injected:{name}"].set(getattr(r.injected, field))
         x, y = r.x(), r.y()
+        if self.noise is not None:
+            # as the BPMs measure them [m]: INJ:tbt and the BPMs' PVs show the same sample
+            x, y = self.noise.apply(x), self.noise.apply(y)
         self.rec["tbt:x"].set(x.ravel())
         self.rec["tbt:y"].set(y.ravel())
         for k, bpm in enumerate(r.monitors):

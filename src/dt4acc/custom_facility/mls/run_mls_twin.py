@@ -17,7 +17,7 @@ import asyncio
 import getpass
 import logging
 import os
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 from softioc import builder, softioc
 
@@ -29,6 +29,9 @@ from dt4acc.custom_epics.ioc.controller import dispatcher
 from dt4acc.custom_epics.ioc.orbit_pva import OrbitTwinServer
 from dt4acc.core.bl.turn_by_turn import RingTurnByTurn
 from dt4acc.custom_epics.ioc.turn_by_turn import TurnByTurnPVs, hook_track_updates
+from dt4acc.custom_epics.ioc.noise_pvs import initialize_bpm_noise_pvs
+from dt4acc.core.bl import random_numbers
+from dt4acc.core.bl.noise import BpmNoise, GaussianAdditiveNoise
 from dt4acc.custom_epics.ioc.pv_setup import (
     PVFields,
     initialize_calculation_state_pvs,
@@ -106,10 +109,12 @@ async def initialise_pvs(builder, controller: ControllerInterface, bpms: Sequenc
     }
 
 
-def initialise_turn_by_turn_pvs(builder, backend: SimulatorBackend, bpms: Sequence[str]) -> TurnByTurnPVs:
+def initialise_turn_by_turn_pvs(
+    builder, backend: SimulatorBackend, bpms: Sequence[str], noise: Optional[GaussianAdditiveNoise] = None
+) -> TurnByTurnPVs:
     """Turn by turn PVs (``TBT:...``, ``<bpm>:signal:tbt:X`` / ``Y``), as the BESSY II ring twin,
     :mod:`dt4acc.core.bl.turn_by_turn`"""
-    return TurnByTurnPVs(RingTurnByTurn(backend, bpms), builder=builder)
+    return TurnByTurnPVs(RingTurnByTurn(backend, bpms), builder=builder, noise=noise)
 
 
 async def main():
@@ -120,7 +125,11 @@ async def main():
     orbit_server = OrbitTwinServer(pva_prefix + "ORBITCCP:rdBpm", pva_prefix + "ORBITCCP:rdModel")
     orbit_server.start()
     bpms = bpm_names(ring)
-    view = MLSView(bpms=bpms, orbit_server=orbit_server)
+    # the twin's random numbers, made now: a bad DT4ACC_SEED stops the twin here
+    random_numbers.generator()
+    # noise on the BPMs' readings: off at start (noise:bpm:...)
+    noise = BpmNoise()
+    view = MLSView(bpms=bpms, orbit_server=orbit_server, bpm_noise=noise.sa)
     controller = make_controller(backend, view)
     controller.start()
     if prefix:
@@ -128,7 +137,9 @@ async def main():
 
     view.update_process_variables(await initialise_pvs(builder, controller, bpms, n_elements=len(ring) + 1))
     # turn by turn data at the BPMs, recomputed after each new closed orbit
-    hook_track_updates(view, initialise_turn_by_turn_pvs(builder, backend, bpms))
+    tbt = initialise_turn_by_turn_pvs(builder, backend, bpms, noise=noise.tbt)
+    hook_track_updates(view, tbt)
+    initialize_bpm_noise_pvs(noise, builder=builder, on_change={"sa": view.republish_monitors, "tbt": tbt.trigger})
     await read_and_dispatch(
         controller=controller, view=view, rcmds=[ReadCommand("survey", "s")] + list(controller.default_delayed_reads)
     )

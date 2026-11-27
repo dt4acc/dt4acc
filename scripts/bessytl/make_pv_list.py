@@ -105,6 +105,10 @@ VIRTUAL = [
         ("TL:survey:names", "element names", RO, NO),
         ("TL:survey:uids", "element ids", RO, NO),
     ]),
+    ("Noise on the BPMs' readings (#82): without `TL:`, `<P>:noise:bpm:sa:*`", [
+        ("noise:bpm:sa:enable", "noise on the BPMs' and striplines' readings (<bpm>:signal:sa:X / Y): On / Off (default)", ACTS, NO),
+        ("noise:bpm:sa:sigma", "its standard deviation (mm), Gaussian; placeholder 0.001", ACTS, NO),
+    ]),
 ]
 
 HEADER = """\

@@ -4,7 +4,7 @@ import logging
 import os
 from importlib import resources
 from pathlib import Path
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 from softioc import builder, softioc
 
@@ -28,6 +28,9 @@ from dt4acc.custom_epics.ioc.pv_setup import (
     initialize_calculation_state_pvs,
 )
 from dt4acc.custom_epics.ioc.bpm_pvs import initialize_bpm_pvs
+from dt4acc.custom_epics.ioc.noise_pvs import initialize_bpm_noise_pvs
+from dt4acc.core.bl import random_numbers
+from dt4acc.core.bl.noise import BpmNoise, GaussianAdditiveNoise
 from dt4acc.custom_facility.bessyii.provide_lattice import (
     LATTICE_FILE,
     bessyii_pyat_lattice,
@@ -110,7 +113,11 @@ async def main():
 
     orbit_server.start()
     bpms = ring_monitors(backend, BPM_PREFIX)
-    view = View(orbit_server=orbit_server, bpms=bpms)
+    # the twin's random numbers, made now: a bad DT4ACC_SEED stops the twin here
+    random_numbers.generator()
+    # noise on the BPMs' readings: off at start (noise:bpm:...)
+    noise = BpmNoise()
+    view = View(orbit_server=orbit_server, bpms=bpms, bpm_noise=noise.sa)
 
     controller = Controller(
         name="epics-delegate-ctrller",
@@ -133,7 +140,9 @@ async def main():
                                controller=controller, view=view, bpms=bpms)
     )
     # turn by turn data at the BPMs, recomputed after each new closed orbit
-    hook_track_updates(view, initialise_turn_by_turn_pvs(builder, backend, bpms))
+    tbt = initialise_turn_by_turn_pvs(builder, backend, bpms, noise=noise.tbt)
+    hook_track_updates(view, tbt)
+    initialize_bpm_noise_pvs(noise, builder=builder, on_change={"sa": view.republish_monitors, "tbt": tbt.trigger})
     # pinhole cameras: views of their elements, the view hands them the orbit and optics there;
     # the emittance is calculated after each new closed orbit
     initialise_pinhole_pvs(builder, view, backend)
@@ -204,14 +213,16 @@ def lattice_directory() -> Path:
     return Path(str(resources.files("dt4acc").joinpath(LATTICE_FILE))).parent
 
 
-def initialise_turn_by_turn_pvs(builder, backend: SimulatorBackend, bpms: Sequence[str]) -> TurnByTurnPVs:
+def initialise_turn_by_turn_pvs(
+    builder, backend: SimulatorBackend, bpms: Sequence[str], noise: Optional[GaussianAdditiveNoise] = None
+) -> TurnByTurnPVs:
     """Turn by turn PVs of the ring alone (``TBT:...``, ``<bpm>:signal:tbt:X`` / ``Y``),
     :mod:`dt4acc.core.bl.turn_by_turn`
 
     Not part of :func:`initialise_pvs`: the injection twin uses those and
     serves the BPMs' turn by turn data of its own hand over.
     """
-    return TurnByTurnPVs(RingTurnByTurn(backend, bpms), builder=builder)
+    return TurnByTurnPVs(RingTurnByTurn(backend, bpms), builder=builder, noise=noise)
 
 
 def initialise_pinhole_pvs(builder, view, backend: SimulatorBackend) -> RingEmittancePVs:
