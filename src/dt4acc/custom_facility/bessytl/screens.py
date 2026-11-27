@@ -23,8 +23,8 @@ misses.
 Todo:
   * dispersion: the energy spread adds ``(D * sigma_delta)^2`` to sigma^2;
     the line's optics give no dispersion yet
-  * a screen in the beam stops it: the twin's screens are transparent, the
-    beam carries on to the next monitors and the ring
+  * a screen that observes is transparent; at the machine it scatters the
+    beam a little (the beam size after it grows): not modelled
 """
 import numpy as np
 

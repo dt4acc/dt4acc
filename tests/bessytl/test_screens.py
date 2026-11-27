@@ -11,7 +11,10 @@ from softioc import builder as _softioc_builder  # noqa: F401
 
 from dt4acc.custom_epics.ioc.pv_setup import initialize_orbit_pvs, initialize_twiss_pvs
 from dt4acc.custom_facility.bessytl.screens import ScreenGeometry, beam_size, screen_image
-from dt4acc.custom_facility.bessytl.view import TRACK, TWISS, TransferLineView, initialize_monitor_pvs
+from dt4acc.custom_facility.bessytl.view import (
+    TRACK, TWISS, ScreenMode, TransferLineView, initialize_artificial_screen_pvs, initialize_monitor_pvs,
+    initialize_screen_mode_pvs,
+)
 from dt4acc_lib.model.utils.command import ReadCommand
 
 from tests.recording_builder import RecordingBuilder
@@ -150,3 +153,135 @@ def test_failed_calculation_dark_image():
     view.fire()
     assert not image(view, "FOMZ1T").any()
     assert math.isnan(rec(view, "FOMZ1T", "x"))
+
+
+# --- a screen's mode (#76): out, observe, stop
+MODE_MONITORS = ["FOMZ1T", "BPMZ1T", "FOMZ2T", "BPMZ2T"]
+
+
+def mode_view(single_pass=False):
+    builder = RecordingBuilder()
+    view = TransferLineView(monitors=MODE_MONITORS, single_pass=single_pass, emittance={"x": 1e-7, "y": 1e-8},
+                            screen=GEOMETRY, elements=MODE_MONITORS)
+    view.update_process_variables({
+        **initialize_monitor_pvs(MODE_MONITORS, builder=builder, geometry=GEOMETRY),
+        **initialize_screen_mode_pvs(view, builder=builder),
+        **initialize_artificial_screen_pvs(view, builder=builder, geometry=GEOMETRY),
+        **initialize_orbit_pvs(builder, n_elements=len(MODE_MONITORS)),
+        **initialize_twiss_pvs(builder, n_elements=len(MODE_MONITORS)),
+    })
+    track = [SimpleNamespace(x=1e-3, y=0.0, fam_name=n, uid=f"{n}:0") for n in MODE_MONITORS]
+    view.update_twiss(TWISS, SimpleNamespace(readings=[SimpleNamespace(payload=SimpleNamespace(twiss=[
+        SimpleNamespace(fam_name=n, uid=f"{n}:0", x=SimpleNamespace(beta=10.0, alpha=0.0, nu=0.0),
+                        y=SimpleNamespace(beta=4.0, alpha=0.0, nu=0.0)) for n in MODE_MONITORS
+    ]))]))
+    view.update_track(TRACK, SimpleNamespace(readings=[SimpleNamespace(payload=SimpleNamespace(track=track))]))
+    return view, builder
+
+
+def sees_beam(view, name):
+    return math.isfinite(rec(view, name, "x"))
+
+
+def test_observe_by_default_the_beam_passes():
+    view, builder = mode_view()
+    assert builder.records["FOMZ1T:mode"].value == ScreenMode.OBSERVE
+    assert all(sees_beam(view, m) for m in MODE_MONITORS)
+    assert image(view, "FOMZ1T").any() and not view.beam_stopped()
+
+
+def test_out_no_image_the_beam_passes():
+    view, _ = mode_view()
+    view.set_screen_mode("FOMZ1T", ScreenMode.OUT)
+    assert not image(view, "FOMZ1T").any() and math.isnan(rec(view, "FOMZ1T", "sigma_x"))
+    assert all(sees_beam(view, m) for m in MODE_MONITORS[1:]), "acts at once, the beam passes"
+    assert not view.beam_stopped()
+
+
+def test_stop_the_monitors_after_it_see_no_beam():
+    view, _ = mode_view()
+    view.set_screen_mode("FOMZ1T", ScreenMode.STOP)
+    assert sees_beam(view, "FOMZ1T") and image(view, "FOMZ1T").any(), "the screen itself sees the beam"
+    for name in MODE_MONITORS[1:]:
+        assert not sees_beam(view, name), name
+    assert not image(view, "FOMZ2T").any()
+    assert view.beam_stopped()
+    # the model is not changed: the beam stops, the trajectory is the same
+    assert math.isfinite(rec(view, "beam", "x")[-1])
+    view.set_screen_mode("FOMZ1T", ScreenMode.OBSERVE)
+    assert all(sees_beam(view, m) for m in MODE_MONITORS)
+
+
+def test_the_mode_pv_sets_it():
+    made = {}
+
+    class Builder:
+        def mbbOut(self, name, *states, **kwargs):
+            made[name] = (states, kwargs)
+
+    view = TransferLineView(monitors=MODE_MONITORS, single_pass=True)
+    initialize_screen_mode_pvs(view, builder=Builder())
+    assert set(made) == {"FOMZ1T:mode", "FOMZ2T:mode"}
+    states, kwargs = made["FOMZ2T:mode"]
+    assert states == ("Out", "Observe", "Stop")
+    kwargs["on_update"](2)
+    assert view.screen_mode["FOMZ2T"] == ScreenMode.STOP and view.beam_stopped()
+    with pytest.raises(ValueError):
+        view.set_screen_mode("BPMZ1T", ScreenMode.STOP)
+
+
+def test_single_pass_a_mode_acts_at_the_next_shot():
+    view, _ = mode_view(single_pass=True)
+    assert view.fire()
+    view.set_screen_mode("FOMZ1T", ScreenMode.STOP)
+    assert sees_beam(view, "BPMZ2T"), "no shot yet: the last one"
+    assert view.fire()
+    assert not sees_beam(view, "BPMZ2T")
+
+
+
+# --- the artificial screen (#76): a screen at any element of the line
+def test_artificial_screen_nowhere_and_out_at_start():
+    view, builder = mode_view()
+    assert builder.records["screen:mode"].value == ScreenMode.OUT and builder.records["screen:element"].value == ""
+    assert math.isnan(rec(view, "screen", "x")) and not image(view, "screen").any()
+    assert all(sees_beam(view, m) for m in MODE_MONITORS)
+
+
+def test_artificial_screen_observes_at_an_element():
+    view, _ = mode_view()
+    view.set_artificial_screen("BPMZ1T")
+    assert math.isnan(rec(view, "screen", "x")), "still out"
+    view.set_artificial_screen_mode(ScreenMode.OBSERVE)
+    assert rec(view, "screen", "x") == pytest.approx(1.0)
+    assert rec(view, "screen", "sigma_x") == pytest.approx(1.0), "sqrt(1e-7 m rad * 10 m) = 1 mm"
+    assert image(view, "screen").sum() == pytest.approx(1.0, abs=1e-3)
+    assert all(sees_beam(view, m) for m in MODE_MONITORS) and not view.beam_stopped()
+
+
+def test_artificial_screen_stops_the_beam():
+    view, _ = mode_view()
+    view.set_artificial_screen("BPMZ1T")
+    view.set_artificial_screen_mode(ScreenMode.STOP)
+    assert sees_beam(view, "FOMZ1T") and sees_beam(view, "BPMZ1T"), "before it and at it"
+    assert not sees_beam(view, "FOMZ2T") and not sees_beam(view, "BPMZ2T"), "after it"
+    assert view.beam_stopped()
+    view.set_artificial_screen(None)
+    assert all(sees_beam(view, m) for m in MODE_MONITORS) and not view.beam_stopped(), "nowhere: no stop"
+
+
+def test_artificial_screen_unknown_element_rejected():
+    made = {}
+
+    class Builder(RecordingBuilder):
+        def stringOut(self, name, **kwargs):
+            made[name] = kwargs
+            return RecordingBuilder.__getattr__(self, "stringOut")(name, **kwargs)
+
+    view = TransferLineView(monitors=MODE_MONITORS, single_pass=True, elements=MODE_MONITORS)
+    initialize_artificial_screen_pvs(view, builder=Builder(), geometry=GEOMETRY)
+    validate = made["screen:element"]["validate"]
+    assert validate(None, "BPMZ2T") and validate(None, "") and not validate(None, "NOPE")
+    with pytest.raises(ValueError, match="NOPE"):
+        view.set_artificial_screen("NOPE")
+    assert view.artificial_element is None

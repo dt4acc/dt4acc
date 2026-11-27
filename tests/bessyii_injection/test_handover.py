@@ -114,3 +114,15 @@ def test_injected_beam_ends_at_a_stop(ring_lattice) -> None:
         assert np.isnan(x[1:]).all(), name
     h.stop_at = None
     np.testing.assert_array_equal(asyncio.run(h.compute()).x(), free.x())
+
+
+def test_a_line_screen_that_stops_the_beam_injects_nothing(ring_lattice) -> None:
+    h, _ = handover(ring_lattice)
+    free = asyncio.run(h.compute())
+    h.line_blocked = lambda: True
+    blocked = asyncio.run(h.compute())
+    assert np.isnan(blocked.x()).all() and np.isnan(blocked.y()).all()
+    assert np.isnan(blocked.line_exit.as_array()).all() and np.isnan(blocked.injected.as_array()).all()
+    assert blocked.survived().sum() == 0
+    h.line_blocked = lambda: False
+    np.testing.assert_array_equal(asyncio.run(h.compute()).x(), free.x())

@@ -152,6 +152,22 @@ A change of these PVs acts at once: the latest readings are published again. Aft
 reading gets new noise when the twin recalculates (a changed setting), not on its own as a
 real BPM does. The default sizes are placeholders, not the BPMs' real resolution.
 
+To see that it works, read one BPM with the noise off, on and off again:
+
+```bash
+caget BT:BPMZ1D1R:signal:sa:X       # noise off: the model, 0.017 mm at start
+caput BT:noise:bpm:sa:sigma 0.05
+caput BT:noise:bpm:sa:enable 1
+caget BT:BPMZ1D1R:signal:sa:X       # now off 0.017 by about 0.05 mm (random)
+caput BT:noise:bpm:sa:sigma 0.06    # each change draws new noise: another value
+caget BT:BPMZ1D1R:signal:sa:X
+caput BT:noise:bpm:sa:enable 0
+caget BT:BPMZ1D1R:signal:sa:X       # 0.017 again
+```
+
+`BT:beam:orbit:x` does not change meanwhile: the model stays exact. Turn by turn the same
+way, with `noise:bpm:tbt:*` and `caget -# 5 BT:BPMZ1D1R:signal:tbt:X` (section 5).
+
 `DT4ACC_SEED=<number>` (a whole number) at start: all random numbers of the twin come from one
 generator, seeded with it, so a run draws the same sequence of numbers. Which reading gets
 which number can still change from run to run: the closed orbit and the turn by turn data
@@ -236,6 +252,21 @@ caget -# 5 BT:BPMZ1D1R:signal:tbt:X # first 5 turns [mm]
 
 1024 turns take about 0.2 s. With an offset of 2 mm instead of 1 mm, the first three
 turns at `BPMZ1D1R` go from -0.763, 0.195, 0.848 to -1.433, 0.402, 1.745 mm.
+
+### End the beam at an element
+
+Write an element's name to `TBT:stop_at` and the beam ends there: the BPMs up to that
+element still see it in turn 1, the BPMs after it and all later turns show NaN. Empty: no
+stop. A name the lattice does not have is refused (the PV keeps its old value).
+
+```bash
+caput BT:TBT:stop_at Q3M1D1R        # the beam ends at Q3M1D1R
+caget -# 3 BT:BPMZ1D1R:signal:tbt:X # a BPM before it: turn 1 only, then NaN
+caput BT:TBT:stop_at ""             # no stop again
+```
+
+One element at a time. In the injection twin the same is `INJ:stop_at`, used at the next
+shot.
 
 ### Injection twin
 
@@ -403,7 +434,39 @@ dt4acc_bessyii_injection_mockup --shots 10 --rate 1
 | `INJ:tbt:x` / `y` / `names` | all BPMs: turn 1, then turn 2, ... [m] |
 | `<bpm>:signal:tbt:X` / `Y` | one BPM, turn after turn [mm] |
 | `INJ:survived` | particles left after each turn (1 or 0) |
+| `INJ:stop_at` | the ring element the injected beam ends at (section 5), empty: none |
 | `BPMZ1T:signal:sa:X`, `FOMZ3T:x`, `FOMZ3T:image` | line BPM [mm], screen centre [mm] and image |
+
+### Screens: out, observe or stop the beam
+
+The line's fluorescent screens (`FOMZ1T` ... `FOMZ8T`) each have a mode, `<screen>:mode`:
+
+| mode | the screen | the beam |
+|---|---|---|
+| `Observe` (default) | shows the beam: `x`, `y`, `sigma:x`, `sigma:y`, `image` | passes |
+| `Out` | retracted: dark image, NaN | passes |
+| `Stop` | shows the beam | ends there: the BPMs and screens after it show NaN, nothing reaches the ring |
+
+```bash
+caput BT:FOMZ3T:mode Stop           # the beam ends at FOMZ3T
+caput BT:INJ:trigger 1              # shot: FOMZ3T shows the beam, BPMZ4T ... and the ring NaN
+caput BT:FOMZ3T:mode Observe        # back to normal (acts at the next shot)
+```
+
+**A screen anywhere: the artificial screen.** `TL:screen:element` puts a screen at any
+element of the line (empty: nowhere). It works as a real one, with `TL:screen:mode` (`Out`
+at the start, `Observe`, `Stop`) and the same readings under `TL:screen:...`. A name the
+line does not have is refused.
+
+```bash
+caput BT:TL:screen:element Q4MT     # a screen at Q4MT
+caput BT:TL:screen:mode Observe
+caput BT:INJ:trigger 1
+caget BT:TL:screen:x BT:TL:screen:sigma:x   # beam centre and size there [mm]
+```
+
+In the injection twin the modes act at the next shot, as every setting. The transfer line
+twin on its own (`dt4acc_bessytl`) shows a change at once, without a trigger.
 
 ### Watch it
 
@@ -421,14 +484,15 @@ With `live_plot.py` and `demo.py`, section 4. What `demo.py` gives:
 
 Geometry and entering beam are placeholders, not measured. The kickers `KIK1D1R` ...
 `KIK4D1R` do not fire, there is no injection bump. One particle, no bunch, no
-apertures. A shot does not change the stored beam or its current.
+apertures. A shot does not change the stored beam or its current. A screen that observes does not
+scatter the beam (at the machine the beam grows a little behind it).
 
 ## 8. Test the twin thoroughly
 
-1. Without EPICS, from a clone (91 tests, under a minute):
+1. Without EPICS, from a clone (under a minute):
 
    ```bash
-   python -m pytest tests/bessyii tests/bessytl tests/bessyii_injection
+   python -m pytest tests/bessyii tests/bessytl tests/bessyii_injection tests/test_noise.py
    ```
 
 2. Against running twins, compared with plain pyAT (must end with `0 failure(s)`):
@@ -444,6 +508,7 @@ apertures. A shot does not change the stored beam or its current.
 
    - [ ] ring twin up: `Q1PDR:set` 218.458, tunes 17.8481 and 6.7268
    - [ ] the four moves of section 3, each put back
+   - [ ] BPM noise (section 3): on, `BPMZ1D1R:signal:sa:X` moves away from 0.017; off, 0.017 again
    - [ ] `TBT:n_turns 1024`: `TBT:count` goes up, 1024 values
    - [ ] wavelength shifters loaded (1255 elements), back with `""` (1137)
    - [ ] a wrong file name is refused, the lattice stays
@@ -468,7 +533,8 @@ apertures. A shot does not change the stored beam or its current.
 | `MDIZ3T5G:current` is 0 | the beam current is not simulated yet (issue #33) |
 | `CAV*:freq` does not follow `MCLKHX251C:freq` | known; it is updated at a lattice load only |
 
-Supply limits are not enforced (issue #80), and there is no noise on the BPMs (#82).
+Supply limits are not enforced (issue #80). The BPMs read the model exactly unless their
+noise is switched on (section 3, `noise:bpm:*`).
 
 ## 10. Where to read more
 

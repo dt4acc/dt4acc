@@ -16,8 +16,9 @@ first is the beam entering the second.
   read at the ring's beam position monitors
 """
 import logging
+import math
 from dataclasses import dataclass
-from typing import List, Optional, Sequence
+from typing import Callable, List, Optional, Sequence
 
 import numpy as np
 
@@ -33,6 +34,11 @@ INJECTION_ELEMENT = "MSEPEXIT"
 
 def no_offset() -> ParticleState:
     return ParticleState.from_sequence([0.0] * ParticleState.n_elements())
+
+
+def no_beam() -> ParticleState:
+    """no beam: every coordinate NaN"""
+    return ParticleState.from_sequence([math.nan] * ParticleState.n_elements())
 
 
 def to_ring(line_state: ParticleState, geometry: ParticleState) -> ParticleState:
@@ -79,7 +85,10 @@ class InjectionHandover:
         monitors: Sequence[str],
         geometry: ParticleState = None,
         n_turns: int = 2,
+        line_blocked: Callable[[], bool] = lambda: False,
     ):
+        """``line_blocked``: true when the beam does not leave the line (a
+        screen stops it): a shot then injects nothing"""
         assert not line.acc.is_ring, "the transfer line backend needs to work as a line (twiss_in)"
         assert ring.acc.is_ring
         self.line = line
@@ -87,6 +96,7 @@ class InjectionHandover:
         self.monitors = list(monitors)
         self.geometry = geometry or no_offset()
         self.n_turns = n_turns
+        self.line_blocked = line_blocked
         #: ring element the injected beam ends at; None: no stop
         self.stop_at: Optional[str] = None
 
@@ -102,13 +112,17 @@ class InjectionHandover:
     async def compute(self) -> InjectionResult:
         exit_state = self.line_exit()
         injected = to_ring(exit_state, self.geometry)
+        blocked = self.line_blocked()
         for prop, value in (
             ("p0", [injected]),
             ("n_turns", self.n_turns),
             ("data_needed_at", self.monitors),
             ("start_at", INJECTION_ELEMENT),
-            ("stop_at", self.stop_at),
+            # blocked: the beam ends where it would enter the ring, no BPM sees it
+            ("stop_at", INJECTION_ELEMENT if blocked else self.stop_at),
         ):
             await self.ring.set("turn_by_turn_start", prop, value)
         turns = await self.ring.read("turn_by_turn", "pos")
+        if blocked:
+            exit_state = injected = no_beam()
         return InjectionResult(line_exit=exit_state, injected=injected, monitors=self.monitors, turns=turns)

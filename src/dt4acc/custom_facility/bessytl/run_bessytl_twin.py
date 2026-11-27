@@ -50,6 +50,7 @@ from dt4acc.custom_facility.bessytl.view import (
     TransferLineView,
     initialize_model_pvs,
     initialize_monitor_pvs,
+    initialize_screen_mode_pvs,
     model_device,
 )
 from dt4acc_lib.bl.command_rewritter import CommandRewriter
@@ -94,7 +95,8 @@ def assemble(prefix: str, *, orbit_server: bool = True) -> TransferLineTwin:
                              monitor_prefixes=ORBIT_MONITOR_PREFIXES) if orbit_server else None
     monitors = monitor_names(line)
     noise = BpmNoise()
-    view = TransferLineView(monitors=monitors, orbit_server=server, bpm_noise=noise.sa)
+    view = TransferLineView(monitors=monitors, orbit_server=server, bpm_noise=noise.sa,
+                            elements=[e.FamName for e in line])
     controller = Controller(
         name="epics-bessytl-ctrller",
         mexec=mexec,
@@ -136,6 +138,7 @@ async def initialise_pvs(builder, prefix: str, twin: TransferLineTwin) -> None:
     twin.view.update_process_variables({
         **await initialize_power_converter_pvs(builder, controller=twin.controller),
         **initialize_monitor_pvs(twin.monitors, builder=builder),
+        **initialize_screen_mode_pvs(twin.view, builder=builder),
     })
     # a line: no turn by turn, the trajectory is the BPMs' slow acquisition
     # (under the prefix, not under TL: as the ring's and the MLS's noise PVs)

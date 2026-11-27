@@ -33,8 +33,8 @@ commits (see *Pull requests in review*). `lib` is dt4acc-lib.
 | 1u | BESSY II: undulators (gap, phase) and their effect on the beam | request for BESSY II | open | | #86 |
 | 2 | Turn by turn data: turns, start vector, start element, where to output | PDF | done | lib#27 `fe31346`, lib#33 `29bd38d` (start_at) | |
 | 2a | track an ensemble of particles; BPM centre of mass and sum (particles survived) | minutes | done | lib#27 `fe31346` (survived), BPM `tbt_x` / `tbt_y` / `tbt_sum` (view) | |
-| 2b | arbitrary stops for the beam | minutes | open | | #75 |
-| 2c | fluorescent screens: stop the beam or observe | minutes | open | todo in dt4acc#71 `466ea37` | #76 |
+| 2b | arbitrary stops for the beam | minutes | done (a single stop, `stop_at`) | dt4acc#109, lib#37 | #75 |
+| 2c | fluorescent screens: stop the beam or observe | minutes | in progress (BESSY II transfer line: observe, out, stop); open: losses behind a stopping screen (BLMs, #87), artificial screens, other facilities | dt4acc#103 (observe), dt4acc#112 (out / observe / stop); todo in dt4acc#71 `466ea37` | #76 |
 | 2d | fault injection for turn by turn data | minutes | needs a user story | | #84 |
 | 2e | kickers (injection, extraction) in turn by turn | minutes | open | | #77 |
 | 2f | beam loss monitors: where and when particles are lost | review of dt4acc#71 | partial (in review) | lib#35 `00180b6`: `ParticleLosses` (pyAT's loss map), `compute_track(..., losses=True)`, `BeamSurvival.losses`; BLM PVs: todo in dt4acc#71 `df18a75` (`view.update_beam_survival`) | #87 |
