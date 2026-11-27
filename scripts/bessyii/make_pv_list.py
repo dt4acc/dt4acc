@@ -3,8 +3,9 @@ from a PV dump of a running twin and the device database.
 
 Groups: power supplies and magnets, each sub-grouped by magnet type (from
 ``accelerator_setup.json``: a supply has the type of the magnets it drives;
-steerers split by plane), then the virtual devices (tune, orbit, BPMs, optics,
-survey, RF, beam). Per PV: a short description, what a write does, the
+steerers split by plane), the ring BPMs, the virtual devices (tune, orbit, BPMs,
+optics, survey, RF, beam, pinhole cameras, simulation, noise), then what only the
+ring twin alone serves: turn by turn and the lattice loaded at run time. Per PV: a short description, what a write does, the
 protocol (CA and PVA for the soft IOC's records, PVA only for the twin's p4p
 server; measured: pvlist per server and caget) and whether the PV exists on
 the real machine. PV names are given without the twin's prefix
@@ -100,6 +101,26 @@ VIRTUAL = [
         ("beam:rev_freq", "revolution frequency (kHz)", RO, NO),
         ("beam:machine:info:n_rf_buckets", "number of RF buckets (harmonic number)", RO, NO),
     ]),
+    ("Pinhole cameras", [
+        ("PINH3FD2L:rdCenterX", "horizontal beam centre (mm), at the entrance of BM2D2R (its source point PINH3 not in the lattice yet)", RO, SIMILAR),
+        ("PINH3FD2L:rdSigmaX", "horizontal beam size (mm)", RO, SIMILAR),
+        ("PINH3FD2L:rdCenterY", "vertical beam centre (mm), at the entrance of BM2D2R (its source point PINH3 not in the lattice yet)", RO, SIMILAR),
+        ("PINH3FD2L:rdSigmaY", "vertical beam size (mm)", RO, SIMILAR),
+        ("PINH3FD2L:image", "image of the Gaussian beam spot, rows from the top", RO, NO),
+        ("PINH3FD2L:image:width", "pixels per row", RO, NO),
+        ("PINH3FD2L:image:height", "rows", RO, NO),
+        ("PINH3FD2L:image:pixel", "pixel size (mm); placeholder", RO, NO),
+        ("PINH9FD5L:rdCenterX", "horizontal beam centre (mm), at the entrance of BM2D5R (its source point PINH9 not in the lattice yet)", RO, SIMILAR),
+        ("PINH9FD5L:rdSigmaX", "horizontal beam size (mm)", RO, SIMILAR),
+        ("PINH9FD5L:rdCenterY", "vertical beam centre (mm), at the entrance of BM2D5R (its source point PINH9 not in the lattice yet)", RO, SIMILAR),
+        ("PINH9FD5L:rdSigmaY", "vertical beam size (mm)", RO, SIMILAR),
+        ("PINH9FD5L:image", "image of the Gaussian beam spot, rows from the top", RO, NO),
+        ("PINH9FD5L:image:width", "pixels per row", RO, NO),
+        ("PINH9FD5L:image:height", "rows", RO, NO),
+        ("PINH9FD5L:image:pixel", "pixel size (mm); placeholder", RO, NO),
+        ("beam:emittance:x", "horizontal emittance of the stored beam (m rad), calculated from the lattice; the pinhole cameras' size", RO, NO),
+        ("beam:emittance:y", "vertical emittance of the stored beam (m rad), calculated from the lattice: from coupling (skew quadrupoles), else about 0", RO, NO),
+    ]),
     ("Simulation", [
         ("simulator_ring:reset", "a write clears the stored results and recalculates", ACTS, NO),
         ("simulator_ring:reinit", "a write puts the lattice back to its start values, then recalculates", ACTS, NO),
@@ -110,6 +131,52 @@ VIRTUAL = [
         ("noise:bpm:tbt:enable", "noise on the BPMs' turn by turn data (<bpm>:signal:tbt:X / Y): On / Off (default)", ACTS, NO),
         ("noise:bpm:tbt:sigma", "its standard deviation (mm), Gaussian; placeholder 0.01", ACTS, NO),
     ]),
+]
+
+BPM_FIELDS = [("signal:sa:X", "horizontal position (mm)", RO, SIMILAR),
+              ("signal:sa:Y", "vertical position (mm)", RO, SIMILAR)]
+BPMS_INTRO = ["Position at each ring BPM, named as the BPM system: the closed orbit (slow acquisition)."]
+
+# the ring twin alone: turn by turn (dt4acc.custom_epics.ioc.turn_by_turn)
+TBT_INTRO = [
+    "A beam started at the beginning of the ring lattice, at the closed orbit plus an offset (e.g. a",
+    "kicked beam), tracked for some turns and read at the ring's BPMs. Recomputed when a setting",
+    "changes and after each new closed orbit. Only the ring twin alone serves the `TBT:` PVs; the",
+    "injection twin serves the BPMs' turn by turn PVs of its hand over instead (beam from the",
+    "transfer line). The computation is shared by the twins, EPICS and Tango:",
+    "`dt4acc.core.bl.turn_by_turn`; the PVs: `dt4acc.custom_epics.ioc.turn_by_turn`.",
+]
+_TBT_COORDS = [("x", "horizontal (m)", "horizontal (m)"),
+               ("px", "horizontal angle (rad)", "horizontal angle (rad)"),
+               ("y", "vertical (m)", "vertical (m)"),
+               ("py", "vertical angle (rad)", "vertical angle (rad)"),
+               ("delta", "momentum deviation", "momentum deviation"),
+               ("ct", "path length (m)", "path length (m)")]
+TBT_SETTINGS = (
+    [(f"TBT:offset:{c}", f"start offset from the closed orbit, {d}", ACTS, NO) for c, d, _ in _TBT_COORDS]
+    + [("TBT:n_turns", "turns tracked (1 ... 65536, as the BPM electronics)", ACTS, NO),
+       ("TBT:stop_at", "element the beam ends at (one name; empty: none)", ACTS, NO)]
+    + [(f"TBT:start:{c}", ("start state tracked: closed orbit + offset, " if c == "x" else "start state tracked, ") + d,
+        RO, NO) for c, _, d in _TBT_COORDS]
+    + [("TBT:count", "computations so far", RO, NO)]
+)
+TBT_BPM_FIELDS = [("signal:tbt:X", "horizontal position, turn after turn (mm)", RO, NO),
+                  ("signal:tbt:Y", "vertical position, turn after turn (mm)", RO, NO),
+                  ("signal:tbt:survived", "particles still there, turn after turn", RO, NO)]
+
+# the ring twin alone: another lattice loaded at run time (#81)
+LATTICE_INTRO = [
+    "A lattice with small differences replaces the simulated one, e.g. the ring with its wavelength",
+    "shifters inserted (`bessy2_storage_ring_wls.json`). It must hold every magnet, cavity and BPM of",
+    "the twin, in the same order; other elements may differ, otherwise the load is refused and the",
+    "lattice kept. Loaded from the lattice directory (`DT4ACC_LATTICE_DIR`, default the directory of",
+    "the bundled lattice): a file name only. After a load the supplies', magnets' and RF PVs show",
+    "the new lattice's values (nothing is written back) and the model is recomputed; a client",
+    "restores its own settings itself. Only the ring twin alone serves these PVs.",
+]
+LATTICE = [
+    ("simulator_ring:lattice", "a write loads that lattice file of the lattice directory (empty: the start lattice)", ACTS, NO),
+    ("simulator_ring:lattice:message", "result of the last lattice load: `loaded ...` or `refused: ...`", RO, NO),
 ]
 
 HEADER = """\
@@ -209,8 +276,9 @@ def main(a):
         fields_of[dev].add(f)
     seen = set()
 
-    def group(title, fields, devices, placeholder):
-        """Field table (one protocol per field over all devices) and the device names."""
+    def group(title, fields, devices, placeholder, names=None):
+        """Field table (one protocol per field over all devices) and the device names
+        (``names``: their lines; default by family)."""
         out = [f"#### {title} ({len(devices)})", "", *TABLE_HEAD]
         for f, desc, write, machine in fields:
             pvs = [f"{d}:{f}" for d in devices]
@@ -219,7 +287,18 @@ def main(a):
             (p,) = {proto[pv] for pv in pvs}
             seen.update(pvs)
             out.append(row(f"{placeholder}:{f}", desc, write, p, machine))
-        return out + ["", "```text", *device_lines(devices), "```", ""]
+        return out + ["", "```text", *(device_lines(devices) if names is None else names), "```", ""]
+
+    def table(title, pvdescs):
+        """the PVs of ``pvdescs`` the dump has, as one table (nothing if none)"""
+        rows = [r for r in pvdescs if r[0] in proto]
+        seen.update(r[0] for r in rows)
+        return [f"#### {title}", "", *TABLE_HEAD, *[row(pv, d, w, proto[pv], m) for pv, d, w, m in rows], ""] \
+            if rows else []
+
+    def bpms_with(field):
+        """the BPMs (device names) with ``<bpm>:<field>``, in the order of their names"""
+        return sorted(pv[: -len(field) - 1] for pv in proto if pv.endswith(f":{field}"))
 
     lines = [HEADER.format(n=len(proto)), "## Power supplies", "",
              "A supply drives one or more magnets (the Liaison Manager's tables); grouped by",
@@ -239,14 +318,26 @@ def main(a):
         lines += group(title, MAGNET_FIELDS, sorted(d for d, t in magnets.items()
                                                     if t == key and d in fields_of), "<magnet>")
 
+    bpms = bpms_with(BPM_FIELDS[0][0])
+    if bpms:
+        lines += ["## BPMs", "", *BPMS_INTRO, "",
+                  *group("Ring BPMs", BPM_FIELDS, bpms, "<bpm>", [" ".join(bpms)])]
+
     lines += ["## Virtual devices", "",
               "Computed by the twin from the lattice; some mirror machine PVs (see *machine*).", ""]
     for title, pvdescs in VIRTUAL:
-        rows = [r for r in pvdescs if r[0] in proto]
-        if rows:
-            lines += [f"#### {title}", "", *TABLE_HEAD,
-                      *[row(pv, d, w, proto[pv], m) for pv, d, w, m in rows], ""]
-            seen.update(r[0] for r in rows)
+        lines += table(title, pvdescs)
+
+    tbt_bpms = bpms_with(TBT_BPM_FIELDS[0][0])
+    settings = table("Settings and results", TBT_SETTINGS)
+    if settings or tbt_bpms:
+        lines += ["## Turn by turn (ring twin alone)", "", *TBT_INTRO, "", *settings]
+        if tbt_bpms:
+            lines += group("Ring BPMs, turn by turn", TBT_BPM_FIELDS, tbt_bpms, "<bpm>", [" ".join(tbt_bpms)])
+
+    lattice = table("Lattice", LATTICE)
+    if lattice:
+        lines += ["## Lattice at run time (ring twin alone)", "", *LATTICE_INTRO, "", *lattice]
 
     rest = sorted(pv for pv in proto if pv not in seen)
     if rest:
