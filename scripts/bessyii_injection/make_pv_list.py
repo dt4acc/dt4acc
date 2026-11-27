@@ -174,7 +174,7 @@ def main(a):
                            n_inj=n_inj, tl_missing_note=note)]
 
     lines += ["## Transfer line model (`TL:`)", "",
-              "The transfer line twin's model PVs (trajectory, optics, emittance, survey, BPM structures), as",
+              "The transfer line twin's model PVs (trajectory, optics, emittance, artificial screen, survey, BPM structures), as",
               "described in [`../bessytl/pv_list.md`](../bessytl/pv_list.md), up to the septum exit.", "",
               "```text", *sorted(tl_model), "```", ""]
 
