@@ -83,7 +83,7 @@ PVs, prefixed with `DT4ACC_PREFIX` (`<P>`, default: the user name):
 | `<P>:INJ:stop_at` | ring element the injected beam ends at, writable: `caput <P>:INJ:stop_at BPMZ5D1R`; empty: none |
 | `<P>:INJ:line_exit:{x,xp,y,yp,delta,ct}` | centroid leaving the line, line frame |
 | `<P>:INJ:injected:{x,xp,y,yp,delta,ct}` | the injected beam, ring frame, at `MSEPEXIT` |
-| `<P>:INJ:tbt:x`, `<P>:INJ:tbt:y`, `<P>:INJ:tbt:names` | position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... [m] |
+| `<P>:INJ:tbt:x`, `<P>:INJ:tbt:y`, `<P>:INJ:tbt:names` | position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... [m]; with the BPMs' noise when `noise:bpm:tbt:enable` is on |
 | `<P>:<bpm>:signal:tbt:X`, `<P>:<bpm>:signal:tbt:Y` | one ring BPM, turn after turn [mm] |
 | `<P>:INJ:survived` | particles still there after each turn |
 | `<P>:INJ:count` | shots computed so far (the number of shots) |

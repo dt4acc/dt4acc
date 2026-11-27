@@ -5,6 +5,7 @@ from typing import Dict, Optional, Sequence
 import numpy as np
 from softioc import pythonSoftIoc
 
+from dt4acc.core.bl.noise import GaussianAdditiveNoise
 from dt4acc.core.interfaces.view_interface import ViewInterface
 from dt4acc.core.utils.logger import get_logger
 from dt4acc_lib.model.output.result import TranslatedReading, SingleReading
@@ -46,13 +47,42 @@ class View(ViewInterface):
     :class:`OrbitTwinServer` when one is registered.
     """
 
-    def __init__(self, *, orbit_server: Optional[OrbitTwinServer] = None, bpms: Sequence[str] = ()):
-        """``bpms``: their slow acquisition records (``bpm_pvs``) follow the track"""
+    def __init__(
+        self,
+        *,
+        orbit_server: Optional[OrbitTwinServer] = None,
+        bpms: Sequence[str] = (),
+        bpm_noise: Optional[GaussianAdditiveNoise] = None,
+    ):
+        """``bpms``: their slow acquisition records (``bpm_pvs``) follow the track;
+        ``bpm_noise`` [m]: on what the monitors measure of it (``BpmNoise.sa``)"""
         self.process_variables: Dict[ReadCommand, pythonSoftIoc.RecordWrapper] = dict()
         self.orbit_server = orbit_server
         self.bpms = set(bpms)
+        self.bpm_noise = bpm_noise
         # used for creating invalid data
         self.last_data_cache = dict()
+        #: views of single elements (e.g. pinhole cameras): get their share of each new orbit and optics
+        self.element_views = []
+        #: the latest orbit and optics as published (NaN after a failed calculation): {element name: value}
+        self._orbit_at: Dict[str, object] = {}
+        self._twiss_at: Dict[str, object] = {}
+
+    def add_element_views(self, views) -> None:
+        """``views``: each has ``elements`` (lattice element names) and
+        ``update(orbit, twiss)``, called with ``{name: position}`` and
+        ``{name: twiss}`` of its elements after each new orbit or optics
+        (positions with ``x``, ``y`` [m]; twiss with ``x`` / ``y`` ``.beta``,
+        ``.alpha``; NaN without a closed orbit)"""
+        self.element_views.extend(views)
+        self.update_element_views()
+
+    def update_element_views(self) -> None:
+        for view in self.element_views:
+            view.update(
+                {name: self._orbit_at[name] for name in view.elements if name in self._orbit_at},
+                {name: self._twiss_at[name] for name in view.elements if name in self._twiss_at},
+            )
 
     def update_process_variables(
         self, variables: Dict[ReadCommand, pythonSoftIoc.RecordWrapper]
@@ -142,7 +172,9 @@ class View(ViewInterface):
                     self.__class__.__name__
                 )
                 return
+            # copies of the positions too: the cached ones stay the last good data
             value = _copy(ref_value)
+            value.track = [_copy(pos) for pos in ref_value.track]
             for pos in value.track:
                 pos.x = pos.y = math.nan
         else:
@@ -181,6 +213,8 @@ class View(ViewInterface):
                 rw_found.set(True)
 
             self.update_monitors(value.track)
+            self._orbit_at = {pos.fam_name: pos for pos in value.track}
+            self.update_element_views()
         else:
             raise AssertionError(f"Don't know track property {var.property}")
 
@@ -191,6 +225,7 @@ class View(ViewInterface):
         A view whose monitors see the beam only when it passes (single pass,
         e.g. a transfer line fired on demand) overrides this.
         """
+        track = self._add_noise_if_active(track)
         self.update_bpms(track)
         # PVA NTTable
         if self.orbit_server is not None:
@@ -203,6 +238,28 @@ class View(ViewInterface):
                 )
             except Exception as exc:
                 logger.error("OrbitTwinServer.push failed: %s", exc)
+
+    def republish_monitors(self) -> None:
+        """What the monitors measure of the latest track again, e.g. after the
+        noise was switched on or off (nothing before the first track)"""
+        latest = self.last_data_cache.get(ReadCommand("track", "pos"))
+        if latest is not None:
+            self.update_monitors(latest.track)
+
+    def _add_noise_if_active(self, track):
+        """``track`` as the monitors measure it: with ``bpm_noise`` [m] (one
+        sample per position and plane, drawn at once for each plane), the
+        model's ``track`` itself without"""
+        if self.bpm_noise is None or not self.bpm_noise.active:
+            return track
+        xs = self.bpm_noise.apply([pos.x for pos in track])
+        ys = self.bpm_noise.apply([pos.y for pos in track])
+        noisy = []
+        for pos, x, y in zip(track, xs, ys):
+            pos = _copy(pos)
+            pos.x, pos.y = float(x), float(y)
+            noisy.append(pos)
+        return noisy
 
     def update_bpms(self, track) -> None:
         """``<bpm>:signal:sa:X`` / ``Y`` [mm] of the BPMs in the track"""
@@ -332,8 +389,11 @@ class View(ViewInterface):
                     self.__class__.__name__
                 )
                 return
+            # copies of the entries too: the cached ones stay the last good data
             value = _copy(ref_value)
+            value.twiss = [_copy(item) for item in ref_value.twiss]
             for item in value.twiss:
+                item.x, item.y = _copy(item.x), _copy(item.y)
                 for vals_plane in item.x, item.y:
                     vals_plane.beta = vals_plane.alpha = vals_plane.mu = math.nan
             del item, vals_plane
@@ -362,6 +422,9 @@ class View(ViewInterface):
         twiss_uids = [pos.uid for pos in value.twiss]
         assert_epics_string_lengths(twiss_uids, context="twiss uids")
         rw_names.set(twiss_uids)
+
+        self._twiss_at = {pos.fam_name: pos for pos in value.twiss}
+        self.update_element_views()
 
         pi2 = 2 * math.pi
 

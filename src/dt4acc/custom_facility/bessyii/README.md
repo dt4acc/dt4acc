@@ -130,6 +130,61 @@ What else to read:
 Magnets (`<magnet>:Cm:set`, `x:set`, `y:set`) exist only in the twin, for debugging.
 All PVs, and which exist on the machine: [pv_list.md](pv_list.md).
 
+### BPM readings with noise
+
+The BPMs read the model exactly. To make them read more like real BPMs, switch on noise:
+a random value (Gaussian) is added to each reading. The model PVs (`beam:orbit:*`) stay
+exact. Off at start.
+
+```bash
+caput BT:noise:bpm:sa:sigma 0.05    # size of the noise [mm]: here 50 um (default 0.001)
+caput BT:noise:bpm:sa:enable 1      # on: <bpm>:signal:sa:X / Y and ORBITCC:rdBpm
+caput BT:noise:bpm:tbt:enable 1     # on: turn by turn, <bpm>:signal:tbt:X / Y (default 0.01 mm)
+caput BT:noise:bpm:sa:enable 0      # off: exact again
+```
+
+| PV | what |
+|---|---|
+| `noise:bpm:sa:enable`, `noise:bpm:sa:sigma` | slow acquisition (closed orbit): on / off, size [mm] |
+| `noise:bpm:tbt:enable`, `noise:bpm:tbt:sigma` | turn by turn: on / off, size [mm] |
+
+A change of these PVs acts at once: the latest readings are published again. After that, a
+reading gets new noise when the twin recalculates (a changed setting), not on its own as a
+real BPM does. The default sizes are placeholders, not the BPMs' real resolution.
+
+`DT4ACC_SEED=<number>` (a whole number) at start: all random numbers of the twin come from one
+generator, seeded with it, so a run draws the same sequence of numbers. Which reading gets
+which number can still change from run to run: the closed orbit and the turn by turn data
+are computed side by side.
+The MLS, transfer line and injection twins have the same PVs (the line: `sa` only).
+
+### Pinhole cameras
+
+The two pinhole cameras, `PINH3FD2L` and `PINH9FD5L`, show the beam centre, the beam size
+and an image of the beam spot. They follow the closed orbit and the optics by themselves.
+
+```bash
+caget BT:PINH3FD2L:rdCenterX BT:PINH3FD2L:rdSigmaX   # centre and size [mm]
+caget BT:beam:emittance:x BT:beam:emittance:y        # the emittance they use [m rad]
+```
+
+| PV | what |
+|---|---|
+| `<camera>:rdCenterX` / `Y` | beam centre [mm] |
+| `<camera>:rdSigmaX` / `Y` | beam size [mm]: sqrt(emittance x beta) |
+| `<camera>:image` (`:width`, `:height`, `:pixel`) | image of the beam spot, row 0 at the top |
+| `beam:emittance:x` / `y` | emittance of the stored beam [m rad], calculated from the lattice (read only) |
+
+The emittance is calculated from the lattice after each change, as the orbit: x is about
+7.7 nm rad. y comes only from coupling: the twin's lattice has none until you set a skew
+quadrupole (`CQS...`), so y is about 0 and the vertical size about 0 too. On the machine
+errors couple the planes; the twin does not model them yet.
+
+Good to know: the cameras' source points are not in the lattice yet, so for now they show
+the beam at the **entrance** of their dipole (BM2D2R, BM2D5R), not at the source point
+inside it. The size has no energy spread part yet (no dispersion), so the horizontal size
+is too small. The pixels are placeholders. Without a closed orbit: NaN and a dark image.
+
 ## 4. Plot
 
 Run the scripts in `scripts/bessyii_injection` (from a clone), with the **injection**

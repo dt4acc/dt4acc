@@ -31,7 +31,7 @@ import asyncio
 import getpass
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib import resources
 from typing import List
 
@@ -40,13 +40,16 @@ from softioc import builder, softioc
 
 from dt4acc.config.data.querries import configure_data_file
 from dt4acc.core.bl.controller import Controller, read_and_dispatch
+from dt4acc.core.bl import random_numbers
+from dt4acc.core.bl.noise import BpmNoise
 from dt4acc.core.bl.translating_command_execution_engine import TranslatingCommandExecutionEngine
 from dt4acc.custom_epics.ioc.controller import dispatcher
+from dt4acc.custom_epics.ioc.noise_pvs import initialize_bpm_noise_pvs
 from dt4acc.custom_epics.ioc.orbit_pva import OrbitTwinServer
 from dt4acc.custom_epics.ioc.view import View
 from dt4acc.custom_facility.bessyii.liasion_translator_setup import load_managers
 from dt4acc.custom_facility.bessyii.provide_lattice import provide_backend_encapsulating_lattice
-from dt4acc.custom_facility.bessyii.run_bessyii_twin import initialise_pvs as ring_pvs
+from dt4acc.custom_facility.bessyii.run_bessyii_twin import initialise_pvs as ring_pvs, initialise_pinhole_pvs
 from dt4acc.custom_facility.bessyii_injection.handover import InjectionHandover
 from dt4acc.custom_facility.bessyii_injection.pvs import InjectionPVs
 from dt4acc.custom_epics.ioc.pv_setup import initialize_power_converter_pvs
@@ -103,6 +106,8 @@ class InjectionTwin:
     tl: Controller
     line_view: TransferLineView
     handover: InjectionHandover
+    #: on the BPMs' readings, ring and line (noise:bpm:...), off at start
+    noise: BpmNoise = field(default_factory=BpmNoise)
 
 
 def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
@@ -112,11 +117,12 @@ def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
     def orbit_server(p, **kwargs):
         return OrbitTwinServer(f"{p}:ORBITCC:rdBpm", f"{p}:ORBITCC:rdModel", **kwargs) if orbit_servers else None
 
+    noise = BpmNoise()
     # storage ring
     ring_backend = provide_backend_encapsulating_lattice()
     _, ring_lm, ring_ts, _ = load_managers()
     ring_bpms = [e.FamName for e in ring_backend.acc.acc if isinstance(e, at.Monitor) and e.FamName.startswith("BPMZ")]
-    ring_view = View(orbit_server=orbit_server(prefix), bpms=ring_bpms)
+    ring_view = View(orbit_server=orbit_server(prefix), bpms=ring_bpms, bpm_noise=noise.sa)
     ring = Controller(name="ring", mexec=engine(ring_backend, ring_lm, ring_ts), view=ring_view,
                       default_delayed_reads=DELAYED)
 
@@ -129,7 +135,7 @@ def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
     line_monitors = monitor_names(line)
     # the line carries beam only during a shot (InjectionPVs, INJ:trigger)
     line_view = TransferLineView(
-        monitors=line_monitors, single_pass=True, elements=[e.FamName for e in line],
+        monitors=line_monitors, single_pass=True, bpm_noise=noise.sa, elements=[e.FamName for e in line],
         orbit_server=orbit_server(model_device(prefix), monitor_prefixes=ORBIT_MONITOR_PREFIXES),
     )
     tl = Controller(name="transfer-line", mexec=engine(line_backend, line_lm, line_ts), view=line_view,
@@ -141,7 +147,7 @@ def assemble(prefix: str, *, orbit_servers: bool = True) -> InjectionTwin:
                                  line_blocked=line_view.beam_stopped)
     return InjectionTwin(ring_backend=ring_backend, ring=ring, ring_view=ring_view, line=line,
                          line_backend=line_backend, line_monitors=line_monitors, tl=tl, line_view=line_view,
-                         handover=handover)
+                         handover=handover, noise=noise)
 
 
 def line_shot(twin: InjectionTwin):
@@ -174,7 +180,14 @@ async def initialise_pvs(builder, prefix: str, twin: InjectionTwin) -> Injection
     # machine names: ring, hand over, transfer line devices
     builder.SetDeviceName(prefix)
     twin.ring_view.update_process_variables(await ring_pvs(builder=builder, controller=twin.ring, bpms=twin.handover.monitors))
-    injection = InjectionPVs(twin.handover, builder=builder, before_shot=line_shot(twin))
+    initialise_pinhole_pvs(builder, twin.ring_view, twin.ring_backend)
+    injection = InjectionPVs(twin.handover, builder=builder, before_shot=line_shot(twin), noise=twin.noise.tbt)
+    # one set for ring and line; turn by turn: acts at the next shot
+    def republish_sa():
+        twin.ring_view.republish_monitors()
+        twin.line_view.republish_monitors()
+
+    initialize_bpm_noise_pvs(twin.noise, builder=builder, on_change={"sa": republish_sa})
     # the line's supplies and magnets come from its own device database
     configure_data_file(resources.files("dt4acc").joinpath(*ACCELERATOR_SETUP))
     twin.line_view.update_process_variables({
@@ -193,6 +206,8 @@ async def initialise_pvs(builder, prefix: str, twin: InjectionTwin) -> Injection
 
 async def main():
     prefix = os.environ.get("DT4ACC_PREFIX", getpass.getuser())
+    # the twin's random numbers, made now: a bad DT4ACC_SEED stops the twin here
+    random_numbers.generator()
     twin = assemble(prefix)
     for view in (twin.ring_view, twin.line_view):
         view.orbit_server.start()

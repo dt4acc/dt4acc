@@ -105,6 +105,7 @@ injection twin, where the ring serves `beam:*` and `ORBITCC:*` without `TL:`.
 | `TL:beam:emittance:{x,y}` | emittance of the beam [m rad], writable: the screens' beam size (placeholder) |
 | `TL:survey:s` | position along the line [m] |
 | PVA `TL:ORBITCC:rdBpm`, `TL:ORBITCC:rdModel` | `rdBpm`: BPMZ* and striplines SLZ*, in lattice order (BPMZ1T, SLZ1T, SLZ2T, BPMZ2T ... BPMZ5T, SLZ3T), nm; as the ring twin's `ORBITCC:*` |
+| `noise:bpm:sa:enable`, `noise:bpm:sa:sigma` (no `TL:`) | noise on the BPMs' and striplines' readings (`signal:sa:X` / `Y`, `TL:ORBITCC:rdBpm`): on / off (default off), size [mm]; the model PVs stay exact |
 
 ### Screens
 

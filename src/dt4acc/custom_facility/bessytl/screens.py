@@ -26,55 +26,17 @@ Todo:
   * a screen that observes is transparent; at the machine it scatters the
     beam a little (the beam size after it grows): not modelled
 """
-import math
-from dataclasses import dataclass
-
 import numpy as np
-from scipy.special import erf
 
-
-@dataclass(frozen=True)
-class ScreenGeometry:
-    """The camera's view of the screen: pixels and their size"""
-    width: int = 100
-    height: int = 100
-    #: [mm]
-    pixel: float = 0.2
-
-    def edges(self, n: int) -> np.ndarray:
-        """pixel edges [mm] along an axis of ``n`` pixels, centred on 0"""
-        return (np.arange(n + 1) - n / 2.0) * self.pixel
-
+from dt4acc.core.bl.beam_spot import CameraGeometry as ScreenGeometry, beam_size, spot_image
 
 #: placeholder: the screens' cameras are not known yet (20 mm x 20 mm)
 SCREEN = ScreenGeometry()
 
 
-def beam_size(emittance: float, beta: float) -> float:
-    """sigma [m] of a beam of ``emittance`` [m rad] where the optics give ``beta`` [m]"""
-    return math.sqrt(emittance * beta)
-
-
-def _fractions(edges: np.ndarray, centre: float, sigma: float) -> np.ndarray:
-    """fraction of a Gaussian (``centre``, ``sigma`` [mm]) in each interval between ``edges``"""
-    if sigma > 0.0:
-        cdf = 0.5 * (1.0 + erf((edges - centre) / (math.sqrt(2.0) * sigma)))
-    else:
-        # all of it at the centre
-        cdf = (edges > centre).astype(float)
-    return np.diff(cdf)
-
-
 def screen_image(x: float, y: float, sigma_x: float, sigma_y: float, geometry: ScreenGeometry = SCREEN) -> np.ndarray:
-    """The image of the spot, ``geometry.height`` x ``geometry.width``
+    """The image of the spot (:func:`dt4acc.core.bl.beam_spot.spot_image`), all [mm]"""
+    return spot_image(x, y, sigma_x, sigma_y, geometry)
 
-    ``x``, ``y``: beam centre, ``sigma_x``, ``sigma_y``: beam size, all [mm].
-    No beam (a value is NaN, e.g. the calculation failed): a dark image.
-    """
-    shape = (geometry.height, geometry.width)
-    if not all(math.isfinite(v) for v in (x, y, sigma_x, sigma_y)):
-        return np.zeros(shape)
-    along_x = _fractions(geometry.edges(geometry.width), x, sigma_x)
-    # row 0 at the top: y decreasing along the rows
-    along_y = _fractions(geometry.edges(geometry.height), y, sigma_y)[::-1]
-    return np.outer(along_y, along_x)
+
+__all__ = ["SCREEN", "ScreenGeometry", "beam_size", "screen_image"]

@@ -51,6 +51,8 @@ Twin only:
 | `<P>:<bpm>:signal:tbt:X`, `<P>:<bpm>:signal:tbt:Y`, `<P>:<bpm>:signal:tbt:survived` | turn by turn position at the BPM [mm], particles still there, as the BESSY II ring twin |
 | `<P>:TBT:offset:{x,px,y,py,delta,ct}`, `<P>:TBT:n_turns` | turn by turn: start offset from the closed orbit (default 1 mm in x and y), turns (default 128, up to 65536); a write recomputes |
 | `<P>:TBT:start:*`, `TBT:count` | turn by turn: start state, computations |
+| `<P>:noise:bpm:sa:enable`, `<P>:noise:bpm:sa:sigma` | noise on the BPMs' readings (`signal:sa:X` / `Y`, `ORBITCCP:rdBpm`): on / off (default off), size [mm]; as the BESSY II ring twin |
+| `<P>:noise:bpm:tbt:enable`, `<P>:noise:bpm:tbt:sigma` | noise on the turn by turn readings (`signal:tbt:X` / `Y`): on / off (default off), size [mm] |
 
 ## Not yet
 

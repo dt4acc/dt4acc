@@ -32,6 +32,7 @@ from typing import Optional, Sequence
 import numpy as np
 from softioc import builder as softioc_builder
 
+from dt4acc.core.bl.noise import GaussianAdditiveNoise
 from dt4acc.core.bl.shared_event_loop import get_shared_event_loop
 from dt4acc.core.bl.turn_by_turn import COORDINATES, MAX_TURNS, UNITS, RingTurnByTurn, TurnByTurnResult
 from dt4acc.custom_epics.ioc.bpm_pvs import M2MM, TBT_FIELDS, TBT_SURVIVED_FIELD
@@ -43,8 +44,10 @@ logger = logging.getLogger("dt4acc")
 class TurnByTurnPVs:
     """Records of the ring's turn by turn data; recomputes whenever the settings or the lattice change"""
 
-    def __init__(self, tbt: RingTurnByTurn, builder=softioc_builder):
+    def __init__(self, tbt: RingTurnByTurn, builder=softioc_builder, noise: Optional[GaussianAdditiveNoise] = None):
+        """``noise`` [m]: on the BPMs' turn by turn readings (``BpmNoise.tbt``)"""
         self.tbt = tbt
+        self.noise = noise
         self._dirty = False
         self._running = False
         self.count = 0
@@ -100,12 +103,18 @@ class TurnByTurnPVs:
         finally:
             self._running = False
 
+    def _add_noise_if_active(self, values: np.ndarray) -> np.ndarray:
+        """``values`` [m] as the BPMs measure them"""
+        return values if self.noise is None else self.noise.apply(values)
+
     def publish(self, r: TurnByTurnResult):
         for name, value in zip(COORDINATES, r.start):
             self.rec[f"start:{name}"].set(value)
+        # all BPMs and turns at once, in m; mm only for the PVs
+        x, y = self._add_noise_if_active(r.x), self._add_noise_if_active(r.y)
         for k, bpm in enumerate(r.monitors):
-            self.rec[f"{bpm}:x"].set(r.x[:, k] * M2MM)
-            self.rec[f"{bpm}:y"].set(r.y[:, k] * M2MM)
+            self.rec[f"{bpm}:x"].set(x[:, k] * M2MM)
+            self.rec[f"{bpm}:y"].set(y[:, k] * M2MM)
             self.rec[f"{bpm}:survived"].set(r.survived[:, k])
         self.count += 1
         self.rec["count"].set(self.count)
