@@ -31,6 +31,7 @@ from softioc import builder, softioc
 
 from dt4acc.config.data.querries import configure_data_file
 from dt4acc.core.bl.controller import Controller, read_and_dispatch
+from dt4acc.core.bl import random_numbers
 from dt4acc.core.bl.noise import BpmNoise
 from dt4acc.core.bl.translating_command_execution_engine import TranslatingCommandExecutionEngine
 from dt4acc.custom_epics.ioc.controller import dispatcher
@@ -107,6 +108,8 @@ async def main():
     # the supplies and magnets the PVs are made for
     configure_data_file(resources.files("dt4acc").joinpath(*ACCELERATOR_SETUP))
     prefix = os.environ.get("DT4ACC_PREFIX", getpass.getuser())
+    # the twin's random numbers, made now: a bad DT4ACC_SEED stops the twin here
+    random_numbers.generator()
     twin = assemble(prefix)
     twin.view.orbit_server.start()
     twin.controller.start()
@@ -135,7 +138,9 @@ async def initialise_pvs(builder, prefix: str, twin: TransferLineTwin) -> None:
         **initialize_monitor_pvs(twin.monitors, builder=builder),
     })
     # a line: no turn by turn, the trajectory is the BPMs' slow acquisition
-    initialize_bpm_noise_pvs(twin.noise, builder=builder, kinds=("sa",))
+    # (under the prefix, not under TL: as the ring's and the MLS's noise PVs)
+    initialize_bpm_noise_pvs(twin.noise, builder=builder, kinds=("sa",),
+                             on_change={"sa": twin.view.republish_monitors})
     builder.SetDeviceName(model_device(prefix))
     twin.view.update_process_variables(initialize_model_pvs(builder, twin.view, n_elements=len(twin.line) + 1))
 

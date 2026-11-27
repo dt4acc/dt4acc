@@ -42,7 +42,7 @@ INJECTION = [
     ("Tracking in the ring", [
         ("INJ:n_turns", "turns in the ring each shot tracks the injected beam (1 ... 256): the length of the turn by turn data, not a number of shots", ACTS, NO),
         ("INJ:stop_at", "ring element the beam ends at (one name; empty: none)", ACTS, NO),
-        ("INJ:tbt:x", "horizontal position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... (m)", RO, NO),
+        ("INJ:tbt:x", "horizontal position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... (m); with the BPMs' noise when noise:bpm:tbt:enable is on", RO, NO),
         ("INJ:tbt:y", "vertical position at the ring BPMs, as INJ:tbt:x (m)", RO, NO),
         ("INJ:tbt:names", "the ring BPMs, in the order of INJ:tbt:x / y", RO, NO),
         ("INJ:survived", "particles still there after each turn", RO, NO),
@@ -66,7 +66,7 @@ prepends `DT4ACC_PREFIX` (default: the user name), e.g. `<P>:Q1PDR:set`.
 
 | part | PVs | names | listed in |
 |---|---|---|---|
-| storage ring | {n_ring} | as the storage ring twin, without its turn by turn PVs (`TBT:*`, `<bpm>:signal:tbt:*`): here they are the hand over's | [`../bessyii/pv_list.md`](../bessyii/pv_list.md) |
+| storage ring | {n_ring} | as the storage ring twin, without its turn by turn PVs (`TBT:*`, `<bpm>:signal:tbt:*`): here they are the hand over's; `noise:bpm:*` act on the ring's and the line's BPMs | [`../bessyii/pv_list.md`](../bessyii/pv_list.md) |
 | transfer line: supplies, magnets, monitors | {n_tl_dev} | machine names, as the transfer line twin | [`../bessytl/pv_list.md`](../bessytl/pv_list.md){tl_missing_note} |
 | transfer line: model | {n_tl_model} | `TL:...`, as the transfer line twin | [`../bessytl/pv_list.md`](../bessytl/pv_list.md), names below |
 | hand over | {n_inj} | `INJ:...`, `<bpm>:signal:tbt:...` | below |
@@ -110,6 +110,12 @@ def is_tl_model(pv: str) -> bool:
     return pv.startswith("TL:")
 
 
+def is_shared(pv: str) -> bool:
+    """PVs the transfer line twin has with the ring's name: the injection twin
+    serves them once, for ring and line (``noise:bpm:*``), listed as the ring's"""
+    return pv.startswith("noise:bpm:")
+
+
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("injection", type=Path, help="dump of the injection twin")
@@ -132,7 +138,10 @@ def main(a):
     tl_model = {pv: p for pv, p in line.items() if is_tl_model(pv)}
     missing = sorted(set(tl_model) - set(inj))
     assert not missing, f"transfer line model PVs not served: {missing[:5]}"
-    tl_dev_all = {pv: p for pv, p in line.items() if not is_tl_model(pv)}
+    shared = sorted(pv for pv in line if is_shared(pv))
+    missing = sorted(set(shared) - set(ring))
+    assert not missing, f"PVs shared by ring and line the ring does not serve: {missing[:5]}"
+    tl_dev_all = {pv: p for pv, p in line.items() if not is_tl_model(pv) and not is_shared(pv)}
     tl_dev = {pv: p for pv, p in tl_dev_all.items() if pv in inj}
     tl_dev_missing = sorted(set(tl_dev_all) - set(tl_dev))
     clash = sorted(pv for pv in tl_dev if pv in ring)

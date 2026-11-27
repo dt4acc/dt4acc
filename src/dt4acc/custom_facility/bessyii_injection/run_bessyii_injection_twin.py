@@ -40,6 +40,7 @@ from softioc import builder, softioc
 
 from dt4acc.config.data.querries import configure_data_file
 from dt4acc.core.bl.controller import Controller, read_and_dispatch
+from dt4acc.core.bl import random_numbers
 from dt4acc.core.bl.noise import BpmNoise
 from dt4acc.core.bl.translating_command_execution_engine import TranslatingCommandExecutionEngine
 from dt4acc.custom_epics.ioc.controller import dispatcher
@@ -177,7 +178,12 @@ async def initialise_pvs(builder, prefix: str, twin: InjectionTwin) -> Injection
     builder.SetDeviceName(prefix)
     twin.ring_view.update_process_variables(await ring_pvs(builder=builder, controller=twin.ring, bpms=twin.handover.monitors))
     injection = InjectionPVs(twin.handover, builder=builder, before_shot=line_shot(twin), noise=twin.noise.tbt)
-    initialize_bpm_noise_pvs(twin.noise, builder=builder)
+    # one set for ring and line; turn by turn: acts at the next shot
+    def republish_sa():
+        twin.ring_view.republish_monitors()
+        twin.line_view.republish_monitors()
+
+    initialize_bpm_noise_pvs(twin.noise, builder=builder, on_change={"sa": republish_sa})
     # the line's supplies and magnets come from its own device database
     configure_data_file(resources.files("dt4acc").joinpath(*ACCELERATOR_SETUP))
     twin.line_view.update_process_variables({
@@ -195,6 +201,8 @@ async def initialise_pvs(builder, prefix: str, twin: InjectionTwin) -> Injection
 
 async def main():
     prefix = os.environ.get("DT4ACC_PREFIX", getpass.getuser())
+    # the twin's random numbers, made now: a bad DT4ACC_SEED stops the twin here
+    random_numbers.generator()
     twin = assemble(prefix)
     for view in (twin.ring_view, twin.line_view):
         view.orbit_server.start()

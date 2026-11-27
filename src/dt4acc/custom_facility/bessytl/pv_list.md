@@ -239,7 +239,7 @@ Computed by the twin from the lattice.
 | `TL:survey:names` | element names |  | CA + PVA | no |
 | `TL:survey:uids` | element ids |  | CA + PVA | no |
 
-#### Noise on the BPMs' readings (#82)
+#### Noise on the BPMs' readings (#82): without `TL:`, `<P>:noise:bpm:sa:*`
 
 | PV | | write | protocol | machine |
 |---|---|---|---|---|

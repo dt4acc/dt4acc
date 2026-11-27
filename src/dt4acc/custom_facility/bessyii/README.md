@@ -148,9 +148,14 @@ caput BT:noise:bpm:sa:enable 0      # off: exact again
 | `noise:bpm:sa:enable`, `noise:bpm:sa:sigma` | slow acquisition (closed orbit): on / off, size [mm] |
 | `noise:bpm:tbt:enable`, `noise:bpm:tbt:sigma` | turn by turn: on / off, size [mm] |
 
-The same noise again: start the twin with `DT4ACC_SEED=<number>`; all random numbers of the
-twin come from one generator, seeded once. A reading gets new noise when the twin
-recalculates (a changed setting), not on its own as a real BPM does. The default sizes are placeholders, not the BPMs' real resolution.
+A change of these PVs acts at once: the latest readings are published again. After that, a
+reading gets new noise when the twin recalculates (a changed setting), not on its own as a
+real BPM does. The default sizes are placeholders, not the BPMs' real resolution.
+
+`DT4ACC_SEED=<number>` (a whole number) at start: all random numbers of the twin come from one
+generator, seeded with it, so a run draws the same sequence of numbers. Which reading gets
+which number can still change from run to run: the closed orbit and the turn by turn data
+are computed side by side.
 The MLS, transfer line and injection twins have the same PVs (the line: `sa` only).
 
 ## 4. Plot

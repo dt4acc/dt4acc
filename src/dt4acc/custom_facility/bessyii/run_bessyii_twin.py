@@ -29,7 +29,8 @@ from dt4acc.custom_epics.ioc.pv_setup import (
 )
 from dt4acc.custom_epics.ioc.bpm_pvs import initialize_bpm_pvs
 from dt4acc.custom_epics.ioc.noise_pvs import initialize_bpm_noise_pvs
-from dt4acc.core.bl.noise import BpmNoise, Noise
+from dt4acc.core.bl import random_numbers
+from dt4acc.core.bl.noise import BpmNoise, GaussianAdditiveNoise
 from dt4acc.custom_facility.bessyii.provide_lattice import (
     LATTICE_FILE,
     bessyii_pyat_lattice,
@@ -110,6 +111,8 @@ async def main():
 
     orbit_server.start()
     bpms = ring_monitors(backend, BPM_PREFIX)
+    # the twin's random numbers, made now: a bad DT4ACC_SEED stops the twin here
+    random_numbers.generator()
     # noise on the BPMs' readings: off at start (noise:bpm:...)
     noise = BpmNoise()
     view = View(orbit_server=orbit_server, bpms=bpms, bpm_noise=noise.sa)
@@ -134,9 +137,10 @@ async def main():
         initialise_lattice_pvs(builder, backend=backend, lattice=lattice, liaison_manager=lm,
                                controller=controller, view=view, bpms=bpms)
     )
-    initialize_bpm_noise_pvs(noise, builder=builder)
     # turn by turn data at the BPMs, recomputed after each new closed orbit
-    hook_track_updates(view, initialise_turn_by_turn_pvs(builder, backend, bpms, noise=noise.tbt))
+    tbt = initialise_turn_by_turn_pvs(builder, backend, bpms, noise=noise.tbt)
+    hook_track_updates(view, tbt)
+    initialize_bpm_noise_pvs(noise, builder=builder, on_change={"sa": view.republish_monitors, "tbt": tbt.trigger})
     # Extra reads at startup
     await read_and_dispatch(
         controller=controller,
@@ -205,7 +209,7 @@ def lattice_directory() -> Path:
 
 
 def initialise_turn_by_turn_pvs(
-    builder, backend: SimulatorBackend, bpms: Sequence[str], noise: Optional[Noise] = None
+    builder, backend: SimulatorBackend, bpms: Sequence[str], noise: Optional[GaussianAdditiveNoise] = None
 ) -> TurnByTurnPVs:
     """Turn by turn PVs of the ring alone (``TBT:...``, ``<bpm>:signal:tbt:X`` / ``Y``),
     :mod:`dt4acc.core.bl.turn_by_turn`

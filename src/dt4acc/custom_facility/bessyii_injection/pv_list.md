@@ -107,7 +107,7 @@ by turn, when a shot is fired (`INJ:trigger`). The settings act at the next shot
 |---|---|---|---|---|
 | `INJ:n_turns` | turns in the ring each shot tracks the injected beam (1 ... 256): the length of the turn by turn data, not a number of shots | acts | CA + PVA | no |
 | `INJ:stop_at` | ring element the beam ends at (one name; empty: none) | acts | CA + PVA | no |
-| `INJ:tbt:x` | horizontal position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... (m) |  | CA + PVA | no |
+| `INJ:tbt:x` | horizontal position at the ring BPMs: turn 1 at all BPMs, then turn 2, ... (m); with the BPMs' noise when noise:bpm:tbt:enable is on |  | CA + PVA | no |
 | `INJ:tbt:y` | vertical position at the ring BPMs, as INJ:tbt:x (m) |  | CA + PVA | no |
 | `INJ:tbt:names` | the ring BPMs, in the order of INJ:tbt:x / y |  | CA + PVA | no |
 | `INJ:survived` | particles still there after each turn |  | CA + PVA | no |
