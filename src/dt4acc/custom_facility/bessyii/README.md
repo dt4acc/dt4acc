@@ -152,6 +152,22 @@ A change of these PVs acts at once: the latest readings are published again. Aft
 reading gets new noise when the twin recalculates (a changed setting), not on its own as a
 real BPM does. The default sizes are placeholders, not the BPMs' real resolution.
 
+To see that it works, read one BPM with the noise off, on and off again:
+
+```bash
+caget BT:BPMZ1D1R:signal:sa:X       # noise off: the model, 0.017 mm at start
+caput BT:noise:bpm:sa:sigma 0.05
+caput BT:noise:bpm:sa:enable 1
+caget BT:BPMZ1D1R:signal:sa:X       # now off 0.017 by about 0.05 mm (random)
+caput BT:noise:bpm:sa:sigma 0.06    # each change draws new noise: another value
+caget BT:BPMZ1D1R:signal:sa:X
+caput BT:noise:bpm:sa:enable 0
+caget BT:BPMZ1D1R:signal:sa:X       # 0.017 again
+```
+
+`BT:beam:orbit:x` does not change meanwhile: the model stays exact. Turn by turn the same
+way, with `noise:bpm:tbt:*` and `caget -# 5 BT:BPMZ1D1R:signal:tbt:X` (section 5).
+
 `DT4ACC_SEED=<number>` (a whole number) at start: all random numbers of the twin come from one
 generator, seeded with it, so a run draws the same sequence of numbers. Which reading gets
 which number can still change from run to run: the closed orbit and the turn by turn data
@@ -473,10 +489,10 @@ scatter the beam (at the machine the beam grows a little behind it).
 
 ## 8. Test the twin thoroughly
 
-1. Without EPICS, from a clone (91 tests, under a minute):
+1. Without EPICS, from a clone (under a minute):
 
    ```bash
-   python -m pytest tests/bessyii tests/bessytl tests/bessyii_injection
+   python -m pytest tests/bessyii tests/bessytl tests/bessyii_injection tests/test_noise.py
    ```
 
 2. Against running twins, compared with plain pyAT (must end with `0 failure(s)`):
@@ -492,6 +508,7 @@ scatter the beam (at the machine the beam grows a little behind it).
 
    - [ ] ring twin up: `Q1PDR:set` 218.458, tunes 17.8481 and 6.7268
    - [ ] the four moves of section 3, each put back
+   - [ ] BPM noise (section 3): on, `BPMZ1D1R:signal:sa:X` moves away from 0.017; off, 0.017 again
    - [ ] `TBT:n_turns 1024`: `TBT:count` goes up, 1024 values
    - [ ] wavelength shifters loaded (1255 elements), back with `""` (1137)
    - [ ] a wrong file name is refused, the lattice stays
@@ -516,7 +533,8 @@ scatter the beam (at the machine the beam grows a little behind it).
 | `MDIZ3T5G:current` is 0 | the beam current is not simulated yet (issue #33) |
 | `CAV*:freq` does not follow `MCLKHX251C:freq` | known; it is updated at a lattice load only |
 
-Supply limits are not enforced (issue #80), and there is no noise on the BPMs (#82).
+Supply limits are not enforced (issue #80). The BPMs read the model exactly unless their
+noise is switched on (section 3, `noise:bpm:*`).
 
 ## 10. Where to read more
 
