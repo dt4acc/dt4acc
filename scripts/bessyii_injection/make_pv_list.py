@@ -66,7 +66,7 @@ prepends `DT4ACC_PREFIX` (default: the user name), e.g. `<P>:Q1PDR:set`.
 
 | part | PVs | names | listed in |
 |---|---|---|---|
-| storage ring | {n_ring} | as the storage ring twin, without its turn by turn PVs (`TBT:*`, `<bpm>:signal:tbt:*`): here they are the hand over's; `noise:bpm:*` act on the ring's and the line's BPMs | [`../bessyii/pv_list.md`](../bessyii/pv_list.md) |
+| storage ring | {n_ring} | as the storage ring twin, without its turn by turn PVs (`TBT:*`, `<bpm>:signal:tbt:*`): here they are the hand over's, and without `simulator_ring:lattice*`; `noise:bpm:*` act on the ring's and the line's BPMs | [`../bessyii/pv_list.md`](../bessyii/pv_list.md) |
 | transfer line: supplies, magnets, monitors | {n_tl_dev} | machine names, as the transfer line twin | [`../bessytl/pv_list.md`](../bessytl/pv_list.md){tl_missing_note} |
 | transfer line: model | {n_tl_model} | `TL:...`, as the transfer line twin | [`../bessytl/pv_list.md`](../bessytl/pv_list.md), names below |
 | hand over | {n_inj} | `INJ:...`, `<bpm>:signal:tbt:...` | below |
@@ -105,6 +105,12 @@ def is_ring_turn_by_turn(pv: str) -> bool:
     return pv.startswith("TBT:") or ":signal:tbt:" in pv
 
 
+def is_ring_only(pv: str) -> bool:
+    """the ring twin's PVs the injection twin does not serve: loading another
+    ring lattice at run time (``simulator_ring:lattice``, #81)"""
+    return pv.startswith("simulator_ring:lattice")
+
+
 def is_tl_model(pv: str) -> bool:
     """model PVs of the transfer line twin (under TL:, the ring has them without)"""
     return pv.startswith("TL:")
@@ -129,7 +135,7 @@ def main(a):
     inj, ring, line = read_dump(a.injection), read_dump(a.ring), read_dump(a.line)
 
     # the ring: exactly as the ring twin, but its own turn by turn PVs
-    ring = {pv: p for pv, p in ring.items() if not is_ring_turn_by_turn(pv)}
+    ring = {pv: p for pv, p in ring.items() if not is_ring_turn_by_turn(pv) and not is_ring_only(pv)}
     missing = sorted(set(ring) - set(inj))
     assert not missing, f"ring PVs the injection twin does not serve: {missing[:5]}"
     assert all(inj[pv] == p for pv, p in ring.items()), "a ring PV is served over another protocol"
